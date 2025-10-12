@@ -1,94 +1,3 @@
-# Generic Net framewortk
-=========
-#### Introduction
-Based on Net Frame 8.Now including basic ORM frame support (including EF Core).This may be most simplify code to intergrate ORM ability
-
-
-## Specification
-- Customer Annotation MappingEntity MappingField
-- Global DAOFactory Manager Datasource;
-- Single JdbcDao per DataSource;
-- Service Layer BaseRepository，with basic CRUD operator,can enhace or override;
-- Mybatis xml query ability,with js script enabled;
-- Integarte with propluar Database system;
-- Support EF core Annotation
-
-## Examples
-- DataSource Configration
-```yaml
-dataSource:
- core:
-  host: localhost
-  port: 3316
-  dbType: Mysql
-  userName: root
-  password: root
-  maxSize: 10
-```
-
-
-- DAO/Repository initialize
-```cs
-
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-//Construct Repository
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
-
-```
-
-- CRUD Operator
-```cs
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
-TestModel model = new TestModel();
-...  
-//New Entity
-repository.SaveEntity(model);
-//
-TestModel  model=repository.GetById(1);
-//return models with single column Query
-IList<TestModel> list=repository.QueryModelsByField("name", Constants.SqlOperator.LIKE, new object[] { "t" });
-//Update
-repository.UpdateEntity(model);
-//Delete
-repository.RemoveEntity(new long[] { 1 }.ToArray());
-```
-- Batch Insert
-```cs
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
-IList<TestSimple> list = new List<TestSimple>();
-for (int i = 0; i < 1000; i++)
-{
-    TestSimple simple = new TestSimple();
-    simple.name = "col" + Convert.ToString(i);
-    simple.tValue = i;
-    simple.dTime = DateTime.Now;
-    list.Add(simple);
-}
-return repository.InsertBatch(list);
-```
-
-- Mybatis like Query
-```cs
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
-
-PageQuery query = new PageQuery(4);
-query.Parameters.Add("Name", "t%");
-query.NameSpace = "Frameset.Test";
-query.QueryId = "select1";
-PageDTO<TestVO> list = repository.QueryPage<TestVO>(query);
-
-TestVO vo = new TestVO();
-vo.Name = "test";
-vo.Description = "test";
-vo.CsId = 50;
-repository.ExecuteMapper("Frameset.Test", "insert1", vo);
-```
-
-- Mybatis config xml (compatiable with  Mybatis，support js script)
-```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <mapper namespace="Frameset.Test">
     <resultMap id="rsMap1" type="Frametest.Dao.TestVO">
@@ -175,6 +84,7 @@ repository.ExecuteMapper("Frameset.Test", "insert1", vo);
         </script>
           where id=@Id
     </update>
-    
+    <delete id="del1" parameterType="List">
+        
+    </delete>
 </mapper>
-```
