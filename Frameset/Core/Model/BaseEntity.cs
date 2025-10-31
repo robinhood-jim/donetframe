@@ -3,7 +3,7 @@
 
 namespace Frameset.Core.Model
 {
-    public class BaseEntity 
+    public class BaseEntity
     {
         private IList<string> dirtyProperties = new List<string>();
 
@@ -20,7 +20,7 @@ namespace Frameset.Core.Model
                 }
             }
         }
-        
+
         public IList<string> GetDirties()
         {
             return dirtyProperties;

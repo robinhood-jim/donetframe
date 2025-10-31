@@ -25,8 +25,8 @@ namespace Frameset.Core.Dao
                         ColumnMeta meta = new ColumnMeta();
                         meta.ColumnName = row["COLUMN_NAME"].ToString();
                         meta.DataType = row["DATA_TYPE"].ToString();
-                        meta.ColumnType=row["COLUMN_TYPE"].ToString();
-                        meta.Nullable = !string.Equals("NO",row["IS_NULLABLE"].ToString(),StringComparison.OrdinalIgnoreCase);
+                        meta.ColumnType = row["COLUMN_TYPE"].ToString();
+                        meta.Nullable = !string.Equals("NO", row["IS_NULLABLE"].ToString(), StringComparison.OrdinalIgnoreCase);
                         if (row["EXTRA"] != DBNull.Value)
                         {
                             if (string.Equals("auto_increment", row["EXTRA"].ToString(), StringComparison.OrdinalIgnoreCase))
@@ -76,7 +76,7 @@ namespace Frameset.Core.Dao
                         {
                             meta.Remark = row["TABLE_COMMENT"].ToString();
                         }
-                        
+
                         list.Add(meta);
                     }
                 }

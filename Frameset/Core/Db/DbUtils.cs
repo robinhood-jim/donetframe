@@ -16,7 +16,7 @@ namespace Frameset.Core.Db
         public static DbConnection GetConnection(string connectStr, String dbType)
         {
             DbConnection connection = null;
-            Constants.DbType dbTypes = Constants.dbTypeOf(dbType);
+            Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
 
             switch (dbTypes)
             {
@@ -42,7 +42,7 @@ namespace Frameset.Core.Db
         public static DbCommand GetDbCommand(DbConnection connection, String dbType, String sql)
         {
             DbCommand command = null;
-            Constants.DbType dbTypes = Constants.dbTypeOf(dbType);
+            Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
                 case Constants.DbType.Mysql:
@@ -72,7 +72,7 @@ namespace Frameset.Core.Db
         public static DbParameter WrapParameter(string dbType, int pos, object value)
         {
             DbParameter parameter = null;
-            Constants.DbType dbTypes = Constants.dbTypeOf(dbType);
+            Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
                 case Constants.DbType.Mysql:
@@ -97,7 +97,7 @@ namespace Frameset.Core.Db
         public static IDataAdapter WrapAdapater(string dbType)
         {
             IDataAdapter dataAdapter = null;
-            Constants.DbType dbTypes = Constants.dbTypeOf(dbType);
+            Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
                 case Constants.DbType.Mysql:
@@ -118,7 +118,7 @@ namespace Frameset.Core.Db
         public static DbParameter WrapParameter(string dbType, string column, object value)
         {
             DbParameter parameter = null;
-            Constants.DbType dbTypes = Constants.dbTypeOf(dbType);
+            Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
                 case Constants.DbType.Mysql:

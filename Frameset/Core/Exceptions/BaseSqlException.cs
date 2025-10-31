@@ -2,7 +2,7 @@
 
 namespace Frameset.Core.Exceptions
 {
-    internal class BaseSqlException : Exception
+    public class BaseSqlException : Exception
     {
         public BaseSqlException(string message) : base(message)
         {

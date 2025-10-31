@@ -9,9 +9,9 @@ using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Linq;
 
@@ -26,7 +26,6 @@ namespace Frameset.Core.Dao
         private AbstractSqlDialect dataMeta;
         private Constants.DbType dbType;
         private string schema;
-        internal static readonly Serilog.ILogger log = new LoggerConfiguration().CreateLogger();
 
 
         internal JdbcDao(string connectionStr)
@@ -38,14 +37,14 @@ namespace Frameset.Core.Dao
         {
             this.dbTypeStr = dbTypeStr;
             this.connectionStr = connectionStr;
-            this.dbType = Constants.dbTypeOf(dbTypeStr);
+            this.dbType = Constants.DbTypeOf(dbTypeStr);
             this.dataMeta = DbDialectFactory.GetInstance(dbType);
         }
         internal JdbcDao(string dbTypeStr, string schema, string connectionStr)
         {
             this.dbTypeStr = dbTypeStr;
             this.connectionStr = connectionStr;
-            this.dbType = Constants.dbTypeOf(dbTypeStr);
+            this.dbType = Constants.DbTypeOf(dbTypeStr);
             this.dataMeta = DbDialectFactory.GetInstance(dbType);
             this.schema = schema;
         }
@@ -132,13 +131,16 @@ namespace Frameset.Core.Dao
         }
         DbParameter[] parseParameter(DbCommand command, object[] obj)
         {
-            DbParameter[] paramters = new DbParameter[obj.Length];
-            for (int i = 0; i < obj.Length; i++)
+            if (obj != null && obj.Count() > 0)
             {
-                paramters[i] = dataMeta.WrapParameter(i, obj[i]);
+                DbParameter[] paramters = new DbParameter[obj.Length];
+                for (int i = 0; i < obj.Length; i++)
+                {
+                    paramters[i] = dataMeta.WrapParameter(i, obj[i]);
+                }
+                return paramters;
             }
-            return paramters;
-
+            return null;
         }
         void parseParameter(DbCommand command, Dictionary<string, object> paramMap)
         {
@@ -213,7 +215,7 @@ namespace Frameset.Core.Dao
                         {
                             if (!query.MappingColumns.TryGetValue(name, out mappingColumn))
                             {
-                                mappingColumn = Core.Utils.StringUtils.camelCaseLowConvert(name);
+                                mappingColumn = Core.Utils.StringUtils.CamelCaseLowConvert(name);
                             }
                         }
 
@@ -343,7 +345,26 @@ namespace Frameset.Core.Dao
             return command.ExecuteNonQuery();
 
         }
-
+        public void DoWithQuery(string sql, object[] obj,Action<IDataReader> action)
+        {
+            using(DbConnection connection = dataMeta.GetDbConnection(connectionStr))
+            {
+                connection.Open();
+                using (DbCommand command = dataMeta.GetDbCommand(connection, sql))
+                {
+                    DbParameter[] parameters = parseParameter(command, obj);
+                    if (parameters != null && parameters.Count()>0)
+                    {
+                        command.Parameters.AddRange(parameters);
+                    }
+                    using (DbDataReader reader = command.ExecuteReader())
+                    {
+                        action.Invoke(reader);
+                    }
+                }
+            }
+            
+        }
 
 
 

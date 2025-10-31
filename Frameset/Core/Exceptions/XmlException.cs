@@ -2,7 +2,7 @@
 
 namespace Frameset.Core.Exceptions
 {
-    public class XmlException:Exception
+    public class XmlException : Exception
     {
         public XmlException(string message) : base(message)
         {

@@ -5,7 +5,7 @@ using System.Xml;
 
 namespace Frameset.Office.Core
 {
-    public class XMLStreamReader:IDisposable
+    public class XMLStreamReader : IDisposable
     {
         private readonly Stream stream;
         private readonly XmlReader reader;
@@ -13,6 +13,10 @@ namespace Frameset.Office.Core
         {
             this.stream = stream;
             reader = XmlReader.Create(stream);
+        }
+        public bool GotoElement(string eleName)
+        {
+            return GoTo(() => IsStartElement(eleName));
         }
         public bool GoTo(Func<bool> predicate)
         {
@@ -31,23 +35,23 @@ namespace Frameset.Office.Core
         }
         public bool IsEndElement(string eleName)
         {
-            return reader.NodeType==XmlNodeType.EndElement && reader.LocalName.Equals(eleName);
+            return reader.NodeType == XmlNodeType.EndElement && reader.LocalName.Equals(eleName);
         }
-        public bool Goto(string eleName)
+        public string GetLocalName()
         {
-            return GoTo(() => IsStartElement(eleName));
+            return reader.LocalName;
         }
         public bool HasNext()
         {
-            return reader.Read();
+            return !reader.EOF;
         }
         public string GetAttribute(string name)
         {
             return reader.GetAttribute(name);
         }
-        public string GetAttribute(string nameSpace,string name)
+        public string GetAttribute(string nameSpace, string name)
         {
-            return reader.GetAttribute(name,nameSpace);
+            return reader.GetAttribute(name, nameSpace);
         }
         public string GetValue(string eleName)
         {
@@ -56,24 +60,95 @@ namespace Frameset.Office.Core
             {
                 while (reader.Read())
                 {
-                    if(reader.NodeType==XmlNodeType.CDATA || reader.NodeType==XmlNodeType.Text || reader.NodeType == XmlNodeType.Whitespace)
+                    if (reader.NodeType == XmlNodeType.CDATA || reader.NodeType == XmlNodeType.Text || reader.NodeType == XmlNodeType.Whitespace)
                     {
                         builder.Append(reader.Value.ToString());
                     }
-                    if(reader.NodeType==XmlNodeType.EndElement && reader.LocalName.Equals(eleName))
+                    if (reader.NodeType == XmlNodeType.EndElement && reader.LocalName.Equals(eleName))
                     {
                         break;
                     }
                 }
                 return builder.ToString();
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 throw new XmlException("read xml error!");
             }
         }
-        public void Foreach(string startElement,string endElement,Action<XmlReader> action)
+        public string GetText()
         {
-            
+            return reader.Value;
+        }
+        public void Foreach(string startElement, string endElement, Action<XMLStreamReader> action)
+        {
+            while (GoTo(() => IsStartElement(startElement) || IsEndElement(endElement)))
+            {
+                if (reader.LocalName.Equals(endElement))
+                {
+                    break;
+                }
+                action.Invoke(this);
+            }
+        }
+        public void DoUntilEnd(string eleName, Action<XMLStreamReader> action)
+        {
+            while (reader.Read())
+            {
+                if (reader.NodeType == XmlNodeType.EndElement)
+                {
+                    if (reader.LocalName.Equals(eleName))
+                    {
+                        reader.Read();
+                        break;
+                    }
+                    else
+                    {
+                        reader.Read();
+                    }
+                }
+                if (reader.IsStartElement())
+                {
+                    action.Invoke(this);
+                }
+            }
+        }
+        public string GetValueUntilEndElement(string eleName)
+        {
+            return GetValueUntilEndElement(eleName, "");
+        }
+        internal string GetValueUntilEndElement(string eleName, string skipping)
+        {
+            StringBuilder builder = new StringBuilder();
+            int childElement = 1;
+            while (reader.Read())
+            {
+                XmlNodeType nodeType = reader.NodeType;
+                if (nodeType == XmlNodeType.Text || nodeType == XmlNodeType.CDATA || nodeType == XmlNodeType.Whitespace)
+                {
+                    builder.Append(reader.Value);
+                }
+                else if (reader.IsStartElement())
+                {
+                    if (skipping.Equals(reader.LocalName))
+                    {
+                        GetValueUntilEndElement(reader.LocalName);
+                    }
+                    else
+                    {
+                        childElement++;
+                    }
+                }
+                else if (nodeType == XmlNodeType.EndElement)
+                {
+                    childElement--;
+                    if (eleName.Equals(reader.LocalName) && childElement == 0)
+                    {
+                        break;
+                    }
+                }
+            }
+            return builder.ToString();
         }
 
         public void Dispose()
@@ -86,7 +161,7 @@ namespace Frameset.Office.Core
             {
                 stream.Close();
             }
-             
+
         }
     }
 }

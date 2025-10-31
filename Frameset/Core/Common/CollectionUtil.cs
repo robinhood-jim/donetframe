@@ -1,4 +1,5 @@
-﻿using Spring.Util;
+﻿using Microsoft.IdentityModel.Tokens;
+using Spring.Util;
 using System.Collections.Generic;
 
 namespace Frameset.Core.Common
@@ -12,6 +13,23 @@ namespace Frameset.Core.Common
         public static bool isNotEmpty(IList<K> list)
         {
             return !CollectionUtils.IsEmpty(list);
+        }
+    }
+    public class DictionaryUtils
+    {
+        public void RemoveIf<K, V>(Dictionary<K, V> dict, V value)
+        {
+            if (!dict.IsNullOrEmpty())
+            {
+
+                foreach (var item in dict)
+                {
+                    if (item.Value.Equals(value))
+                    {
+                        dict.Remove(item.Key);
+                    }
+                }
+            }
         }
     }
 }

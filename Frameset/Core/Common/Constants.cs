@@ -26,9 +26,10 @@ namespace Frameset.Core.Common
             DATE,
             TIMESTAMP,
             STRING,
+            BOOLEAN,
             CLOB,
-            BLOB
-
+            BLOB,
+            FORMULA
         }
         public enum SqlOperator
         {
@@ -43,8 +44,44 @@ namespace Frameset.Core.Common
             LLIKE,
             RLIKE
         }
+        public enum FileSystemType
+        {
+            LOCAL,
+            FTP,
+            SFTP,
+            SMB,
+            HDFS,
+            S3,
+            ALIYUN,
+            TENCENTCOS,
+            QINIU,
+            BOS,
+            OBS,
+            MINIO
+        }
+        public enum ResourceType
+        {
+            NONE,
+            KAFAK,
+            RABITMQ,
+            ZEROQ,
+            MONGODB,
+            CASSANDRA
+        }
+        public enum FileFormatType
+        {
+            CSV,
+            XML,
+            XLSX,
+            ARFF,
+            JSON,
+            AVRO,
+            ORC,
+            PARQUET,
+            PROTOBUF
+        }
         public static List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
-        public static DbType dbTypeOf(String dbType)
+        public static DbType DbTypeOf(string dbType)
         {
             DbType retType = DbType.Unknow;
             foreach (DbType type in Enum.GetValues(typeof(DbType)))
@@ -58,6 +95,46 @@ namespace Frameset.Core.Common
             }
             return retType;
         }
-
+        public static FileSystemType FsTypeOf(string resourceType)
+        {
+            FileSystemType resType = FileSystemType.LOCAL;
+            foreach (FileSystemType rtype in Enum.GetValues(typeof(FileSystemType)))
+            {
+                if (rtype.ToString().ToUpper().Equals(resourceType.ToUpper()))
+                {
+                    resType = rtype;
+                    break;
+                }
+            }
+            return resType;
+        }
+        public static ResourceType ResTypeOf(string resourceType)
+        {
+            ResourceType resType = ResourceType.NONE;
+            foreach (ResourceType rtype in Enum.GetValues(typeof(ResourceType)))
+            {
+                if (rtype.ToString().ToUpper().Equals(resourceType.ToUpper()))
+                {
+                    resType = rtype;
+                    break;
+                }
+            }
+            return resType;
+        }
+        public static FileFormatType FileFormatTypeOf(string resourceType)
+        {
+            FileFormatType resType = FileFormatType.CSV;
+            foreach (FileFormatType rtype in Enum.GetValues(typeof(FileFormatType)))
+            {
+                if (rtype.ToString().ToUpper().Equals(resourceType.ToUpper()))
+                {
+                    resType = rtype;
+                    break;
+                }
+            }
+            return resType;
+        }
+        public static string VALID = "1";
+        public static string INVALID = "0";
     }
 }

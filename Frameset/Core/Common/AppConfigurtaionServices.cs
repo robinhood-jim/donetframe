@@ -12,7 +12,7 @@ namespace Frameset.Core.Common
             Configuration = new ConfigurationBuilder()
             .Add(new JsonConfigurationSource { Path = "appsettings.json", ReloadOnChange = true })
             //根据环境变量读取配置
-            //Add(new JsonConfigurationSource { Path = $"appsettings.{System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", ReloadOnChange = true })
+            .Add(new JsonConfigurationSource { Path = $"appsettings.{System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", ReloadOnChange = true })
             .Build();
         }
         /// <summary> 

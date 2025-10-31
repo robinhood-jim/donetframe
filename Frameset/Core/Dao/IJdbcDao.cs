@@ -6,6 +6,7 @@ using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 
 
@@ -15,14 +16,14 @@ namespace Frameset.Core.Dao
     {
         string GetConnectString();
         string GetDbTypeStr();
-        
-        
+
+
         bool SaveEntity(DbCommand command, BaseEntity model, InsertSegment segment);
         bool UpdateEntity(DbCommand command, BaseEntity entity, UpdateSegment segment);
         int Execute(DbCommand command, string sql, DbParameter[] parameters);
 
         AbstractSqlDialect GetDialect();
-        
+
         int QueryByInt(DbCommand command);
         long QueryByLong(DbCommand command);
         IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
@@ -31,6 +32,6 @@ namespace Frameset.Core.Dao
         object QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject);
 
         string GetCurrentSchema();
-        
+        void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
     }
 }

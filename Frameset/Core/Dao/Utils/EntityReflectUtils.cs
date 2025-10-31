@@ -85,8 +85,8 @@ namespace Frameset.Core.Dao.Utils
                                 MappingField mappingField = attributes[i] as MappingField;
                                 if (mappingField.Exist)
                                 {
-                                    Constants.MetaType dataType = adjustType(prop.GetType());
-                                    builder.PropertyName(propName).FieldName(!string.IsNullOrWhiteSpace(mappingField.Field) ? mappingField.Field : Frameset.Core.Utils.StringUtils.camelCaseLowConvert(propName));
+                                    Constants.MetaType dataType = AdjustType(prop.PropertyType);
+                                    builder.PropertyName(propName).FieldName(!string.IsNullOrWhiteSpace(mappingField.Field) ? mappingField.Field : Frameset.Core.Utils.StringUtils.CamelCaseLowConvert(propName));
                                     if (mappingField.IfPrimary)
                                     {
                                         builder.Primary(true);
@@ -107,7 +107,7 @@ namespace Frameset.Core.Dao.Utils
                             else if (attributes[i].GetType().Equals(typeof(ColumnAttribute)))
                             {
                                 ColumnAttribute a = attributes[i] as ColumnAttribute;
-                                builder.PropertyName(propName).FieldName(!string.IsNullOrWhiteSpace(a.Name) ? a.Name : Frameset.Core.Utils.StringUtils.camelCaseLowConvert(propName)).FieldInfo(fieldInfo).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                                builder.PropertyName(propName).FieldName(!string.IsNullOrWhiteSpace(a.Name) ? a.Name : Frameset.Core.Utils.StringUtils.CamelCaseLowConvert(propName)).FieldInfo(fieldInfo).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                             }
                             else if (attributes[i].GetType().Equals(typeof(DatabaseGeneratedAttribute)))
@@ -144,7 +144,7 @@ namespace Frameset.Core.Dao.Utils
                     else if (!entityContent.IfExplicit)
                     {
                         FieldBuilder builder = new FieldBuilder();
-                        builder.PropertyName(propName).FieldName(Frameset.Core.Utils.StringUtils.camelCaseLowConvert(propName)).DataType(adjustType(prop.GetType())).FieldInfo(fieldInfo).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                        builder.PropertyName(propName).FieldName(Frameset.Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).FieldInfo(fieldInfo).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                         fields.Add(builder.Build());
                     }
@@ -175,7 +175,7 @@ namespace Frameset.Core.Dao.Utils
 
         }
 
-        public static Constants.MetaType adjustType(Type type)
+        public static Constants.MetaType AdjustType(Type type)
         {
             Constants.MetaType dataType = Constants.MetaType.INTEGER;
             if (type.Equals(typeof(int)))

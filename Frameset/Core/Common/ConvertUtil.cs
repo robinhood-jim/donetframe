@@ -1,4 +1,8 @@
-﻿using Spring.Util;
+﻿using Frameset.Core.Exceptions;
+using Frameset.Core.FileSystem;
+using Microsoft.IdentityModel.Tokens;
+using Spring.Globalization.Formatters;
+using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -113,6 +117,63 @@ namespace Frameset.Core.Common
                 dict.TryAdd(name, value);
             }
 
+        }
+        public static object ConvertStringToTargetObject(string value, DataSetColumnMeta meta, DateTimeFormatter formatter)
+        {
+            object retObj;
+
+            retObj = translateValue(value, meta.ColumnType, meta.ColumnCode, formatter);
+            if (retObj == null && meta.DefaultValue != null)
+            {
+                retObj = meta.DefaultValue;
+            }
+            return retObj;
+        }
+        private static object translateValue(string value, Constants.MetaType columnType, string columnName, DateTimeFormatter dateformat)
+        {
+            object retObj;
+            try
+            {
+                if (value.IsNullOrEmpty())
+                {
+                    return null;
+                }
+                if (columnType.Equals(Constants.MetaType.INTEGER))
+                {
+                    if (value.Contains("."))
+                    {
+                        value = value.Substring(0, value.IndexOf("."));
+                    }
+                    retObj = Convert.ToInt32(value);
+                }
+                else if (columnType.Equals(Constants.MetaType.BIGINT))
+                {
+                    if (value.Contains("."))
+                    {
+                        value = value.Substring(0, value.IndexOf("."));
+                    }
+                    retObj = Convert.ToInt64(value);
+                }
+
+                else if (columnType.Equals(Constants.MetaType.DOUBLE))
+                {
+                    retObj = Convert.ToDouble(value);
+                }
+
+                else if (columnType.Equals(Constants.MetaType.TIMESTAMP) || columnType.Equals(Constants.MetaType.DATE))
+                {
+                    retObj = dateformat.Parse(value);
+                }
+                else
+                {
+                    retObj = value;
+                }
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + value + "failed! type mismatch,Please check!");
+            }
+            return retObj;
         }
     }
 }

@@ -213,7 +213,7 @@ namespace Frameset.Core.Repo
             string propName = info.Name;
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             FieldContent content = null;
-            if(fieldMap.TryGetValue(propName,out content))
+            if (fieldMap.TryGetValue(propName, out content))
             {
                 StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
                 IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, content, builder, 0, oper, values);
@@ -232,7 +232,7 @@ namespace Frameset.Core.Repo
             }
             else
             {
-                
+
                 throw new BaseSqlException("");
             }
 
@@ -302,105 +302,7 @@ namespace Frameset.Core.Repo
                 throw new ConfigMissingException("id " + queryId + " does not found in namespace " + nameSpace);
             }
         }
-        /*public object QueryMapper(string nameSpace, string queryId,  object queryObject)
-        {
-            AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, queryId);
-            if (segment != null)
-            {
-                AssertUtils.IsTrue(segment.GetType().Equals(typeof(SqlSelectSegment)), "");
-                SqlSelectSegment sqlsegment = (SqlSelectSegment)segment;
-                Dictionary<string, object> paramMap = new Dictionary<string, object>();
-                string rsMap = sqlsegment.ResultMap;
-                if (!sqlsegment.Parametertype.IsNullOrEmpty())
-                {
-                    ConvertUtil.ToDict(queryObject, paramMap);
-                }
-                else if (queryObject.GetType().Equals(typeof(Dictionary<string, object>)))
-                {
-                    paramMap = (Dictionary<string, object>)queryObject;
-                }
-                string executeSql = segment.ReturnSqlPart(paramMap);
-                ResultMap map = SqlMapperConfigure.GetResultMap(nameSpace, rsMap);
-                Type retType = map != null ? map.ModelType : Type.GetType(rsMap);
-                bool retMap = false;
-                Dictionary<string, MethodParam> methodMap = null;
-                if (retType == null && string.Equals(rsMap, "Map", StringComparison.OrdinalIgnoreCase))
-                {
-                    retMap = true;
-                }
-                else
-                {
-                    methodMap = AnnotationUtils.ReflectObject(retType);
-                }
 
-                
-                var listType = typeof(List<>).MakeGenericType(retType);
-
-                dynamic retList = Activator.CreateInstance(listType);
-                using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
-                {
-                    connection.Open();
-                    using (DbCommand command = dao.GetDialect().GetDbCommand(connection, executeSql))
-                    {
-                        if (!paramMap.IsNullOrEmpty())
-                        {
-                            foreach (var item in paramMap)
-                            {
-                                command.Parameters.Add(dao.GetDialect().WrapParameter("@"+item.Key, item.Value));
-                            }
-                            using (DbDataReader reader = command.ExecuteReader())
-                            {
-                                while (reader.Read())
-                                {
-                                    Dictionary<string, object> dict = null;
-                                    object ret = null;
-                                    MethodParam param = null;
-
-                                    if (retMap)
-                                    {
-                                        dict = new Dictionary<string, object>();
-                                    }
-                                    else
-                                    {
-                                        ret = Activator.CreateInstance(retType);
-                                    }
-
-                                    for (int col = 0; col < reader.FieldCount; col++)
-                                    {
-                                        string name = reader.GetName(col);
-                                        if (retMap)
-                                        {
-                                            dict[reader.GetName(col)] = reader[col];
-                                        }
-                                        if (methodMap.TryGetValue(map.MappingColumns[name],out param))
-                                        {
-                                            param.SetMethod.Invoke(ret, new object[] { ConvertUtil.parseByType(param.ParamType, reader[col]) });
-                                        }
-                                    }
-                                    if (retMap)
-                                    {
-                                        retList.Add(dict);
-                                    }
-                                    else
-                                    {
-                                        dynamic tmp = Convert.ChangeType(ret, retType);
-                                        retList.Add(tmp);
-                                    }
-                                }
-
-                            }
-
-                        }
-
-                    }
-                }                    
-                return retList;
-            }
-            else
-            {
-                throw new ConfigMissingException("id " + queryId + " does not found in namespace " + nameSpace);
-            }
-        }*/
         public int ExecuteMapper(string nameSpace, string exeId, object input)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, exeId);

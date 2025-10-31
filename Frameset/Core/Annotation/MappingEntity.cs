@@ -2,7 +2,7 @@
 
 namespace Frameset.Core.Annotation
 {
-    [AttributeUsage(AttributeTargets.All, AllowMultiple = true)]
+    [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class MappingEntity : Attribute
     {
         public string TableName { get; set; }

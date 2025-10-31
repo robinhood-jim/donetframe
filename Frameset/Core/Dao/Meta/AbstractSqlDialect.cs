@@ -82,7 +82,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "BIGINT";
         }
-       
+
 
 
         public virtual string GetBlobFormat()
@@ -93,7 +93,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "NUMERIC";
         }
-        
+
 
         public virtual string GetClobFormat()
         {
@@ -186,7 +186,7 @@ namespace Frameset.Core.Dao.Meta
                 case Constants.MetaType.FLOAT:
                 case Constants.MetaType.DOUBLE:
                     builder.Append(fieldContent.FieldName).Append(" ").Append(GetNumericFormat());
-                    if(fieldContent.Scale!=0 && fieldContent.Precise != 0)
+                    if (fieldContent.Scale != 0 && fieldContent.Precise != 0)
                     {
                         builder.Append("(").Append(fieldContent.Scale).Append(",").Append(fieldContent.Precise).Append(")");
                     }
@@ -197,14 +197,14 @@ namespace Frameset.Core.Dao.Meta
                 case Constants.MetaType.TIMESTAMP:
                     builder.Append(fieldContent.FieldName).Append(" ").Append(GetTimestampFormat());
                     break;
-                    
+
             }
             return builder.ToString();
 
         }
         public static int GetDefaultPort(string dbType)
         {
-            Constants.DbType dbTypes = Constants.dbTypeOf(dbType);
+            Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             int defaultPort = 0;
             switch (dbTypes)
             {

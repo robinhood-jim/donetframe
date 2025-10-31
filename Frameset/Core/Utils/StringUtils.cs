@@ -8,9 +8,13 @@ namespace Frameset.Core.Utils
     public class StringUtils
     {
         private static readonly string undlineStr = "_";
-        public static string capitalize(string value)
+        public static int ASCII_VISIBLE_START = 48;
+        public static int ASCII_VISIBLE_END = 122;
+        public static int ASCII_UPPER_START = 64;
+        public static int ASCII_LOWER_START = 96;
+        public static string Capitalize(string value)
         {
-            if (hasLegth(value))
+            if (HasLegth(value))
             {
                 return changeFirstCharacterCase(value, true);
             }
@@ -20,9 +24,9 @@ namespace Frameset.Core.Utils
             }
         }
 
-        public static string uncapitalize(string value)
+        public static string Uncapitalize(string value)
         {
-            if (hasLegth(value))
+            if (HasLegth(value))
             {
                 return changeFirstCharacterCase(value, false);
             }
@@ -31,7 +35,7 @@ namespace Frameset.Core.Utils
                 throw new AggregateException("value is empty!");
             }
         }
-        public static string camelCaseUpperConvert(string column)
+        public static string CamelCaseUpperConvert(string column)
         {
             AssertUtils.IsTrue(!string.IsNullOrWhiteSpace(column));
             StringBuilder buider = new StringBuilder();
@@ -49,7 +53,7 @@ namespace Frameset.Core.Utils
             }
             return buider.ToString();
         }
-        public static string camelCaseLowConvert(string column)
+        public static string CamelCaseLowConvert(string column)
         {
             AssertUtils.IsTrue(!string.IsNullOrWhiteSpace(column));
             StringBuilder buider = new StringBuilder();
@@ -74,17 +78,30 @@ namespace Frameset.Core.Utils
             }
             return buider.ToString();
         }
+        public static String GenerateRandomChar(Random random, int length)
+        {
+            StringBuilder builder = new StringBuilder();
+
+            for (int i = 0; i < length; i++)
+            {
+                builder.Append((char)(ASCII_VISIBLE_START + getRandomChar(random)));
+            }
+            return builder.ToString();
+        }
+        private static int getRandomChar(Random random)
+        {
+            return random.Next(ASCII_VISIBLE_END - ASCII_VISIBLE_START + 1);
+        }
 
 
-
-        public static bool hasLegth(string value)
+        public static bool HasLegth(string value)
         {
             return value != null && !string.IsNullOrWhiteSpace(value);
         }
 
         private static string changeFirstCharacterCase(string str, bool capitalize)
         {
-            if (!hasLegth(str))
+            if (!HasLegth(str))
             {
                 return str;
             }
