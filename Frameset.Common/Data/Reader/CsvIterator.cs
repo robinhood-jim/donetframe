@@ -86,7 +86,7 @@ namespace Frameset.Common.Data.Reader
 
             }
             initalize(path);
-            while ((line = reader.ReadLine()) != null)
+            while ((line = await reader.ReadLineAsync()) != null)
             {
                 if (doProcess(line))
                 {

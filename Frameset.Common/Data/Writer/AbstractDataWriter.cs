@@ -6,7 +6,6 @@ using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Spring.Globalization.Formatters;
 using System.Diagnostics;
-using System.Diagnostics.CodeAnalysis;
 
 namespace Frameset.Common.Data.Writer
 {
@@ -35,7 +34,7 @@ namespace Frameset.Common.Data.Writer
         internal bool useRawOutputStream = false;
         internal bool useDictOutput = true;
         internal Dictionary<string, MethodParam> methodMap;
-        internal DateTimeFormatter dateFormat ;
+        internal DateTimeFormatter dateFormat;
         public void Dispose()
         {
             FinishWrite();
@@ -47,7 +46,10 @@ namespace Frameset.Common.Data.Writer
             if (outputStream != null)
             {
                 FileSystem.FinishWrite(outputStream);
-                outputStream.Close();
+                if (outputStream.CanWrite)
+                {
+                    outputStream.Close();
+                }
             }
         }
         internal AbstractDataWriter(DataCollectionDefine define, IFileSystem fileSystem)

@@ -8,7 +8,7 @@ namespace Frameset.Common.FileSystem
     {
         public static IFileSystem GetFileSystem(DataCollectionDefine define)
         {
-            IFileSystem fileSystem = null;
+            IFileSystem fileSystem = LocalFileSystem.GetInstance();
             switch (define.FsType)
             {
                 case Constants.FileSystemType.LOCAL:

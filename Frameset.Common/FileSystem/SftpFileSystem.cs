@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using Microsoft.IdentityModel.Tokens;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
 
@@ -17,6 +18,7 @@ namespace Frameset.Common.FileSystem
         public SftpFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.SFTP;
+            Init(define);
         }
         public override void Init(DataCollectionDefine define)
         {
@@ -25,7 +27,12 @@ namespace Frameset.Common.FileSystem
             {
                 string portStr = null;
 
-                define.ResourceConfig.TryGetValue("ftp.host", out host);
+                string hostStr;
+                define.ResourceConfig.TryGetValue("ftp.host", out hostStr);
+                if (!hostStr.IsNullOrEmpty())
+                {
+                    host = hostStr;
+                }
                 if (define.ResourceConfig.TryGetValue("ftp.port", out portStr))
                 {
                     port = Convert.ToInt32(portStr);
@@ -45,7 +52,14 @@ namespace Frameset.Common.FileSystem
 
         public override void Dispose()
         {
-            throw new NotImplementedException();
+            if (client != null)
+            {
+                if (client.IsConnected)
+                {
+                    client.Disconnect();
+                }
+                client.Dispose();
+            }
         }
 
         public override bool Exist(string resourcePath)
@@ -53,6 +67,7 @@ namespace Frameset.Common.FileSystem
             BeginOperator();
             try
             {
+                client.Connect();
                 return client.Exists(resourcePath);
             }
             finally
@@ -66,22 +81,31 @@ namespace Frameset.Common.FileSystem
         public override Stream? GetInputStream(string resourcePath)
         {
             BeginOperator();
-            if (client.Exists(resourcePath))
+            try
             {
-                ISftpFile file = client.Get(resourcePath);
-
-                if (file.IsRegularFile)
+                client.Connect();
+                if (client.Exists(resourcePath))
                 {
-                    return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
+                    ISftpFile file = client.Get(resourcePath);
+
+                    if (file.IsRegularFile)
+                    {
+                        return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
+                    }
+                    else if (file.IsDirectory)
+                    {
+                        throw new NotSupportedException("source is Path,can not open!");
+                    }
                 }
-                else if (file.IsDirectory)
+                else
                 {
                     throw new NotSupportedException("source is Path,can not open!");
                 }
             }
-            else
+            catch (Exception ex)
             {
-                throw new NotSupportedException("source is Path,can not open!");
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
             }
             return null;
         }
@@ -89,33 +113,52 @@ namespace Frameset.Common.FileSystem
         public override Stream? GetOutputStream(string resourcePath)
         {
             BeginOperator();
-            if (!client.Exists(resourcePath))
+            try
             {
-                return GetOutputStremWithCompress(resourcePath, client.OpenWrite(resourcePath));
+                client.Connect();
+                if (!client.Exists(resourcePath))
+                {
+                    return GetOutputStremWithCompress(resourcePath, client.OpenWrite(resourcePath));
+                }
+                else
+                {
+                    throw new OperationNotAllowedException("path already Exists!");
+                }
             }
-            else
+            catch(Exception ex)
             {
-                throw new OperationNotAllowedException("path already Exists!");
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
             }
         }
 
         public override Stream? GetRawInputStream(string resourcePath)
         {
-            if (client.Exists(resourcePath))
+            BeginOperator();
+            try
             {
-                ISftpFile file = client.Get(resourcePath);
-                if (file.IsRegularFile)
+                client.Connect();
+                if (client.Exists(resourcePath))
                 {
-                    return client.OpenRead(resourcePath);
+                    ISftpFile file = client.Get(resourcePath);
+                    if (file.IsRegularFile)
+                    {
+                        return client.OpenRead(resourcePath);
+                    }
+                    else if (file.IsDirectory)
+                    {
+                        throw new NotSupportedException("source is Path,can not open!");
+                    }
                 }
-                else if (file.IsDirectory)
+                else
                 {
-                    throw new NotSupportedException("source is Path,can not open!");
+                    throw new OperationNotAllowedException("path not Exists!");
                 }
             }
-            else
+            catch(Exception ex)
             {
-                throw new OperationNotAllowedException("path not Exists!");
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
             }
             return null;
         }
@@ -123,13 +166,22 @@ namespace Frameset.Common.FileSystem
         public override Stream? GetRawOutputStream(string resourcePath)
         {
             BeginOperator();
-            if (!client.Exists(resourcePath))
+            try
             {
-                return client.OpenWrite(resourcePath);
+                client.Connect();
+                if (!client.Exists(resourcePath))
+                {
+                    return client.OpenWrite(resourcePath);
+                }
+                else
+                {
+                    throw new OperationNotAllowedException("path already Exists!");
+                }
             }
-            else
+            catch(Exception ex)
             {
-                throw new OperationNotAllowedException("path already Exists!");
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
             }
         }
 
@@ -207,6 +259,7 @@ namespace Frameset.Common.FileSystem
             }
             catch (Exception ex)
             {
+                FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
         }
@@ -220,6 +273,12 @@ namespace Frameset.Common.FileSystem
                 }
                 Interlocked.Increment(ref count);
             }
+        }
+        public override void FinishWrite(Stream outputStream)
+        {
+            outputStream.Flush();
+            outputStream.Close();
+            FinishOperator();
         }
     }
 }

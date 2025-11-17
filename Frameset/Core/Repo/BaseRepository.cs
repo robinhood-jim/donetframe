@@ -65,7 +65,7 @@ namespace Frameset.Core.Repo
             {
                 return saveFunc.Invoke(entity);
             }
-            return executeInTransaction<bool>(segment.InsertSql, entity, (command, v) =>
+            return ExecuteInTransaction<bool>(segment.InsertSql, entity, (command, v) =>
             {
                 bool executeRs = false;
                 if (insertBeforeAction != null)
@@ -91,7 +91,7 @@ namespace Frameset.Core.Repo
             }
             else
             {
-                return executeInTransaction<bool>(segment.UpdateSql, entity, (command, v) =>
+                return ExecuteInTransaction<bool>(segment.UpdateSql, entity, (command, v) =>
                 {
                     bool executeRs = false;
                     if (updateBeforeAction != null)
@@ -131,7 +131,7 @@ namespace Frameset.Core.Repo
                     }
                 }
                 string removeSql = removeBuilder.Append(idsBuilder.ToString().Substring(0, idsBuilder.Length - 1)).ToString();
-                return executeInTransaction<int>(removeSql, null, (command, v) =>
+                return ExecuteInTransaction<int>(removeSql, null, (command, v) =>
                 {
                     return dao.Execute(command, removeSql, parameters);
                 });
@@ -154,7 +154,7 @@ namespace Frameset.Core.Repo
                     parameters[i] = dao.GetDialect().WrapParameter(i + 1, pks[i]);
                 }
                 string removeSql = builder.Append(idsBuilder.ToString().Substring(0, idsBuilder.Length - 1)).ToString();
-                return executeInTransaction<int>(removeSql, null, (command, v) =>
+                return ExecuteInTransaction<int>(removeSql, null, (command, v) =>
                 {
                     return dao.Execute(command, removeSql, parameters);
                 });
@@ -433,12 +433,12 @@ namespace Frameset.Core.Repo
         }
 
 
-        internal T executeInTransaction<T>(string sql, V entity, Func<DbCommand, V, T> func)
+        internal T ExecuteInTransaction<T>(string sql, V entity, Func<DbCommand, V, T> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
                 connection.Open();
-                DbTransaction transaction = openTransaction(connection);
+                DbTransaction transaction = OpenTransaction(connection);
                 try
                 {
                     DbCommand command = dao.GetDialect().GetDbCommand(connection, sql);
@@ -454,7 +454,7 @@ namespace Frameset.Core.Repo
 
             }
         }
-        internal virtual DbTransaction openTransaction(DbConnection connection)
+        internal virtual DbTransaction OpenTransaction(DbConnection connection)
         {
             if (transcationFunc == null)
             {

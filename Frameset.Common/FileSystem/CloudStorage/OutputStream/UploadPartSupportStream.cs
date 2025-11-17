@@ -28,6 +28,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         internal Dictionary<int, MemoryStream> partMemMap = new Dictionary<int, MemoryStream>();
         internal int partNum = 0;
         internal int partSize = 20 * 1024 * 1024;
+        internal bool finish = false;
         internal void doInit()
         {
             string configPartSizeStr;
@@ -45,7 +46,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         }
         public override void Flush()
         {
-            throw new NotImplementedException();
+            
         }
 
         public override int Read(byte[] buffer, int offset, int count)
@@ -98,6 +99,10 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         }
         public override void Close()
         {
+            if (finish)
+            {
+                return;
+            }
             if (!UploadId.IsNullOrEmpty())
             {
                 while (etagMap.Count + errorPartMap.Count != partNum)
@@ -124,6 +129,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             else
             {
                 uploadAsync();
+                finish = true;
             }
         }
 

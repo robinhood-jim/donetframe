@@ -54,16 +54,11 @@ namespace Frameset.Common.Data.Reader
             return false;
         }
 
-        public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
+        public override async IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
         {
             initalize(path);
             base.MoveNext();
             cachedValue.Clear();
-            return asyncQuery();
-
-        }
-        private async IAsyncEnumerable<T> asyncQuery()
-        {
             while (fileReader.HasNext())
             {
                 GenericRecord record = fileReader.Next();

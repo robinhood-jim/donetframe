@@ -1,5 +1,6 @@
 ﻿using Amazon.S3;
 using Amazon.S3.Model;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Serilog;
 using System.Net;
@@ -37,7 +38,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             }
             else
             {
-                return null;
+                throw new OperationFailedException("uploadPar completa failed");
             }
         }
 
@@ -58,6 +59,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
                 Key = key
             };
             request.InputStream = partMemMap[0];
+           
             PutObjectResponse response = client.PutObjectAsync(request).Result;
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {

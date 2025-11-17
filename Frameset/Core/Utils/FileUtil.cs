@@ -19,7 +19,7 @@ namespace Frameset.Core.Utils
             string _namespace = type.Namespace;
 
             Assembly _assembly = Assembly.GetExecutingAssembly();
-            string resourceName = _assembly.GetName().Name.ToString() + ".Resources.contenttype.properties";
+            string resourceName =   "Frameset.Resources.contenttype.properties";
 
             Stream stream = _assembly.GetManifestResourceStream(resourceName);
             string line = null;
@@ -49,41 +49,43 @@ namespace Frameset.Core.Utils
                 fileSeparator = '/';
                 pos = resourcePath.LastIndexOf(fileSeparator);
             }
+            FileMeta meta = new FileMeta();
+            string fileName;
+            string filePath;
             if (pos != -1)
             {
-                FileMeta meta = new FileMeta();
-                string fileName = resourcePath.Substring(pos + 1);
-                string filePath = resourcePath.Substring(0, pos);
-                meta.Path = filePath;
-                meta.FileName = fileName;
-                string[] namePart = fileName.Split(".");
-                for (int i = namePart.Length - 1; i > 0; i--)
-                {
-                    if (CompressType.NONE.Equals(meta.CompressCodec))
-                    {
-                        int pos1 = suffix.IndexOf(namePart[i].ToLower());
-                        if (pos1 != -1)
-                        {
-                            meta.CompressCodec = compressTypes[pos1];
-                            continue;
-                        }
-                    }
-                    string contentType;
-                    contentTypeMap.TryGetValue(namePart[i].ToLower(), out contentType);
-                    if (!contentType.IsNullOrEmpty())
-                    {
-                        meta.FileFormat = namePart[i].ToLower();
-                        meta.ContentType = contentType;
-                        break;
-                    }
-                }
-                return meta;
-
+                fileName = resourcePath.Substring(pos + 1);
+                filePath = resourcePath.Substring(0, pos);
             }
             else
             {
-                throw new ConfigMissingException("resourcePath is illegal");
+                filePath = "";
+                fileName = resourcePath;
             }
+            meta.Path = filePath;
+            meta.FileName = fileName;
+            string[] namePart = fileName.Split(".");
+            for (int i = namePart.Length - 1; i > 0; i--)
+            {
+                if (CompressType.NONE.Equals(meta.CompressCodec))
+                {
+                    int pos1 = suffix.IndexOf(namePart[i].ToLower());
+                    if (pos1 != -1)
+                    {
+                        meta.CompressCodec = compressTypes[pos1];
+                        continue;
+                    }
+                }
+                string contentType;
+                contentTypeMap.TryGetValue(namePart[i].ToLower(), out contentType);
+                if (!contentType.IsNullOrEmpty())
+                {
+                    meta.FileFormat = namePart[i].ToLower();
+                    meta.ContentType = contentType;
+                    break;
+                }
+            }
+            return meta;
 
         }
     }

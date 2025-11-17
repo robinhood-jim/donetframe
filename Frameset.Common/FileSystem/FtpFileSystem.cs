@@ -2,6 +2,7 @@
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using Microsoft.IdentityModel.Tokens;
 
 namespace Frameset.Common.FileSystem
 {
@@ -18,6 +19,7 @@ namespace Frameset.Common.FileSystem
         public FtpFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.FTP;
+            Init(define);
         }
         public override void Init(DataCollectionDefine define)
         {
@@ -27,8 +29,12 @@ namespace Frameset.Common.FileSystem
             if (define.ResourceConfig.Count > 0)
             {
                 string portStr = null;
-
-                define.ResourceConfig.TryGetValue("ftp.host", out host);
+                string hostStr;
+                define.ResourceConfig.TryGetValue("ftp.host", out hostStr);
+                if (!hostStr.IsNullOrEmpty())
+                {
+                    host = hostStr;
+                }
                 if (define.ResourceConfig.TryGetValue("ftp.port", out portStr))
                 {
                     port = Convert.ToInt32(portStr);
@@ -67,18 +73,19 @@ namespace Frameset.Common.FileSystem
         public override Stream? GetInputStream(string resourcePath)
         {
             BeginOperator();
-            if (!client.FileExists(resourcePath))
-            {
-                return null;
-            }
             try
             {
                 client.Connect();
-                return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
-
+                if (!client.FileExists(resourcePath))
+                {
+                    return null;
+                }
+                client.Connect();
+                return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));  
             }
             catch (Exception ex)
             {
+                FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
 
@@ -87,35 +94,41 @@ namespace Frameset.Common.FileSystem
         public override Stream? GetOutputStream(string resourcePath)
         {
             BeginOperator();
-            if (client.FileExists(resourcePath))
-            {
-                throw new NotSupportedException("path already exists!");
-            }
             try
             {
                 client.Connect();
+                if (client.FileExists(resourcePath))
+                {
+                    throw new NotSupportedException("path already exists!");
+                }
+                client.Connect();
                 return GetOutputStremWithCompress(resourcePath, client.OpenWrite(resourcePath));
+
             }
             catch (Exception ex)
             {
+                FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
+
         }
 
         public override Stream? GetRawInputStream(string resourcePath)
         {
             BeginOperator();
-            if (!client.FileExists(resourcePath))
-            {
-                return null;
-            }
             try
             {
+                client.Connect();
+                if (!client.FileExists(resourcePath))
+                {
+                    return null;
+                }
                 client.Connect();
                 return client.OpenRead(resourcePath);
             }
             catch (Exception ex)
             {
+                FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
 
@@ -124,19 +137,20 @@ namespace Frameset.Common.FileSystem
         public override Stream GetRawOutputStream(string resourcePath)
         {
             BeginOperator();
-            if (client.FileExists(resourcePath))
-            {
-                throw new OperationNotAllowedException("resource Exists!");
-            }
             try
             {
                 client.Connect();
+                if (client.FileExists(resourcePath))
+                {
+                    throw new OperationNotAllowedException("resource Exists!");
+                }
                 return client.OpenWrite(resourcePath);
             }
             catch (Exception ex)
             {
                 throw new OperationFailedException(ex.Message, ex);
             }
+            
         }
 
         public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
@@ -213,6 +227,15 @@ namespace Frameset.Common.FileSystem
                 client.Dispose();
             }
 
+        }
+        public override void FinishWrite(Stream outputStream)
+        {
+            if (outputStream.CanWrite)
+            {
+                outputStream.Flush();
+                outputStream.Close();
+            }
+            FinishOperator();
         }
     }
 }

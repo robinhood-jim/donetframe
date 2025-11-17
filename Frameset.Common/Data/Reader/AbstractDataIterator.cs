@@ -15,7 +15,7 @@ namespace Frameset.Common.Data.Reader
         internal bool reUseCurrent = false;
         internal T current;
         public T Current => current;
-        internal DateTimeFormatter dateFormat ;
+        internal DateTimeFormatter dateFormat;
         internal bool readAsDict = true;
         public DataCollectionDefine MetaDefine
         {

@@ -66,7 +66,7 @@ namespace Frameset.Common.Data.Reader
                 groupMap.Clear();
                 rowCount = currentReader.RowCount;
                 readLines = 0;
-                
+
                 for (int i = 0; i < fields.Count; i++)
                 {
                     groupMap.TryAdd(fields[i], currentReader.ReadColumnAsync(fields[i]).Result);
@@ -86,10 +86,36 @@ namespace Frameset.Common.Data.Reader
             return true;
         }
 
-        public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
+        public override async IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
         {
+            base.MoveNext();
+            if (currentGroup < groupCount)
+            {
+                if (currentReader == null || readLines >= rowCount)
+                {
+                    currentReader = groupReaders[currentGroup++];
+                    groupMap.Clear();
+                    rowCount = currentReader.RowCount;
+                    readLines = 0;
 
-            throw new NotImplementedException();
+                    for (int i = 0; i < fields.Count; i++)
+                    {
+                        groupMap.TryAdd(fields[i],await currentReader.ReadColumnAsync(fields[i]));
+                    }
+                }
+                cachedValue.Clear();
+                foreach (DataField field in fields)
+                {
+                    object value = groupMap[field].Data.GetValue(readLines);
+                    if (value != null)
+                    {
+                        cachedValue.TryAdd(field.Name, value);
+                    }
+                }
+                ConstructReturn();
+                readLines++;
+                yield return current;
+            }
         }
     }
 }

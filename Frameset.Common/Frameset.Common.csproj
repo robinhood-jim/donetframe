@@ -4,7 +4,6 @@
     <TargetFramework>net8.0</TargetFramework>
     <ImplicitUsings>enable</ImplicitUsings>
     <Nullable>enable</Nullable>
-	<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
   </PropertyGroup>
 
@@ -33,7 +32,6 @@
 	<PackageReference Include="SharpZipLib" Version="1.4.2" PrivateAssets="All" />
 	<PackageReference Include="Snappier" Version="1.2.0" PrivateAssets="All"/>
 	<PackageReference Include="SSH.NET" Version="2025.0.0" PrivateAssets="All" />
-	<PackageReference Include="WebHDFS.Client" Version="2.0.0" PrivateAssets="All" />
 	<PackageReference Include="ZstdSharp.Port" Version="0.8.6" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.7.1.0" />
 	  <None Include="..\LICENSE" Pack="true" PackagePath=""/>

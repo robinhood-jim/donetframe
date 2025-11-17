@@ -15,6 +15,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         public CloudStorageFileSystem(DataCollectionDefine define) : base(define)
         {
+            bucketName = getBucketName();
         }
         internal string getBucketName()
         {

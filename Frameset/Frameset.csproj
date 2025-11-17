@@ -8,7 +8,6 @@
     <Company>LTD</Company>
     <Description>Common Net Frameset Core including ORM and Office xls and word file  Read and Write support.</Description>
     <PackageReadmeFile>README.en.md</PackageReadmeFile>
-	<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
     <Version>1.0.0</Version>
     <PackageId></PackageId>
