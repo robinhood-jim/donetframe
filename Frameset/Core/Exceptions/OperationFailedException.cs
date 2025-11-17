@@ -8,6 +8,7 @@ namespace Frameset.Core.Exceptions
         {
 
         }
+
         public OperationFailedException(string message, Exception innerClass) : base(message, innerClass)
         {
 

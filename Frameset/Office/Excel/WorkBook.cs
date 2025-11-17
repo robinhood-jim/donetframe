@@ -105,17 +105,17 @@ namespace Frameset.Office.Excel
             SheetProp = prop;
             doInit(stream, writeTag);
         }
-        public WorkBook(Stream stream,bool writeTag,Type entityType)
+        public WorkBook(Stream stream, bool writeTag, Type entityType)
         {
             SheetProp = ExcelSheetProp.FromEntityDefine(entityType);
             doInit(stream, writeTag);
         }
-        public WorkBook(Stream stream, bool writeTag, IDataReader reader,string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null)
+        public WorkBook(Stream stream, bool writeTag, IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null)
         {
-            SheetProp = ExcelSheetProp.FromDataReader(reader,timeFormat,nameMapping);
+            SheetProp = ExcelSheetProp.FromDataReader(reader, timeFormat, nameMapping);
             doInit(stream, writeTag);
         }
-        private void doInit(Stream stream,bool writeTag)
+        private void doInit(Stream stream, bool writeTag)
         {
             shardingStrings = new ShardingStrings();
             if (writeTag)
@@ -146,7 +146,7 @@ namespace Frameset.Office.Excel
             }
             else
             {
-                currentSheet = CreateSheet(SheetProp.SheetName+sheetNum ?? "sheet" + sheetNum, SheetProp);
+                currentSheet = CreateSheet(SheetProp.SheetName + sheetNum ?? "sheet" + sheetNum, SheetProp);
             }
         }
         void extractPart()

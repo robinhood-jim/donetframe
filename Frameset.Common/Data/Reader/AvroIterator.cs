@@ -1,26 +1,86 @@
-﻿using Frameset.Common.FileSystem;
+﻿using Avro;
+using Avro.File;
+using Avro.Generic;
+using Frameset.Common.FileSystem;
+using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
-using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Frameset.Common.Data.Reader
 {
-    public class AvroIterator<T> : AbstractIterator<T>
+    public class AvroIterator<T> : AbstractDataIterator<T>
     {
+        private RecordSchema schema;
+        private IFileReader<GenericRecord> fileReader;
+
+
         public AvroIterator(DataCollectionDefine define) : base(define)
         {
+            Identifier = Constants.FileFormatType.AVRO;
+            useRawStream = true;
+            initalize(define.Path);
         }
 
         public AvroIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
+            Identifier = Constants.FileFormatType.AVRO;
+            useRawStream = true;
+            initalize(define.Path);
+        }
+        public override void initalize(string path = null)
+        {
+            base.initalize(path);
+            fileReader = DataFileReader<GenericRecord>.OpenReader(inputStream);
+            schema = (RecordSchema)fileReader.GetSchema();
+        }
+        public override bool MoveNext()
+        {
+            base.MoveNext();
+            cachedValue.Clear();
+            if (fileReader.HasNext())
+            {
+                GenericRecord record = fileReader.Next();
+                List<Field> fields = schema.Fields;
+                foreach (Field field in fields)
+                {
+                    object value = record.GetValue(field.Pos);
+                    if (value != null)
+                    {
+                        cachedValue.TryAdd(field.Name, value);
+                    }
+                }
+                ConstructReturn();
+                return true;
+            }
+            return false;
         }
 
-        public override IAsyncEnumerable<T> QueryAsync(IFileSystem fileSystem, string path = null)
+        public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
         {
-            throw new NotImplementedException();
+            initalize(path);
+            base.MoveNext();
+            cachedValue.Clear();
+            return asyncQuery();
+
         }
+        private async IAsyncEnumerable<T> asyncQuery()
+        {
+            while (fileReader.HasNext())
+            {
+                GenericRecord record = fileReader.Next();
+                List<Field> fields = schema.Fields;
+                foreach (Field field in fields)
+                {
+                    object value = record.GetValue(field.Pos);
+                    if (value != null)
+                    {
+                        cachedValue.TryAdd(field.Name, value);
+                    }
+                }
+                ConstructReturn();
+                yield return current;
+            }
+        }
+
+
     }
 }

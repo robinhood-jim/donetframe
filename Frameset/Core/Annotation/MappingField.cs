@@ -3,7 +3,7 @@ using System;
 
 namespace Frameset.Core.Annotation
 {
-    [AttributeUsage(AttributeTargets.Property|AttributeTargets.Field, AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class MappingField : Attribute
     {
         private string _field;

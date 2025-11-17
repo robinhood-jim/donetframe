@@ -345,15 +345,15 @@ namespace Frameset.Core.Dao
             return command.ExecuteNonQuery();
 
         }
-        public void DoWithQuery(string sql, object[] obj,Action<IDataReader> action)
+        public void DoWithQuery(string sql, object[] obj, Action<IDataReader> action)
         {
-            using(DbConnection connection = dataMeta.GetDbConnection(connectionStr))
+            using (DbConnection connection = dataMeta.GetDbConnection(connectionStr))
             {
                 connection.Open();
                 using (DbCommand command = dataMeta.GetDbCommand(connection, sql))
                 {
                     DbParameter[] parameters = parseParameter(command, obj);
-                    if (parameters != null && parameters.Count()>0)
+                    if (parameters != null && parameters.Count() > 0)
                     {
                         command.Parameters.AddRange(parameters);
                     }
@@ -363,7 +363,7 @@ namespace Frameset.Core.Dao
                     }
                 }
             }
-            
+
         }
 
 

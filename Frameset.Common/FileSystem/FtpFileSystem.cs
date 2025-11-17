@@ -1,7 +1,8 @@
 ﻿using FluentFTP;
+using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Serilog;
+
 namespace Frameset.Common.FileSystem
 {
     public class FtpFileSystem : AbstractFileSystem
@@ -13,11 +14,10 @@ namespace Frameset.Common.FileSystem
         internal string password = null;
         int port = 21;
         FtpClient client;
-        Stream workingStream;
-        ThreadLocal<FtpClient> clientLocal;
+        long count = 1;
         public FtpFileSystem(DataCollectionDefine define) : base(define)
         {
-
+            identifier = Constants.FileSystemType.FTP;
         }
         public override void Init(DataCollectionDefine define)
         {
@@ -50,109 +50,93 @@ namespace Frameset.Common.FileSystem
             }
             finally
             {
-                client.Disconnect();
-                busyTag = false;
+                FinishOperator();
             }
 
         }
 
-        public override void FinishWrite(Stream outStream)
+        public override void FinishOperator()
         {
-
-        }
-        public void FinishWrite(string path)
-        {
-            if (busyTag && workingStream != null)
-            {
-                try
-                {
-                    client.Connect();
-                    FtpStatus status = client.UploadStream(workingStream, path);
-                    if (status != FtpStatus.Success)
-                    {
-                        throw new OperationFailedException("");
-                    }
-                }
-                finally
-                {
-                    client.Disconnect();
-                }
-                busyTag = false;
-            }
-        }
-        public void FinishRead()
-        {
-            if (busyTag && workingStream != null)
+            if (Interlocked.Read(ref count) == 0)
             {
                 client.Disconnect();
-                busyTag = false;
+                Interlocked.Increment(ref count);
             }
         }
 
         public override Stream? GetInputStream(string resourcePath)
         {
             BeginOperator();
-            if (!Exist(resourcePath))
+            if (!client.FileExists(resourcePath))
             {
                 return null;
             }
-            workingStream = new MemoryStream();
             try
             {
                 client.Connect();
-                if (client.DownloadStream(workingStream, resourcePath))
-                {
-                    return GetInputStreamWithCompress(resourcePath, workingStream);
-                }
-                else
-                {
-                    throw new UnauthorizedAccessException("");
-                }
+                return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
+
             }
-            finally
+            catch (Exception ex)
             {
-                FinishRead();
+                throw new OperationFailedException(ex.Message, ex);
             }
+
         }
 
         public override Stream? GetOutputStream(string resourcePath)
         {
             BeginOperator();
-            workingStream = new MemoryStream();
-            return GetOutputStremWithCompress(resourcePath, workingStream);
+            if (client.FileExists(resourcePath))
+            {
+                throw new NotSupportedException("path already exists!");
+            }
+            try
+            {
+                client.Connect();
+                return GetOutputStremWithCompress(resourcePath, client.OpenWrite(resourcePath));
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException(ex.Message, ex);
+            }
         }
 
         public override Stream? GetRawInputStream(string resourcePath)
         {
             BeginOperator();
-            if (!Exist(resourcePath))
+            if (!client.FileExists(resourcePath))
             {
                 return null;
             }
-            workingStream = new MemoryStream();
             try
             {
                 client.Connect();
-                if (client.DownloadStream(workingStream, resourcePath))
-                {
-                    return workingStream;
-                }
-                else
-                {
-                    throw new UnauthorizedAccessException("");
-                }
+                return client.OpenRead(resourcePath);
             }
-            finally
+            catch (Exception ex)
             {
-                FinishRead();
+                throw new OperationFailedException(ex.Message, ex);
             }
+
         }
 
         public override Stream GetRawOutputStream(string resourcePath)
         {
             BeginOperator();
-            workingStream = new MemoryStream();
-            return workingStream;
+            if (client.FileExists(resourcePath))
+            {
+                throw new OperationNotAllowedException("resource Exists!");
+            }
+            try
+            {
+                client.Connect();
+                return client.OpenWrite(resourcePath);
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException(ex.Message, ex);
+            }
         }
 
         public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
@@ -170,6 +154,7 @@ namespace Frameset.Common.FileSystem
 
         public override long GetStreamSize(string resourcePath)
         {
+            BeginOperator();
             try
             {
                 client.Connect();
@@ -184,7 +169,7 @@ namespace Frameset.Common.FileSystem
             }
             finally
             {
-                client.Disconnect();
+                FinishOperator();
             }
             return -1;
         }
@@ -204,6 +189,7 @@ namespace Frameset.Common.FileSystem
 
         public override bool IsDirectory(string resourcePath)
         {
+            BeginOperator();
             try
             {
                 client.Connect();
@@ -211,33 +197,22 @@ namespace Frameset.Common.FileSystem
             }
             finally
             {
-                client.Disconnect();
+                FinishOperator();
             }
         }
-        internal void BeginOperator()
-        {
-            if (busyTag)
-            {
-                throw new ResourceInUsingException("exist another unfinished operator,wait!");
-            }
-            busyTag = true;
 
-        }
-        private void setFtpClient(FtpClient client)
-        {
-            if (clientLocal.Value != null && clientLocal.IsValueCreated)
-            {
 
-            }
-            clientLocal = new ThreadLocal<FtpClient>(()=>client);
-        }
         public override void Dispose()
         {
             if (client != null)
             {
+                if (client.IsConnected)
+                {
+                    client.Disconnect();
+                }
                 client.Dispose();
             }
-            busyTag = false;
+
         }
     }
 }

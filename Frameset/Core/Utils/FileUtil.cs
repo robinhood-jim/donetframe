@@ -1,26 +1,41 @@
-﻿using Frameset.Core.Common;
-using Frameset.Core.Exceptions;
+﻿using Frameset.Core.Exceptions;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Text.Json;
+using System.Reflection;
 
 namespace Frameset.Core.Utils
 {
     public class FileUtil
     {
-        private static Dictionary<string, string> contentTypeMap;
+        private static Dictionary<string, string> contentTypeMap = new Dictionary<string, string>();
         private static IList<string> suffix = new List<string>();
         private static IList<CompressType> compressTypes = new List<CompressType>();
         static FileUtil()
         {
-            string contentTypeStr = AppConfigurtaionServices.Configuration["SysParam.ContentTypes"];
-            contentTypeMap = (Dictionary<string, string>)JsonSerializer.Deserialize(contentTypeStr, typeof(Dictionary<string, string>));
-            foreach (CompressType type in Enum.GetValues(typeof(CompressType)))
+            Type type = MethodBase.GetCurrentMethod().DeclaringType;
+
+            string _namespace = type.Namespace;
+
+            Assembly _assembly = Assembly.GetExecutingAssembly();
+            string resourceName = _assembly.GetName().Name.ToString() + ".Resources.contenttype.properties";
+
+            Stream stream = _assembly.GetManifestResourceStream(resourceName);
+            string line = null;
+            using (StreamReader reader = new StreamReader(stream))
             {
-                suffix.Add(type.ToString().ToLower());
-                compressTypes.Add(type);
+                while ((line = reader.ReadLine()) != null)
+                {
+                    string[] arr = line.Split('=');
+                    contentTypeMap.TryAdd(arr[0], arr[1]);
+                }
+            }
+
+            foreach (CompressType compressType in Enum.GetValues(typeof(CompressType)))
+            {
+                suffix.Add(compressType.ToString().ToLower());
+                compressTypes.Add(compressType);
 
             }
 
@@ -31,7 +46,7 @@ namespace Frameset.Core.Utils
             int pos = resourcePath.LastIndexOf(fileSeparator);
             if (pos == -1)
             {
-                fileSeparator = Path.DirectorySeparatorChar;
+                fileSeparator = '/';
                 pos = resourcePath.LastIndexOf(fileSeparator);
             }
             if (pos != -1)
@@ -41,7 +56,7 @@ namespace Frameset.Core.Utils
                 string filePath = resourcePath.Substring(0, pos);
                 meta.Path = filePath;
                 meta.FileName = fileName;
-                string[] namePart = fileName.Split("\\.");
+                string[] namePart = fileName.Split(".");
                 for (int i = namePart.Length - 1; i > 0; i--)
                 {
                     if (CompressType.NONE.Equals(meta.CompressCodec))
@@ -50,6 +65,7 @@ namespace Frameset.Core.Utils
                         if (pos1 != -1)
                         {
                             meta.CompressCodec = compressTypes[pos1];
+                            continue;
                         }
                     }
                     string contentType;

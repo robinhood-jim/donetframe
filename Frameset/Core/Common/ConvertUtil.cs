@@ -1,6 +1,5 @@
 ﻿using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
 using Spring.Globalization.Formatters;
 using Spring.Util;
 using System;
@@ -118,7 +117,7 @@ namespace Frameset.Core.Common
             }
 
         }
-        public static object ConvertStringToTargetObject(string value, DataSetColumnMeta meta, DateTimeFormatter formatter)
+        public static object ConvertStringToTargetObject(object value, DataSetColumnMeta meta, DateTimeFormatter formatter)
         {
             object retObj;
 
@@ -129,15 +128,16 @@ namespace Frameset.Core.Common
             }
             return retObj;
         }
-        private static object translateValue(string value, Constants.MetaType columnType, string columnName, DateTimeFormatter dateformat)
+        private static object translateValue(object valueObj, Constants.MetaType columnType, string columnName, DateTimeFormatter dateformat)
         {
             object retObj;
             try
             {
-                if (value.IsNullOrEmpty())
+                if (valueObj == null)
                 {
                     return null;
                 }
+                string value = valueObj.ToString();
                 if (columnType.Equals(Constants.MetaType.INTEGER))
                 {
                     if (value.Contains("."))
@@ -171,7 +171,7 @@ namespace Frameset.Core.Common
             }
             catch (Exception ex)
             {
-                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + value + "failed! type mismatch,Please check!");
+                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + valueObj + "failed! type mismatch,Please check!");
             }
             return retObj;
         }

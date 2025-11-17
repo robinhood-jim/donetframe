@@ -26,7 +26,7 @@ namespace Frameset.Office.Excel
         {
         }
 
-        public SingleWorkBook(Stream stream, bool writeTag, IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null) : base(stream, writeTag, reader,timeFormat,nameMapping)
+        public SingleWorkBook(Stream stream, bool writeTag, IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null) : base(stream, writeTag, reader, timeFormat, nameMapping)
         {
         }
 
@@ -51,7 +51,7 @@ namespace Frameset.Office.Excel
         }
         public bool WriteEntity(object obj)
         {
-            Trace.Assert(obj.GetType().Equals(SheetProp.EntityType),"must call ExcelSheetProp.FromEntity first");
+            Trace.Assert(obj.GetType().Equals(SheetProp.EntityType), "must call ExcelSheetProp.FromEntity first");
             if (currentSheet == null)
             {
                 throw new ConfigMissingException("Please call BeginWrite first");

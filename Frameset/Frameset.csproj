@@ -2,7 +2,32 @@
   <PropertyGroup>
     <OutputType>Library</OutputType>
     <TargetFramework>net8.0</TargetFramework>
+    <AssemblyName>Frameset.Core</AssemblyName>
+    <GeneratePackageOnBuild>True</GeneratePackageOnBuild>
+    <Title>Robin.Frameset.Core</Title>
+    <Company>LTD</Company>
+    <Description>Common Net Frameset Core including ORM and Office xls and word file  Read and Write support.</Description>
+    <PackageReadmeFile>README.en.md</PackageReadmeFile>
+	<PackageLicenseExpression>Apache-2.0</PackageLicenseExpression>
+	<PackageLicenseFile>LICENSE</PackageLicenseFile>
+    <Version>1.0.0</Version>
+    <PackageId></PackageId>
+    <Authors>robinhoodjim</Authors>
+    <RepositoryUrl>https://github.com/robinhood-jim/donetframe</RepositoryUrl>
   </PropertyGroup>
+  <ItemGroup>
+    <None Remove="Resources\contenttype.properties" />
+  </ItemGroup>
+  <ItemGroup>
+    <EmbeddedResource Include="Resources\contenttype.properties" />
+  </ItemGroup>
+  <ItemGroup>
+    <None Include="..\README.en.md">
+      <Pack>True</Pack>
+      <PackagePath>\</PackagePath>
+    </None>
+	  <None Include="..\LICENSE" Pack="true" PackagePath="\"/>
+  </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ExtendedNumerics.BigDecimal" Version="3001.1.0.233" />
     <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" />

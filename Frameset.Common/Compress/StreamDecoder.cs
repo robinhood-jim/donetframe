@@ -16,10 +16,10 @@ namespace Frameset.Common.Compress
         {
 
         }
-        public static Stream? GetInputByCompressType(string resourcePath, Stream rawstream)
+        public static Stream? GetInputByCompressType(string resourcePath, Stream rawstream, char dirSep = '/')
         {
             Stream inputStream = null;
-            FileMeta meta = FileUtil.Parse(resourcePath, Path.DirectorySeparatorChar);
+            FileMeta meta = FileUtil.Parse(resourcePath, dirSep);
             if (meta != null)
             {
                 switch (meta.CompressCodec)

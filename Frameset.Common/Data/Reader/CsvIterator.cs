@@ -3,19 +3,18 @@ using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Spring.Globalization.Formatters;
 
 
 namespace Frameset.Common.Data.Reader
 {
-    public class CsvIterator<T> : AbstractIterator<T>
+    public class CsvIterator<T> : AbstractDataIterator<T>
     {
         public string Spliter
         {
             get; set;
         } = ",";
         internal long pos;
-        internal DateTimeFormatter dateFormat;
+
         public CsvIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.CSV;
@@ -28,9 +27,9 @@ namespace Frameset.Common.Data.Reader
             useReader = true;
         }
 
-        public override void BeforeProcess()
+        public override void initalize(string filePath = null)
         {
-
+            base.initalize(filePath);
         }
         public override bool MoveNext()
         {
@@ -41,23 +40,7 @@ namespace Frameset.Common.Data.Reader
             {
                 string readStr = reader.ReadLine();
                 pos++;
-                if (!readStr.IsNullOrEmpty())
-                {
-                    string[] arr = readStr.Split(Spliter);
-                    if (arr.Length >= MetaDefine.ColumnList.Count)
-                    {
-                        for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
-                        {
-                            DataSetColumnMeta meta = MetaDefine.ColumnList[i];
-                            cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormat));
-                            hasNext = true;
-                        }
-                    }
-                    else
-                    {
-                        Log.Error(" line " + pos + " does't  have enough columns");
-                    }
-                }
+                hasNext = doProcess(readStr);
             }
             if (hasNext)
             {
@@ -68,11 +51,49 @@ namespace Frameset.Common.Data.Reader
 
         public override void Dispose()
         {
-            
-        }
-        public override IAsyncEnumerable<T> QueryAsync(IFileSystem fileSystem,string path = null)
-        {
 
+        }
+        private bool doProcess(string readStr)
+        {
+            bool hasNext = false;
+            if (!readStr.IsNullOrEmpty())
+            {
+                string[] arr = readStr.Split(Spliter);
+                if (arr.Length >= MetaDefine.ColumnList.Count)
+                {
+                    for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
+                    {
+                        DataSetColumnMeta meta = MetaDefine.ColumnList[i];
+                        cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormat));
+                        hasNext = true;
+                    }
+                    ConstructReturn();
+                }
+                else
+                {
+                    Log.Error(" line " + pos + " does't  have enough columns");
+                }
+            }
+            return hasNext;
+        }
+
+
+        public override async IAsyncEnumerable<T> ReadAsync(string path, string filterSql = null)
+        {
+            string line;
+            if (!filterSql.IsNullOrEmpty())
+            {
+
+            }
+            initalize(path);
+            while ((line = reader.ReadLine()) != null)
+            {
+                if (doProcess(line))
+                {
+                    ConstructReturn();
+                    yield return current;
+                }
+            }
         }
     }
 }

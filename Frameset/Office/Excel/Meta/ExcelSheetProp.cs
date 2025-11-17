@@ -22,7 +22,7 @@ namespace Frameset.Office.Excel.Meta
         public string? SheetName
         {
             get; internal set;
-        } 
+        }
         public int StartRow
         {
             get; internal set;
@@ -57,7 +57,7 @@ namespace Frameset.Office.Excel.Meta
         } = 0;
         public SheetVisibility Visibility
         {
-            get;internal set;
+            get; internal set;
         }
         internal Dictionary<string, FieldContent> fieldInfoMap = new Dictionary<string, FieldContent>();
         public Type EntityType
@@ -148,7 +148,7 @@ namespace Frameset.Office.Excel.Meta
                             {
                                 parseAttribute(propAttr, cellProp, columnName, totalNum);
                             }
-                            
+
                             FieldBuilder builder = new FieldBuilder();
                             builder.PropertyName(propName).FieldName(columnName).DataType(cellProp.ColumnType).FieldInfo(field);
                             propDef.fieldInfoMap.TryAdd(propName, builder.Build());
@@ -165,11 +165,11 @@ namespace Frameset.Office.Excel.Meta
             }
             return propDef;
         }
-        public static ExcelSheetProp FromDataReader(IDataReader reader,string timeFormat="yyyy-MM-dd",Dictionary<string,string> nameMapping=null)
+        public static ExcelSheetProp FromDataReader(IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null)
         {
             Trace.Assert(reader.FieldCount > 0, "empty reader");
             ExcelSheetProp prop = new ExcelSheetProp();
-            for(int i = 0; i < reader.FieldCount; i++)
+            for (int i = 0; i < reader.FieldCount; i++)
             {
                 string propName = reader.GetName(i);
                 string columName = propName;
@@ -178,8 +178,8 @@ namespace Frameset.Office.Excel.Meta
                 {
                     nameMapping.TryGetValue(propName, out columName);
                 }
-                ExcelCellProp cellProp= new ExcelCellProp(columName, propName, metaType);
-                if(Constants.MetaType.DATE.Equals(metaType) || Constants.MetaType.TIMESTAMP.Equals(metaType))
+                ExcelCellProp cellProp = new ExcelCellProp(columName, propName, metaType);
+                if (Constants.MetaType.DATE.Equals(metaType) || Constants.MetaType.TIMESTAMP.Equals(metaType))
                 {
                     cellProp.Format = timeFormat;
                 }
@@ -187,8 +187,8 @@ namespace Frameset.Office.Excel.Meta
             }
             return prop;
         }
-        
-        internal static void parseAttribute(object[] propAttr,ExcelCellProp cellProp,string columnName,int totalNum)
+
+        internal static void parseAttribute(object[] propAttr, ExcelCellProp cellProp, string columnName, int totalNum)
         {
             int orderPos = totalNum;
             for (int i = 0; i < propAttr.Length; i++)
@@ -336,13 +336,13 @@ namespace Frameset.Office.Excel.Meta
         }
         public int Index
         {
-            get;set;
+            get; set;
         }
         internal ExcelCellProp()
         {
 
         }
-       
+
         public ExcelCellProp(string columnName, string columnCode, Constants.MetaType columnType, bool needMerge)
         {
             this.ColumnCode = columnCode;
@@ -365,6 +365,6 @@ namespace Frameset.Office.Excel.Meta
             this.ColumnType = columnType;
             this.NeedMerge = false;
         }
-        
+
     }
 }

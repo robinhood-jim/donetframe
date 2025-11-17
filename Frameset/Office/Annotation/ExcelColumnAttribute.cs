@@ -3,7 +3,7 @@
 namespace Frameset.Office.Annotation
 {
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
-    public class ExcelColumnAttribute:Attribute
+    public class ExcelColumnAttribute : Attribute
     {
         public string? ColumnName
         {
@@ -27,7 +27,7 @@ namespace Frameset.Office.Annotation
         } = -1;
         public string Formula
         {
-            get;set;
+            get; set;
         }
     }
 }

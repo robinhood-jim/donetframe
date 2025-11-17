@@ -215,7 +215,7 @@ namespace Frameset.Office.Excel
                 CurrentRowNum++;
             }
         }
-        
+
         internal void WriteRow(bool isHidden, byte groupLevel, double rowHeight)
         {
 
@@ -266,7 +266,7 @@ namespace Frameset.Office.Excel
                     FieldContent content = null;
                     if (fieldMap.TryGetValue(columnProp.ColumnCode, out content))
                     {
-                        rValue = content.GetMethold.Invoke(obj,null);
+                        rValue = content.GetMethold.Invoke(obj, null);
 
                         Cell cell = GetCell(i, Prop);
                         SetValue(cell, columnProp, rValue);
@@ -277,7 +277,7 @@ namespace Frameset.Office.Excel
             }
 
         }
-        
+
         internal void SetValue(Cell cell, ExcelCellProp prop, object value)
         {
             switch (prop.ColumnType)

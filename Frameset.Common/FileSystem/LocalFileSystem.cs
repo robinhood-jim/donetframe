@@ -1,6 +1,5 @@
-﻿using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics;
+﻿using Frameset.Core.Common;
+using Frameset.Core.FileSystem;
 
 namespace Frameset.Common.FileSystem
 {
@@ -9,7 +8,7 @@ namespace Frameset.Common.FileSystem
         static LocalFileSystem fileSystem = new LocalFileSystem(null);
         internal LocalFileSystem(DataCollectionDefine define) : base(define)
         {
-
+            identifier = Constants.FileSystemType.LOCAL;
         }
         public static LocalFileSystem GetInstance()
         {
@@ -26,12 +25,6 @@ namespace Frameset.Common.FileSystem
             return Path.Exists(resourcePath);
         }
 
-
-
-        public override void FinishWrite(Stream outStream)
-        {
-
-        }
 
         public override Stream? GetInputStream(string resourcePath)
         {
@@ -62,21 +55,12 @@ namespace Frameset.Common.FileSystem
         {
             if (!File.Exists(resourcePath))
             {
-                return null;
+                return new FileStream(resourcePath, FileMode.CreateNew);
             }
-            return new FileStream(resourcePath, FileMode.CreateNew);
+            return new FileStream(resourcePath, FileMode.Create);
         }
 
-        public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
-        {
-            Trace.Assert(!resourcePath.IsNullOrEmpty(), "path must not be null");
-            if (!File.Exists(resourcePath))
-            {
-                return null;
-            }
-            Stream stream = GetInputStream(resourcePath);
-            return Tuple.Create(stream, new StreamReader(GetInputStream(resourcePath)));
-        }
+
 
         public override long GetStreamSize(string resourcePath)
         {
@@ -91,12 +75,7 @@ namespace Frameset.Common.FileSystem
             }
         }
 
-        public override Tuple<Stream, StreamWriter> GetWriter(string resourcePath)
-        {
-            Trace.Assert(!resourcePath.IsNullOrEmpty(), "path must not be null");
-            Stream outStream = GetOutputStream(resourcePath);
-            return Tuple.Create(outStream, new StreamWriter(outStream));
-        }
+
 
         public override void Init(DataCollectionDefine define)
         {

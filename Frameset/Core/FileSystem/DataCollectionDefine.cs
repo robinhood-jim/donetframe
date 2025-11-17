@@ -108,6 +108,11 @@ namespace Frameset.Core.FileSystem
         {
             return new DataCollectionBuilder();
         }
+        public DataCollectionBuilder Path(string path)
+        {
+            define.Path = path;
+            return this;
+        }
         public DataCollectionBuilder AddColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue = null)
         {
             define.AddColumnDefine(columnName, columnType, defaultValue);
@@ -118,9 +123,9 @@ namespace Frameset.Core.FileSystem
             define.AddColumnDefine(columnName, columnType, flushOut);
             return this;
         }
-        public DataCollectionBuilder FsType(string fsType)
+        public DataCollectionBuilder FsType(Constants.FileSystemType fsType)
         {
-            define.FsType = Constants.FsTypeOf(fsType);
+            define.FsType = fsType;
             return this;
         }
         public DataCollectionBuilder ResourceType(string resourceType)
