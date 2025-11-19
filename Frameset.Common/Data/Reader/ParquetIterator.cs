@@ -100,7 +100,7 @@ namespace Frameset.Common.Data.Reader
 
                     for (int i = 0; i < fields.Count; i++)
                     {
-                        groupMap.TryAdd(fields[i],await currentReader.ReadColumnAsync(fields[i]));
+                        groupMap.TryAdd(fields[i], await currentReader.ReadColumnAsync(fields[i]));
                     }
                 }
                 cachedValue.Clear();

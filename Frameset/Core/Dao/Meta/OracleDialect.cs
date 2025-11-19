@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
+using Microsoft.IdentityModel.Tokens;
 using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
@@ -15,6 +16,14 @@ namespace Frameset.Core.Dao.Meta
         internal OracleDialect()
         {
 
+        }
+        public override string AppendAutoIncrement()
+        {
+            throw new NotSupportedException("oracle not support increment");
+        }
+        public override string getVarcharFormat(FieldContent content)
+        {
+            return "VARCHAR2(" + content.Length + ")";
         }
         public override string GenerateSequenceScript(string sequenceName)
         {
@@ -125,5 +134,31 @@ namespace Frameset.Core.Dao.Meta
                 return GetNoPageSql(baseSql, query);
             }
         }
+        public override void AppendAdditionalScript(StringBuilder builder, Dictionary<string, object> paramMap)
+        {
+            if (!paramMap.IsNullOrEmpty())
+            {
+
+                object tableSapce;
+                paramMap.TryGetValue("tablespace", out tableSapce);
+                if (tableSapce != null && !tableSapce.ToString().IsNullOrEmpty())
+                {
+                    builder.Append(" TABLESPACE ").Append(tableSapce.ToString());
+                }
+                object storageMap;
+                paramMap.TryGetValue("storageConfig", out storageMap);
+                if (storageMap != null)
+                {
+                    builder.Append(" storage (\n");
+                    Dictionary<string, string> storageCfgMap = storageMap as Dictionary<string, string>;
+                    foreach (var entry in storageCfgMap)
+                    {
+                        builder.Append(entry.Key).Append(" ").Append(entry.Value).Append("\n");
+                    }
+                    builder.Append(")");
+                }
+            }
+        }
     }
+
 }

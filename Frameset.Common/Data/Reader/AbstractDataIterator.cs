@@ -17,6 +17,8 @@ namespace Frameset.Common.Data.Reader
         public T Current => current;
         internal DateTimeFormatter dateFormat;
         internal bool readAsDict = true;
+        internal DateTimeFormatter dateFormatter;
+        internal DateTimeFormatter timestampFormatter;
         public DataCollectionDefine MetaDefine
         {
             get; internal set;
@@ -95,6 +97,20 @@ namespace Frameset.Common.Data.Reader
             InitDefaultFs();
             string processPath = filePath.IsNullOrEmpty() ? MetaDefine.Path : filePath;
             Trace.Assert(!processPath.IsNullOrEmpty(), "path must not be null");
+            string dateFormatStr;
+            string timestampFormatStr;
+            MetaDefine.ResourceConfig.TryGetValue("output.dateFormat", out dateFormatStr);
+            if (dateFormatStr.IsNullOrEmpty())
+            {
+                dateFormatStr = "yyyy-MM-dd";
+            }
+            MetaDefine.ResourceConfig.TryGetValue("output.timestampFormat", out timestampFormatStr);
+            if (timestampFormatStr.IsNullOrEmpty())
+            {
+                timestampFormatStr = "yyyy-MM-dd HH:mm:ss";
+            }
+            dateFormatter = new DateTimeFormatter(dateFormatStr);
+            timestampFormatter = new DateTimeFormatter(timestampFormatStr);
             if (useReader)
             {
 

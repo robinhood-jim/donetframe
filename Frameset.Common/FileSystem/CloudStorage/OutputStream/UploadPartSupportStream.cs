@@ -46,7 +46,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         }
         public override void Flush()
         {
-            
+
         }
 
         public override int Read(byte[] buffer, int offset, int count)

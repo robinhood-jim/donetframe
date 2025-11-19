@@ -1,8 +1,10 @@
 ﻿using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using System.Xml;
+using System.Xml.Linq;
 
 namespace Frameset.Common.Data.Reader
 {
@@ -11,14 +13,18 @@ namespace Frameset.Common.Data.Reader
         private XmlReader xmlReader;
         private string rootEleNodeName;
         private string childEleNodeName;
+        private Dictionary<string, DataSetColumnMeta> metaMap = new Dictionary<string, DataSetColumnMeta>();
+
         public XmlIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.XML;
+            initalize(define.Path);
         }
 
         public XmlIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.XML;
+            initalize(define.Path);
         }
 
         public override void initalize(string filePath = null)
@@ -40,6 +46,10 @@ namespace Frameset.Common.Data.Reader
                     }
                 }
             }
+            foreach (var item in MetaDefine.ColumnList)
+            {
+                metaMap.TryAdd(item.ColumnCode, item);
+            }
         }
 
         public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
@@ -58,13 +68,28 @@ namespace Frameset.Common.Data.Reader
                     {
                         while (xmlReader.MoveToNextAttribute())
                         {
-                            cachedValue.TryAdd(xmlReader.Name, xmlReader.Value);
+                            string name = xmlReader.Name;
+                            DataSetColumnMeta meta;
+                            metaMap.TryGetValue(name, out meta);
+                            if (meta == null)
+                            {
+                                throw new OperationFailedException("prop " + name + " not defined!");
+                            }
+                            ParseObject(meta);
                         }
                         xmlReader.MoveToElement();
                     }
                     else if (!xmlReader.LocalName.Equals(childEleNodeName))
                     {
-                        cachedValue.TryAdd(xmlReader.LocalName, xmlReader.Value);
+                        string propName = xmlReader.LocalName;
+                        xmlReader.Read();
+                        DataSetColumnMeta meta;
+                        metaMap.TryGetValue(propName, out meta);
+                        if (meta == null)
+                        {
+                            throw new OperationFailedException("prop " + propName + " not defined!");
+                        }
+                        ParseObject(meta);
                     }
                 }
                 else if (xmlReader.NodeType == XmlNodeType.EndElement)
@@ -79,6 +104,7 @@ namespace Frameset.Common.Data.Reader
             }
 
         }
+        
         public override bool MoveNext()
         {
             base.MoveNext();
@@ -92,13 +118,28 @@ namespace Frameset.Common.Data.Reader
                     {
                         while (xmlReader.MoveToNextAttribute())
                         {
-                            cachedValue.TryAdd(xmlReader.Name, xmlReader.Value);
+                            string name = xmlReader.Name;
+                            DataSetColumnMeta meta;
+                            metaMap.TryGetValue(name, out meta);
+                            if (meta == null)
+                            {
+                                throw new OperationFailedException("prop " + name + " not defined!");
+                            }
+                            ParseObject(meta);
                         }
                         xmlReader.MoveToElement();
                     }
                     else if (!xmlReader.LocalName.Equals(childEleNodeName))
                     {
-                        cachedValue.TryAdd(xmlReader.LocalName, xmlReader.Value);
+                        string propName = xmlReader.LocalName;
+                        xmlReader.Read();
+                        DataSetColumnMeta meta;
+                        metaMap.TryGetValue(propName, out meta);
+                        if (meta == null)
+                        {
+                            throw new OperationFailedException("prop " + propName + " not defined!");
+                        }
+                        ParseObject(meta);
                     }
                 }
                 else if (xmlReader.NodeType == XmlNodeType.EndElement)
@@ -118,7 +159,17 @@ namespace Frameset.Common.Data.Reader
             }
             return hasNext;
         }
-
+        internal void ParseObject(DataSetColumnMeta meta)
+        {
+            if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
+            {
+                cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, dateFormatter));
+            }
+            else
+            {
+                cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, timestampFormatter));
+            }
+        }
 
     }
 }

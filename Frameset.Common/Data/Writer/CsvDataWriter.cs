@@ -7,11 +7,11 @@ using Microsoft.IdentityModel.Tokens;
 
 namespace Frameset.Common.Data.Writer
 {
-    public class CsvWriter<T> : AbstractDataWriter<T>
+    public class CsvDataWriter<T> : AbstractDataWriter<T>
     {
         private List<string> contents;
         private char sepearotr = ',';
-        public CsvWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
+        public CsvDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useWriter = true;
@@ -26,7 +26,7 @@ namespace Frameset.Common.Data.Writer
 
         public override void FinishWrite()
         {
-            flush();
+            Flush();
         }
 
         public override void WriteRecord(T value)
@@ -39,7 +39,7 @@ namespace Frameset.Common.Data.Writer
                     Dictionary<string, object> valueMap = value as Dictionary<string, object>;
                     object retValue;
                     valueMap.TryGetValue(meta.ColumnCode, out retValue);
-                    contents.Add(getOutput(meta, retValue));
+                    contents.Add(GetOutputString(meta, retValue));
                 }
                 else
                 {
@@ -48,7 +48,7 @@ namespace Frameset.Common.Data.Writer
                     if (param != null)
                     {
                         object retValue = param.GetMethod.Invoke(value, null);
-                        contents.Add(getOutput(meta, retValue));
+                        contents.Add(GetOutputString(meta, retValue));
                     }
                     else
                     {
@@ -58,30 +58,6 @@ namespace Frameset.Common.Data.Writer
             }
             writer.WriteLine(String.Join(sepearotr, contents));
         }
-        internal string getOutput(DataSetColumnMeta meta, object value)
-        {
-            if (value != null)
-            {
-                if (meta.ColumnType == Constants.MetaType.TIMESTAMP || meta.ColumnType == Constants.MetaType.DATE)
-                {
-                    if (value.GetType().Equals(typeof(DateTime)))
-                    {
-                        return dateFormat.Format((DateTime)value);
-                    }
-                    else
-                    {
-                        return value.ToString();
-                    }
-                }
-                else
-                {
-                    return value.ToString();
-                }
-            }
-            else
-            {
-                return "";
-            }
-        }
+
     }
 }

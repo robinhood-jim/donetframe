@@ -81,7 +81,7 @@ namespace Frameset.Common.FileSystem
                     return null;
                 }
                 client.Connect();
-                return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));  
+                return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
             }
             catch (Exception ex)
             {
@@ -150,7 +150,7 @@ namespace Frameset.Common.FileSystem
             {
                 throw new OperationFailedException(ex.Message, ex);
             }
-            
+
         }
 
         public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)

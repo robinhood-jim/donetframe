@@ -59,7 +59,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
                 Key = key
             };
             request.InputStream = partMemMap[0];
-           
+
             PutObjectResponse response = client.PutObjectAsync(request).Result;
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {

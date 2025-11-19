@@ -25,6 +25,10 @@ namespace Frameset.Core.Dao.Meta
         {
             return ";SELECT LAST_INSERT_ID() as Id";
         }
+        public override string AppendAutoIncrement()
+        {
+            return "AUTO INCREMENT";
+        }
         public override int BatchInsert<V>(IJdbcDao dao, DbConnection connection, IList<V> models, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));

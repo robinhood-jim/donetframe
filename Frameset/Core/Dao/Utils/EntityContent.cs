@@ -1,5 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Text;
 
 namespace Frameset.Core.Dao.Utils
 {
@@ -51,6 +52,16 @@ namespace Frameset.Core.Dao.Utils
             {
                 this._dsName = dsName;
             }
+        }
+        public string GetTableName()
+        {
+            StringBuilder builder = new StringBuilder();
+            if (!Schema.IsNullOrEmpty())
+            {
+                builder.Append(Schema).Append(".");
+            }
+            builder.Append(TableName);
+            return builder.ToString();
         }
     }
 }

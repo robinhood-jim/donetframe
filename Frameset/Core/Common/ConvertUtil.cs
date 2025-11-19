@@ -85,7 +85,7 @@ namespace Frameset.Core.Common
             {
                 foreach (string pattern in DEFAULTFORMATTER)
                 {
-                    Tuple<bool, DateTime> parseTuple = guessFormat(dateStr, pattern);
+                    Tuple<bool, DateTime> parseTuple = GuessTimeFormat(dateStr, pattern);
                     if (parseTuple.Item1)
                     {
                         retTime = parseTuple.Item2;
@@ -96,7 +96,7 @@ namespace Frameset.Core.Common
             }
             return retTime;
         }
-        public static Tuple<bool, DateTime> guessFormat(string dateStr, string pattern)
+        public static Tuple<bool, DateTime> GuessTimeFormat(string dateStr, string pattern)
         {
             DateTime parseDate;
             if (DateTime.TryParseExact(dateStr, pattern, null, DateTimeStyles.None, out parseDate))
@@ -162,11 +162,18 @@ namespace Frameset.Core.Common
 
                 else if (columnType.Equals(Constants.MetaType.TIMESTAMP) || columnType.Equals(Constants.MetaType.DATE))
                 {
-                    retObj = dateformat.Parse(value);
+                    if (valueObj is DateTime || valueObj is DateTimeOffset)
+                    {
+                        retObj = valueObj;
+                    }
+                    else
+                    {
+                        retObj = dateformat.Parse(value);
+                    }
                 }
                 else
                 {
-                    retObj = value;
+                    retObj = valueObj;
                 }
             }
             catch (Exception ex)

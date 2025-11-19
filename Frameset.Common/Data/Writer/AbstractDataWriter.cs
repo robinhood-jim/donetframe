@@ -34,13 +34,18 @@ namespace Frameset.Common.Data.Writer
         internal bool useRawOutputStream = false;
         internal bool useDictOutput = true;
         internal Dictionary<string, MethodParam> methodMap;
-        internal DateTimeFormatter dateFormat;
+
+        internal DateTimeFormatter dateFormatter;
+        internal DateTimeFormatter timestampFormatter;
         public void Dispose()
         {
             FinishWrite();
             if (writer != null)
             {
-                writer.Flush();
+                if (outputStream.CanWrite)
+                {
+                    writer.Flush();
+                }
                 writer.Close();
             }
             if (outputStream != null)
@@ -61,6 +66,20 @@ namespace Frameset.Common.Data.Writer
                 methodMap = AnnotationUtils.ReflectObject(typeof(T));
                 useDictOutput = false;
             }
+            string dateFormatStr;
+            string timestampFormatStr;
+            MetaDefine.ResourceConfig.TryGetValue("output.dateFormat", out dateFormatStr);
+            if (dateFormatStr.IsNullOrEmpty())
+            {
+                dateFormatStr = "yyyy-MM-dd";
+            }
+            MetaDefine.ResourceConfig.TryGetValue("output.timestampFormat", out timestampFormatStr);
+            if (timestampFormatStr.IsNullOrEmpty())
+            {
+                timestampFormatStr = "yyyy-MM-dd HH:mm:ss";
+            }
+            dateFormatter = new DateTimeFormatter(dateFormatStr);
+            timestampFormatter = new DateTimeFormatter(timestampFormatStr);
         }
         internal virtual void initalize()
         {
@@ -102,7 +121,51 @@ namespace Frameset.Common.Data.Writer
                     retValue = param.GetMethod.Invoke(input, null);
                 }
             }
+            if (retValue != null)
+            {
+                if (column.ColumnType != Constants.MetaType.TIMESTAMP)
+                {
+                    retValue = ConvertUtil.ConvertStringToTargetObject(retValue, column, dateFormatter);
+                }
+                else
+                {
+                    retValue = ConvertUtil.ConvertStringToTargetObject(retValue, column, timestampFormatter);
+                }
+            }
+
             return retValue;
+        }
+        internal string GetOutputString(DataSetColumnMeta meta, object value)
+        {
+            if (value != null)
+            {
+                if (meta.ColumnType == Constants.MetaType.TIMESTAMP || meta.ColumnType == Constants.MetaType.DATE)
+                {
+                    if (value is DateTime || value is DateTimeOffset)
+                    {
+                        if (meta.ColumnType == Constants.MetaType.DATE)
+                        {
+                            return dateFormatter.Format(value);
+                        }
+                        else
+                        {
+                            return timestampFormatter.Format(value);
+                        }
+                    }
+                    else
+                    {
+                        return value.ToString();
+                    }
+                }
+                else
+                {
+                    return value.ToString();
+                }
+            }
+            else
+            {
+                return "";
+            }
         }
         internal CompressType GetCompressType()
         {
@@ -118,7 +181,7 @@ namespace Frameset.Common.Data.Writer
         }
         public abstract void FinishWrite();
         public abstract void WriteRecord(T value);
-        public virtual void flush()
+        public virtual void Flush()
         {
             if (writer != null)
             {
@@ -130,5 +193,34 @@ namespace Frameset.Common.Data.Writer
         {
             return typeof(T).Equals(typeof(Dictionary<string, object>));
         }
+        internal object GetOutput(DataSetColumnMeta column, object input)
+        {
+            if (input != null)
+            {
+                if (column.ColumnType == Constants.MetaType.DATE)
+                {
+                    if (input is DateTime || input is DateTimeOffset)
+                    {
+                        return dateFormatter.Format(input);
+                    }
+                    return input;
+                }
+                else if (column.ColumnType == Constants.MetaType.TIMESTAMP)
+                {
+                    if (input is DateTime || input is DateTimeOffset)
+                    {
+                        return timestampFormatter.Format(input);
+                    }
+                    return input;
+                }
+            }
+            else
+            {
+                return input;
+            }
+            return input;
+
+        }
     }
+
 }

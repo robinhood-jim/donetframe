@@ -1,38 +1,54 @@
 ﻿using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Spring.Globalization.Formatters;
-using System.Text.Json;
+using Newtonsoft.Json;
+using System.Diagnostics;
 
 namespace Frameset.Common.Data.Reader
 {
     public class JsonIterator<T> : AbstractDataIterator<T>
     {
-        internal DateTimeFormatter dateFormat = new DateTimeFormatter("year-{month:full}-{day:full}");
-        IAsyncEnumerable<Dictionary<string, object>> iterator;
+
+        //IAsyncEnumerable<Dictionary<string, object>> iterator;
+        private JsonTextReader jsonReader;
+        private Dictionary<string, DataSetColumnMeta> metaMap = new Dictionary<string, DataSetColumnMeta>();
+
         public JsonIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.CSV;
-            useReader = false;
+            useReader = true;
+            initalize(define.Path);
         }
 
         public JsonIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
-            useReader = false;
+            useReader = true;
+            initalize(define.Path);
         }
 
         public override void initalize(string filePath = null)
         {
             base.initalize(filePath);
-            iterator = JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object>>(inputStream);
+            jsonReader = new JsonTextReader(reader);
+            if (jsonReader != null)
+            {
+                jsonReader.Read();
+                Trace.Assert(jsonReader.TokenType == JsonToken.StartArray);
+            }
+            foreach (var item in MetaDefine.ColumnList)
+            {
+                metaMap.TryAdd(item.ColumnCode, item);
+            }
+
         }
 
         public override async IAsyncEnumerable<T> ReadAsync(string path, string filterSql = null)
         {
             base.initalize(path);
 
-            await foreach (var map in JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object>>(inputStream))
+            await foreach (var map in System.Text.Json.JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object>>(inputStream))
             {
                 cachedValue.Clear();
                 for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
@@ -52,19 +68,42 @@ namespace Frameset.Common.Data.Reader
         public override bool MoveNext()
         {
             base.MoveNext();
-            bool hasNext = iterator.GetAsyncEnumerator().MoveNextAsync().Result;
-            if (hasNext)
+            bool hasNext = false;
+            while (jsonReader.Read())
             {
-                Dictionary<string, object> map = iterator.GetAsyncEnumerator().Current;
-                cachedValue.Clear();
-                for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
+                if (jsonReader.TokenType == JsonToken.StartObject)
                 {
-                    DataSetColumnMeta meta = MetaDefine.ColumnList[i];
-                    object value;
-                    map.TryGetValue(meta.ColumnCode, out value);
-                    cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormat));
+                    cachedValue.Clear();
                 }
-                ConstructReturn();
+                else if (jsonReader.TokenType == JsonToken.EndObject)
+                {
+                    ConstructReturn();
+                    hasNext = true;
+                    break;
+                }
+                else if (jsonReader.TokenType == JsonToken.PropertyName)
+                {
+                    string propName = jsonReader.Value.ToString();
+                    jsonReader.Read();
+                    object value = jsonReader.Value;
+                    DataSetColumnMeta meta;
+                    metaMap.TryGetValue(propName, out meta);
+                    if (meta != null)
+                    {
+                        if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
+                        {
+                            cachedValue.TryAdd(propName, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormat));
+                        }
+                        else
+                        {
+                            cachedValue.TryAdd(propName, ConvertUtil.ConvertStringToTargetObject(value, meta, timestampFormatter));
+                        }
+                    }
+                    else
+                    {
+                        throw new OperationFailedException("prop " + propName + " not defined!");
+                    }
+                }
             }
             return hasNext;
         }

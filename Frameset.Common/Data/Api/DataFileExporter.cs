@@ -19,16 +19,16 @@ namespace Frameset.Common.Data.Api
                 switch (Constants.FileFormatTypeOf(meta.FileFormat))
                 {
                     case Constants.FileFormatType.CSV:
-                        writer = new CsvWriter<T>(collectionDefine, fileSystem);
+                        writer = new CsvDataWriter<T>(collectionDefine, fileSystem);
                         break;
                     case Constants.FileFormatType.XML:
                         writer = new XmlDataWriter<T>(collectionDefine, fileSystem);
                         break;
                     case Constants.FileFormatType.JSON:
-                        writer = new JsonWriter<T>(collectionDefine, fileSystem);
+                        writer = new JsonDataWriter<T>(collectionDefine, fileSystem);
                         break;
                     case Constants.FileFormatType.AVRO:
-                        writer = new AvroWriter<T>(collectionDefine, fileSystem);
+                        writer = new AvroDataWriter<T>(collectionDefine, fileSystem);
                         break;
                     case Constants.FileFormatType.PARQUET:
                         writer = new ParquetDateWriter<T>(collectionDefine, fileSystem);

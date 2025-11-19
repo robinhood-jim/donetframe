@@ -125,7 +125,7 @@ namespace Frameset.Common.FileSystem
                     throw new OperationNotAllowedException("path already Exists!");
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
@@ -155,7 +155,7 @@ namespace Frameset.Common.FileSystem
                     throw new OperationNotAllowedException("path not Exists!");
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
@@ -178,7 +178,7 @@ namespace Frameset.Common.FileSystem
                     throw new OperationNotAllowedException("path already Exists!");
                 }
             }
-            catch(Exception ex)
+            catch (Exception ex)
             {
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);

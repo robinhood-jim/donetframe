@@ -1,8 +1,8 @@
-﻿using Frameset.Core.Exceptions;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
 
 namespace Frameset.Core.Utils
@@ -19,7 +19,7 @@ namespace Frameset.Core.Utils
             string _namespace = type.Namespace;
 
             Assembly _assembly = Assembly.GetExecutingAssembly();
-            string resourceName =   "Frameset.Resources.contenttype.properties";
+            string resourceName = "Frameset.Resources.contenttype.properties";
 
             Stream stream = _assembly.GetManifestResourceStream(resourceName);
             string line = null;
@@ -63,8 +63,9 @@ namespace Frameset.Core.Utils
                 fileName = resourcePath;
             }
             meta.Path = filePath;
-            meta.FileName = fileName;
+            
             string[] namePart = fileName.Split(".");
+            int suffixPos = 0;
             for (int i = namePart.Length - 1; i > 0; i--)
             {
                 if (CompressType.NONE.Equals(meta.CompressCodec))
@@ -82,9 +83,11 @@ namespace Frameset.Core.Utils
                 {
                     meta.FileFormat = namePart[i].ToLower();
                     meta.ContentType = contentType;
+                    suffixPos = i;
                     break;
                 }
             }
+            meta.FileName = string.Join('.',namePart.Take(suffixPos));
             return meta;
 
         }

@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
@@ -19,11 +20,15 @@ namespace Frameset.Core.Dao.Meta
         {
 
         }
-
-        public virtual string GetDecimalScript(int percise, int scale)
+        public virtual string GetDecimalScript(int scale, int precise)
         {
 
-            return new StringBuilder("DECIMAL(").Append(scale).Append(",").Append(percise).Append(")").ToString();
+            return new StringBuilder("DECIMAL(").Append(scale).Append(",").Append(precise).Append(")").ToString();
+        }
+        public virtual string GetDecimalScript(FieldContent content)
+        {
+
+            return new StringBuilder("DECIMAL(").Append(content.Scale).Append(",").Append(content.Precise).Append(")").ToString();
         }
         public virtual string GenerateSequenceScript(string sequenceName)
         {
@@ -51,11 +56,15 @@ namespace Frameset.Core.Dao.Meta
         {
             return new StringBuilder("VARCHAR(").Append(length).Append(")").ToString();
         }
-        public virtual string GetCharFormat()
+        public virtual string getVarcharFormat(FieldContent content)
+        {
+            return new StringBuilder("VARCHAR(").Append(content.Length).Append(")").ToString();
+        }
+        public virtual string GetCharFormat(FieldContent content)
         {
             return "CHAR(1)";
         }
-        public virtual string GetTimestampFormat()
+        public virtual string GetTimestampFormat(FieldContent content)
         {
             return "TIMESTAMP";
         }
@@ -63,39 +72,47 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        public virtual string GetDateTimeFormat()
+        public virtual string GetTimeStampFormat(FieldContent content)
         {
             return "DATETIME";
         }
 
-        public virtual string GetIntegerFormat()
+        public virtual string GetIntegerFormat(FieldContent content)
         {
             return "INT";
         }
 
-        public virtual string GetShortFormat()
+        public virtual string GetShortFormat(FieldContent content)
         {
             return "SMALLINT";
         }
 
-        public virtual string GetLongFormat()
+        public virtual string GetLongFormat(FieldContent content)
         {
             return "BIGINT";
         }
+        public virtual string GetFloatFormat(FieldContent content)
+        {
+            return "FLOAT";
+        }
+        public virtual string GetDateFormat(FieldContent content)
+        {
+            return "DATE";
+        }
 
 
 
-        public virtual string GetBlobFormat()
+        public virtual string GetBlobFormat(FieldContent content)
         {
             return "BLOB";
         }
-        public virtual string GetNumericFormat()
+        public virtual string GetNumericFormat(FieldContent content)
         {
-            return "NUMERIC";
+            return "NUMERIC(" + content.Scale + "," + content.Precise + ")";
         }
 
 
-        public virtual string GetClobFormat()
+        public virtual string GetClobFormat(FieldContent content)
         {
             return "TEXT";
         }
@@ -106,6 +123,58 @@ namespace Frameset.Core.Dao.Meta
         public virtual string AppendSequence(string sequenceName)
         {
             return "";
+        }
+        public virtual string AppendAutoIncrement()
+        {
+            return "IDENTITY";
+        }
+        public virtual string GetFieldDefineScript(FieldContent content)
+        {
+            StringBuilder builder = new StringBuilder(0);
+            builder.Append(StringUtils.CamelCaseLowConvert(content.FieldName)).Append(" ");
+            switch (content.DataType)
+            {
+                case Constants.MetaType.INTEGER:
+                    builder.Append(GetIntegerFormat(content));
+                    break;
+                case Constants.MetaType.BIGINT:
+                    builder.Append(GetLongFormat(content));
+                    break;
+                case Constants.MetaType.CHAR:
+                    builder.Append(GetCharFormat(content));
+                    break;
+                case Constants.MetaType.FLOAT:
+                    builder.Append(GetFloatFormat(content));
+                    break;
+                case Constants.MetaType.DOUBLE:
+                    builder.Append(GetDecimalScript(content));
+                    break;
+                case Constants.MetaType.DATE:
+                    builder.Append(GetDateFormat(content));
+                    break;
+                case Constants.MetaType.TIMESTAMP:
+                    builder.Append(GetTimestampFormat(content));
+                    break;
+                case Constants.MetaType.CLOB:
+                    builder.Append(GetClobFormat(content));
+                    break;
+                case Constants.MetaType.BLOB:
+                    builder.Append(GetBlobFormat(content));
+                    break;
+                case Constants.MetaType.STRING:
+                    builder.Append(getVarcharFormat(content));
+                    break;
+            }
+            if (content.IfIncrement)
+            {
+                builder.Append(" ").Append(AppendAutoIncrement());
+            }
+            if (content.IfPrimary)
+            {
+                builder.Append(" ").Append(" PRIMARY KEY");
+            }
+            builder.Append(",");
+            return builder.ToString();
         }
         public abstract DbConnection GetDbConnection(string connectStr);
         public abstract DbCommand GetDbCommand(DbConnection connection, string sql);
@@ -175,27 +244,27 @@ namespace Frameset.Core.Dao.Meta
             switch (fieldContent.DataType)
             {
                 case Constants.MetaType.SHORT:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetShortFormat());
+                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetShortFormat(fieldContent));
                     break;
                 case Constants.MetaType.BIGINT:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetLongFormat());
+                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetLongFormat(fieldContent));
                     break;
                 case Constants.MetaType.INTEGER:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetIntegerFormat());
+                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetIntegerFormat(fieldContent));
                     break;
                 case Constants.MetaType.FLOAT:
                 case Constants.MetaType.DOUBLE:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetNumericFormat());
+                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetNumericFormat(fieldContent));
                     if (fieldContent.Scale != 0 && fieldContent.Precise != 0)
                     {
                         builder.Append("(").Append(fieldContent.Scale).Append(",").Append(fieldContent.Precise).Append(")");
                     }
                     break;
                 case Constants.MetaType.DATE:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetDateTimeFormat());
+                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetDateFormat(fieldContent));
                     break;
                 case Constants.MetaType.TIMESTAMP:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetTimestampFormat());
+                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetTimestampFormat(fieldContent));
                     break;
 
             }
@@ -229,6 +298,10 @@ namespace Frameset.Core.Dao.Meta
 
             }
             return defaultPort;
+
+        }
+        public virtual void AppendAdditionalScript(StringBuilder buidler, Dictionary<string, object> paramMap)
+        {
 
         }
     }

@@ -38,9 +38,9 @@ namespace Frameset.Common.FileSystem
         {
             if (!File.Exists(resourcePath))
             {
-                return null;
+                return GetOutputStremWithCompress(resourcePath, new FileStream(resourcePath, FileMode.CreateNew));
             }
-            return GetOutputStremWithCompress(resourcePath, new FileStream(resourcePath, FileMode.CreateNew));
+            return GetOutputStremWithCompress(resourcePath, new FileStream(resourcePath, FileMode.Create));
         }
         public override Stream? GetRawInputStream(string resourcePath)
         {

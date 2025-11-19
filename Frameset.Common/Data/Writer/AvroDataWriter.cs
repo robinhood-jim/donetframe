@@ -10,12 +10,12 @@ using Frameset.Core.Utils;
 
 namespace Frameset.Common.Data.Writer
 {
-    public class AvroWriter<T> : AbstractDataWriter<T>
+    public class AvroDataWriter<T> : AbstractDataWriter<T>
     {
         private RecordSchema schema;
         private DatumWriter<GenericRecord> datumWriter;
         private DataFileWriter<GenericRecord> fileWriter;
-        public AvroWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
+        public AvroDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawOutputStream = true;

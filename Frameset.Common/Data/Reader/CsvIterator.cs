@@ -19,12 +19,14 @@ namespace Frameset.Common.Data.Reader
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
+            initalize(define.Path);
         }
 
         public CsvIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
+            initalize(define.Path);
         }
 
         public override void initalize(string filePath = null)

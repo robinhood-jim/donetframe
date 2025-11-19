@@ -27,6 +27,7 @@ namespace Frameset.Core.Common
             TIMESTAMP,
             STRING,
             BOOLEAN,
+            CHAR,
             CLOB,
             BLOB,
             FORMULA
