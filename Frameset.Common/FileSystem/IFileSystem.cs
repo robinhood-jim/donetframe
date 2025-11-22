@@ -2,6 +2,9 @@
 
 namespace Frameset.Common.FileSystem
 {
+    /// <summary>
+    /// United Data File access FileSystem interface
+    /// </summary>
     public interface IFileSystem
     {
         Tuple<Stream, StreamReader>? GetReader(string resourcePath);

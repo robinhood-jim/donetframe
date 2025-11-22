@@ -1,8 +1,10 @@
-﻿using Spring.Util;
+﻿using Frameset.Core.Common;
+using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Reflection;
 
 namespace Frameset.Core.Dao
 {
@@ -87,7 +89,79 @@ namespace Frameset.Core.Dao
             }
             return list;
         }
+        public static Type GetValueType(Constants.MetaType type)
+        {
+            Type retType;
+            switch (type)
+            {
+                case Constants.MetaType.SHORT:
+                    retType = typeof(short);
+                    break;
+                case Constants.MetaType.INTEGER:
+                    retType = typeof(int);
+                    break;
+                case Constants.MetaType.BIGINT:
+                    retType = typeof(long);
+                    break;
+                case Constants.MetaType.DOUBLE:
+                    retType = typeof(double);
+                    break;
+                case Constants.MetaType.FLOAT:
+                    retType = typeof(float);
+                    break;
+                case Constants.MetaType.CLOB:
+                case Constants.MetaType.STRING:
+                    retType = typeof(string);
+                    break;
+                case Constants.MetaType.BLOB:
+                    retType = typeof(byte[]);
+                    break;
+                case Constants.MetaType.TIMESTAMP:
+                    retType = typeof(DateTime);
+                    break;
+                case Constants.MetaType.DATE:
+                    retType = typeof(DateTime);
+                    break;
+                default:
+                    retType = typeof(string);
+                    break;
+            }
+            return retType;
+        }
+        public static Constants.MetaType GetMetaType(PropertyInfo info)
+        {
+            Constants.MetaType metaType = Constants.MetaType.STRING;
+            switch (Type.GetTypeCode(info.GetGetMethod().ReturnType))
+            {
+                case TypeCode.Int32:
+                    metaType = Constants.MetaType.INTEGER;
+                    break;
+                case TypeCode.Int16:
+                    metaType = Constants.MetaType.SHORT;
+                    break;
+                case TypeCode.Int64:
+                    metaType = Constants.MetaType.BIGINT;
+                    break;
+                case TypeCode.Decimal:
+                    metaType = Constants.MetaType.FLOAT;
+                    break;
+                case TypeCode.Double:
+                    metaType = Constants.MetaType.DOUBLE;
+                    break;
+                case TypeCode.DateTime:
+                    metaType = Constants.MetaType.TIMESTAMP;
+                    break;
+                case TypeCode.Byte:
+                    metaType = Constants.MetaType.BLOB;
+                    break;
+                case TypeCode.String:
+                    metaType = Constants.MetaType.STRING;
+                    break;
+            }
+            return metaType;
+        }
     }
+
     public class ColumnMeta
     {
         public string ColumnName

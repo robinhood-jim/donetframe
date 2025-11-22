@@ -9,6 +9,10 @@ using System.Diagnostics;
 
 namespace Frameset.Common.Data.Writer
 {
+    /// <summary>
+    /// United Data File Writer
+    /// </summary>
+    /// <typeparam name="T"> write target Object Type</typeparam>
     public abstract class AbstractDataWriter<T> : IDisposable
     {
         public DataCollectionDefine MetaDefine
@@ -63,9 +67,28 @@ namespace Frameset.Common.Data.Writer
             this.FileSystem = fileSystem;
             if (!IsReturnDictionary())
             {
+                if (!define.ColumnList.IsNullOrEmpty())
+                {
+                    define.ColumnList.Clear();
+                }
+                define.ParseType(typeof(T));
                 methodMap = AnnotationUtils.ReflectObject(typeof(T));
-                useDictOutput = false;
             }
+            ConstructDateFormatter();
+        }
+        internal AbstractDataWriter(IFileSystem fileSystem, string processPath)
+        {
+            useDictOutput = false;
+            Trace.Assert(fileSystem != null && !typeof(T).Equals(typeof(Dictionary<string, object>)));
+            DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
+            builder.ParseType(typeof(T)).Path(processPath);
+            MetaDefine = builder.Build();
+            methodMap = AnnotationUtils.ReflectObject(typeof(T));
+            ConstructDateFormatter();
+        }
+
+        private void ConstructDateFormatter()
+        {
             string dateFormatStr;
             string timestampFormatStr;
             MetaDefine.ResourceConfig.TryGetValue("output.dateFormat", out dateFormatStr);
@@ -81,6 +104,7 @@ namespace Frameset.Common.Data.Writer
             dateFormatter = new DateTimeFormatter(dateFormatStr);
             timestampFormatter = new DateTimeFormatter(timestampFormatStr);
         }
+
         internal virtual void initalize()
         {
             Trace.Assert(!MetaDefine.Path.IsNullOrEmpty());
@@ -130,6 +154,10 @@ namespace Frameset.Common.Data.Writer
                 else
                 {
                     retValue = ConvertUtil.ConvertStringToTargetObject(retValue, column, timestampFormatter);
+                }
+                if (column.ColumnType == Constants.MetaType.TIMESTAMP || column.ColumnType == Constants.MetaType.DATE)
+                {
+                    retValue = ((DateTime)retValue).ToUniversalTime();
                 }
             }
 
@@ -191,7 +219,8 @@ namespace Frameset.Common.Data.Writer
         }
         public bool IsReturnDictionary()
         {
-            return typeof(T).Equals(typeof(Dictionary<string, object>));
+            useDictOutput = typeof(T).Equals(typeof(Dictionary<string, object>));
+            return useDictOutput;
         }
         internal object GetOutput(DataSetColumnMeta column, object input)
         {

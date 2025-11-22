@@ -10,12 +10,15 @@ using System.Diagnostics;
 
 namespace Frameset.Common.Data.Reader
 {
+    /// <summary>
+    /// United Data File reader IEnumerator
+    /// </summary>
+    /// <typeparam name="T">return Row type</typeparam>
     public abstract class AbstractDataIterator<T> : IEnumerator<T>
     {
         internal bool reUseCurrent = false;
         internal T current;
         public T Current => current;
-        internal DateTimeFormatter dateFormat;
         internal bool readAsDict = true;
         internal DateTimeFormatter dateFormatter;
         internal DateTimeFormatter timestampFormatter;
@@ -56,8 +59,26 @@ namespace Frameset.Common.Data.Reader
             if (!IsReturnDictionary())
             {
                 readAsDict = false;
+                if (!define.ColumnList.IsNullOrEmpty())
+                {
+                    define.ColumnList.Clear();
+                }
+                define.ParseType(typeof(T));
+
                 methodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
+            current = System.Activator.CreateInstance<T>();
+        }
+        public AbstractDataIterator(IFileSystem fileSystem, string processPath)
+        {
+            Trace.Assert(fileSystem != null);
+            DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
+            Trace.Assert(!typeof(T).Equals(typeof(Dictionary<string, object>)));
+            builder.ParseType(typeof(T)).Path(processPath);
+            MetaDefine = builder.Build();
+            FileSystem = fileSystem;
+            readAsDict = false;
+            methodMap = AnnotationUtils.ReflectObject(typeof(T));
             current = System.Activator.CreateInstance<T>();
         }
         public AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem)
@@ -72,6 +93,12 @@ namespace Frameset.Common.Data.Reader
             }
             if (!IsReturnDictionary())
             {
+                readAsDict = false;
+                if (!define.ColumnList.IsNullOrEmpty())
+                {
+                    define.ColumnList.Clear();
+                }
+                define.ParseType(typeof(T));
                 methodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
             current = System.Activator.CreateInstance<T>();
@@ -111,6 +138,10 @@ namespace Frameset.Common.Data.Reader
             }
             dateFormatter = new DateTimeFormatter(dateFormatStr);
             timestampFormatter = new DateTimeFormatter(timestampFormatStr);
+            if (FileSystem == null)
+            {
+                FileSystem = FileSystemFactory.GetFileSystem(MetaDefine);
+            }
             if (useReader)
             {
 
@@ -182,7 +213,7 @@ namespace Frameset.Common.Data.Reader
                     MethodParam param = null;
                     if (methodMap.TryGetValue(item.Key, out param))
                     {
-                        param.SetMethod.Invoke(current, new object[] { ConvertUtil.parseByType(param.SetMethod.ReturnType, item.Value) });
+                        param.SetMethod.Invoke(current, new object[] { ConvertUtil.parseByType(param.GetMethod.ReturnType, item.Value) });
                     }
                 }
             }

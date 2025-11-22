@@ -63,7 +63,7 @@ namespace Frameset.Core.Utils
                 fileName = resourcePath;
             }
             meta.Path = filePath;
-            
+
             string[] namePart = fileName.Split(".");
             int suffixPos = 0;
             for (int i = namePart.Length - 1; i > 0; i--)
@@ -87,7 +87,7 @@ namespace Frameset.Core.Utils
                     break;
                 }
             }
-            meta.FileName = string.Join('.',namePart.Take(suffixPos));
+            meta.FileName = string.Join('.', namePart.Take(suffixPos));
             return meta;
 
         }

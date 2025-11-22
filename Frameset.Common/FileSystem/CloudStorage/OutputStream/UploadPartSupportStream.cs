@@ -11,7 +11,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 
         public override bool CanSeek => false;
 
-        public override bool CanWrite => true;
+        public override bool CanWrite => writeTag;
 
         public override long Length => 0;
 
@@ -29,6 +29,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         internal int partNum = 0;
         internal int partSize = 20 * 1024 * 1024;
         internal bool finish = false;
+        internal bool writeTag = true;
         internal void doInit()
         {
             string configPartSizeStr;
@@ -130,6 +131,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             {
                 uploadAsync();
                 finish = true;
+                writeTag = false;
             }
         }
 

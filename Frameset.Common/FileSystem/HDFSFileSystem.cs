@@ -1,4 +1,5 @@
-﻿using Frameset.Common.FileSystem.utils;
+﻿using Frameset.Common.Data;
+using Frameset.Common.FileSystem.utils;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
@@ -14,17 +15,8 @@ namespace Frameset.Common.FileSystem
         {
             identifier = Constants.FileSystemType.HDFS;
             string apiUrl;
-            define.ResourceConfig.TryGetValue("fs.baseUrl", out apiUrl);
-            if (define.ResourceConfig.ContainsKey("fs.userName") && define.ResourceConfig.ContainsKey("fs.password"))
-            {
-                string username, password;
-
-                client = new HdfsClient(define);
-            }
-            else
-            {
-                client = new HdfsClient(define);
-            }
+            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out apiUrl);
+            client = new HdfsClient(define);
 
         }
 

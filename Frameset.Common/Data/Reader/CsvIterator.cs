@@ -9,7 +9,7 @@ namespace Frameset.Common.Data.Reader
 {
     public class CsvIterator<T> : AbstractDataIterator<T>
     {
-        public string Spliter
+        public string Splitter
         {
             get; set;
         } = ",";
@@ -29,9 +29,22 @@ namespace Frameset.Common.Data.Reader
             initalize(define.Path);
         }
 
+        public CsvIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.CSV;
+            useReader = true;
+            initalize(processPath);
+        }
+
         public override void initalize(string filePath = null)
         {
             base.initalize(filePath);
+            string splitterStr;
+            MetaDefine.ResourceConfig.TryGetValue("csv.splitter", out splitterStr);
+            if (!splitterStr.IsNullOrEmpty())
+            {
+                Splitter = splitterStr;
+            }
         }
         public override bool MoveNext()
         {
@@ -60,13 +73,20 @@ namespace Frameset.Common.Data.Reader
             bool hasNext = false;
             if (!readStr.IsNullOrEmpty())
             {
-                string[] arr = readStr.Split(Spliter);
+                string[] arr = readStr.Split(Splitter);
                 if (arr.Length >= MetaDefine.ColumnList.Count)
                 {
                     for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
                     {
                         DataSetColumnMeta meta = MetaDefine.ColumnList[i];
-                        cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormat));
+                        if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
+                        {
+                            cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormatter));
+                        }
+                        else
+                        {
+                            cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, timestampFormatter));
+                        }
                         hasNext = true;
                     }
                     ConstructReturn();

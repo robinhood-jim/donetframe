@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Common;
+﻿using Frameset.Common.Data;
+using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
@@ -12,7 +13,7 @@ namespace Frameset.Common.FileSystem
         private SftpClient client;
         internal string ftpUri;
         internal string userName = null;
-        internal string host = "localhost";
+        internal string host = ResourceConstants.DEFAULTHOST;
         internal string password = null;
         int port = 22;
         public SftpFileSystem(DataCollectionDefine define) : base(define)
@@ -28,17 +29,17 @@ namespace Frameset.Common.FileSystem
                 string portStr = null;
 
                 string hostStr;
-                define.ResourceConfig.TryGetValue("ftp.host", out hostStr);
+                define.ResourceConfig.TryGetValue(ResourceConstants.SFTPHOST, out hostStr);
                 if (!hostStr.IsNullOrEmpty())
                 {
                     host = hostStr;
                 }
-                if (define.ResourceConfig.TryGetValue("ftp.port", out portStr))
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPORT, out portStr))
                 {
                     port = Convert.ToInt32(portStr);
                 }
-                define.ResourceConfig.TryGetValue("ftp.userName", out userName);
-                define.ResourceConfig.TryGetValue("ftp.password", out password);
+                define.ResourceConfig.TryGetValue(ResourceConstants.SFTPUSERNAME, out userName);
+                define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPASSWD, out password);
 
                 client = new SftpClient(host, port, userName, password);
 

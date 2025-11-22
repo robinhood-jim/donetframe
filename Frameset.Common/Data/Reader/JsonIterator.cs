@@ -28,6 +28,13 @@ namespace Frameset.Common.Data.Reader
             initalize(define.Path);
         }
 
+        public JsonIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.CSV;
+            useReader = true;
+            initalize(processPath);
+        }
+
         public override void initalize(string filePath = null)
         {
             base.initalize(filePath);
@@ -56,7 +63,7 @@ namespace Frameset.Common.Data.Reader
                     DataSetColumnMeta meta = MetaDefine.ColumnList[i];
                     object value;
                     map.TryGetValue(meta.ColumnCode, out value);
-                    cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormat));
+                    cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormatter));
 
                 }
                 ConstructReturn();
@@ -92,7 +99,7 @@ namespace Frameset.Common.Data.Reader
                     {
                         if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
                         {
-                            cachedValue.TryAdd(propName, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormat));
+                            cachedValue.TryAdd(propName, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormatter));
                         }
                         else
                         {

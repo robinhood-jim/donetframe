@@ -4,7 +4,6 @@ using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using System.Xml;
-using System.Xml.Linq;
 
 namespace Frameset.Common.Data.Reader
 {
@@ -25,6 +24,12 @@ namespace Frameset.Common.Data.Reader
         {
             Identifier = Constants.FileFormatType.XML;
             initalize(define.Path);
+        }
+
+        public XmlIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.XML;
+            initalize(processPath);
         }
 
         public override void initalize(string filePath = null)
@@ -104,7 +109,7 @@ namespace Frameset.Common.Data.Reader
             }
 
         }
-        
+
         public override bool MoveNext()
         {
             base.MoveNext();

@@ -21,6 +21,14 @@ namespace Frameset.Common.Data.Writer
             useRawOutputStream = true;
             initalize();
         }
+
+        public AvroDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.AVRO;
+            useRawOutputStream = true;
+            initalize();
+        }
+
         internal override void initalize()
         {
             base.initalize();
@@ -28,6 +36,14 @@ namespace Frameset.Common.Data.Writer
             datumWriter = new GenericDatumWriter<GenericRecord>(schema);
             Codec codec = Codec.CreateCodec(Codec.Type.Null);
             CompressType compressType = GetCompressType();
+            codec = GetCodec(codec, compressType);
+
+            fileWriter = (DataFileWriter<GenericRecord>)DataFileWriter<GenericRecord>.OpenWriter(datumWriter, outputStream, codec);
+
+        }
+
+        private static Codec GetCodec(Codec codec, CompressType compressType)
+        {
             switch (compressType)
             {
                 case CompressType.BZ2:
@@ -47,8 +63,7 @@ namespace Frameset.Common.Data.Writer
                     break;
             }
 
-            fileWriter = (DataFileWriter<GenericRecord>)DataFileWriter<GenericRecord>.OpenWriter(datumWriter, outputStream, codec);
-
+            return codec;
         }
 
         public override void FinishWrite()
@@ -80,6 +95,7 @@ namespace Frameset.Common.Data.Writer
                         {
                             ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal.ToString())).LocalDateTime;
                         }
+
                         record.Add(MetaDefine.ColumnList[i].ColumnCode, ts);
                     }
                     else

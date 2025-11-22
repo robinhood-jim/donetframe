@@ -1,6 +1,9 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Dao;
 using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Collections.Generic;
+using System.Reflection;
 
 namespace Frameset.Core.FileSystem
 {
@@ -95,6 +98,19 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(meta);
             ColumnNameMap.TryAdd(meta.ColumnName, 1);
         }
+        public void ParseType(Type type)
+        {
+            PropertyInfo[] infos = type.GetProperties();
+            if (!infos.IsNullOrEmpty())
+            {
+                foreach (PropertyInfo info in infos)
+                {
+                    string columnName = info.Name;
+                    Constants.MetaType columnType = DataMetaUtils.GetMetaType(info);
+                    AddColumnDefine(columnName, columnType, null);
+                }
+            }
+        }
 
     }
     public class DataCollectionBuilder
@@ -162,6 +178,20 @@ namespace Frameset.Core.FileSystem
         public DataCollectionDefine Build()
         {
             return define;
+        }
+        public DataCollectionBuilder ParseType(Type type)
+        {
+            PropertyInfo[] infos = type.GetProperties();
+            if (!infos.IsNullOrEmpty())
+            {
+                foreach (PropertyInfo info in infos)
+                {
+                    string columnName = info.Name;
+                    Constants.MetaType columnType = DataMetaUtils.GetMetaType(info);
+                    define.AddColumnDefine(columnName, columnType, null);
+                }
+            }
+            return this;
         }
 
     }

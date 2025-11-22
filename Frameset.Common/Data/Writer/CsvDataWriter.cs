@@ -17,11 +17,26 @@ namespace Frameset.Common.Data.Writer
             useWriter = true;
             contents = new List<string>(define.ColumnList.Count);
             string separatorStr;
-            define.ResourceConfig.TryGetValue("fs.outputSeparator", out separatorStr);
+            define.ResourceConfig.TryGetValue("csv.splitter", out separatorStr);
             if (!separatorStr.IsNullOrEmpty())
             {
                 sepearotr = separatorStr[0];
             }
+            initalize();
+        }
+
+        public CsvDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.CSV;
+            useWriter = true;
+            contents = new List<string>(methodMap.Count);
+            string separatorStr;
+            MetaDefine.ResourceConfig.TryGetValue("csv.splitter", out separatorStr);
+            if (!separatorStr.IsNullOrEmpty())
+            {
+                sepearotr = separatorStr[0];
+            }
+            initalize();
         }
 
         public override void FinishWrite()
@@ -56,7 +71,7 @@ namespace Frameset.Common.Data.Writer
                     }
                 }
             }
-            writer.WriteLine(String.Join(sepearotr, contents));
+            writer.WriteLine(string.Join(sepearotr, contents));
         }
 
     }

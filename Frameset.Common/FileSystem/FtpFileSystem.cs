@@ -1,8 +1,8 @@
 ﻿using FluentFTP;
+using Frameset.Common.Data;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Frameset.Common.FileSystem
 {
@@ -11,11 +11,10 @@ namespace Frameset.Common.FileSystem
 
         internal string ftpUri;
         internal string userName = null;
-        internal string host = "localhost";
+        internal string host = ResourceConstants.DEFAULTHOST;
         internal string password = null;
         int port = 21;
         FtpClient client;
-        long count = 1;
         public FtpFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.FTP;
@@ -30,17 +29,17 @@ namespace Frameset.Common.FileSystem
             {
                 string portStr = null;
                 string hostStr;
-                define.ResourceConfig.TryGetValue("ftp.host", out hostStr);
-                if (!hostStr.IsNullOrEmpty())
+                ;
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPHOST, out hostStr))
                 {
-                    host = hostStr;
+                    host = hostStr ?? ResourceConstants.DEFAULTHOST;
                 }
-                if (define.ResourceConfig.TryGetValue("ftp.port", out portStr))
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPPORT, out portStr))
                 {
                     port = Convert.ToInt32(portStr);
                 }
-                define.ResourceConfig.TryGetValue("ftp.userName", out userName);
-                define.ResourceConfig.TryGetValue("ftp.password", out password);
+                define.ResourceConfig.TryGetValue(ResourceConstants.FTPUSERNAME, out userName);
+                define.ResourceConfig.TryGetValue(ResourceConstants.FTPPASSWD, out password);
 
                 client = new FtpClient(host, userName, password, port);
                 busyTag = false;
@@ -80,7 +79,6 @@ namespace Frameset.Common.FileSystem
                 {
                     return null;
                 }
-                client.Connect();
                 return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
             }
             catch (Exception ex)
@@ -101,7 +99,6 @@ namespace Frameset.Common.FileSystem
                 {
                     throw new NotSupportedException("path already exists!");
                 }
-                client.Connect();
                 return GetOutputStremWithCompress(resourcePath, client.OpenWrite(resourcePath));
 
             }
@@ -123,7 +120,6 @@ namespace Frameset.Common.FileSystem
                 {
                     return null;
                 }
-                client.Connect();
                 return client.OpenRead(resourcePath);
             }
             catch (Exception ex)

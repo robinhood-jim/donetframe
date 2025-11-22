@@ -17,6 +17,15 @@ namespace Frameset.Common.Data.Writer
             jsonWriter.WriteStartArray();
         }
 
+        public JsonDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.JSON;
+            useWriter = true;
+            base.initalize();
+            jsonWriter = new JsonTextWriter(writer);
+            jsonWriter.WriteStartArray();
+        }
+
         public override void FinishWrite()
         {
             if (jsonWriter != null)

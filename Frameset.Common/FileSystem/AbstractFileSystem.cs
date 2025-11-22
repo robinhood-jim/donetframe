@@ -8,6 +8,9 @@ using System.Text;
 
 namespace Frameset.Common.FileSystem
 {
+    /// <summary>
+    /// United Data File access FileSystem Abstract class 
+    /// </summary>
     public abstract class AbstractFileSystem : IFileSystem, IDisposable
     {
         internal DataCollectionDefine define;

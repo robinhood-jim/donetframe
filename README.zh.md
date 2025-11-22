@@ -177,3 +177,62 @@ PageDTO<TestVO> list = repository.QueryPage<TestVO>(query);
     
 </mapper>
 ```
+- 统一的FileSystem与文件格式读写支持
+基于统一的IFileSystem 与 AbstractDataIterator AbstractDataWrite,实现对本地文件系统，FTP/SFTP、HDFS以及云存储类型（S3/aliyun OSS/tencent COS）等文件系统支持，数据格式支持csv/json/xml/avro/parquet等格式
+支持Dictionary 和对象两种模式
+从文件系统读取,Dictionary 方式
+```java
+ DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
+ //using FileSystem Local
+ builder.Path("e:/1.json.gz").FsType(Constants.FileSystemType.LOCAL);
+
+ using (AbstractDataIterator<Dictionary<string, object>> iterator = builder.Build().GetDataReader<Dictionary<string,object>>())
+ {
+     while (iterator.MoveNext())
+     {
+         Dictionary<string, object> valueMap = iterator.Current;
+         Log.Information("{valueMap}", valueMap);
+     }
+ }
+```
+Model 对象方式
+```java
+ DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
+ //using FileSystem Local
+ builder.Path("e:/1.json.gz").FsType(Constants.FileSystemType.LOCAL);
+
+ using (AbstractDataIterator<TestModel> iterator = builder.Build().GetDataReader<TestModel>())
+ {
+     while (iterator.MoveNext())
+     {
+         TestModel model = iterator.Current;
+         Log.Information("{Model}", model);
+     }
+ }
+```
+
+
+写入文件系统 Dictionary 方式
+```java
+DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
+//assign Path and column metadata define
+builder.Path("e:/1.parquet").AddColumnDefine("id", Constants.MetaType.BIGINT).AddColumnDefine("name", Constants.MetaType.STRING)
+    .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
+Dictionary<string, object> cachedMap = new Dictionary<string, object>();
+Random random = new Random(1231313);
+long startTs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 3600 * 24 * 1000;
+DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+using (AbstractDataWriter<Dictionary<string, object>> writer = DataFileExporter.GetDataWriter<Dictionary<string, object>>(builder.Build()))
+{
+    for (int i = 0; i < 1000; i++)
+    {
+        cachedMap.Clear();
+        cachedMap.TryAdd("name", StringUtils.GenerateRandomChar(random, 12));
+        cachedMap.TryAdd("time", dateTime.AddMilliseconds(startTs + i * 1000));
+        cachedMap.TryAdd("amount", random.Next(1000) + 1);
+        cachedMap.TryAdd("price", random.NextDouble() * 1000);
+        cachedMap.TryAdd("id", Convert.ToInt64(i));
+        writer.WriteRecord(cachedMap);
+    }
+}
+```

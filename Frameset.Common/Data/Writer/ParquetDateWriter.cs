@@ -26,6 +26,14 @@ namespace Frameset.Common.Data.Writer
             useRawOutputStream = true;
             initalize();
         }
+
+        public ParquetDateWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.PARQUET;
+            useRawOutputStream = true;
+            initalize();
+        }
+
         internal override void initalize()
         {
             base.initalize();

@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Exceptions;
+﻿using Frameset.Common.Data;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
@@ -19,19 +20,20 @@ namespace Frameset.Common.FileSystem.utils
         public HdfsClient(DataCollectionDefine define, HttpMessageHandler handler = null)
         {
             Debug.Assert(!define.ResourceConfig.IsNullOrEmpty());
-            define.ResourceConfig.TryGetValue("fs.baseUrl", out baseUrl);
+            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out baseUrl);
             Debug.Assert(!baseUrl.IsNullOrEmpty());
             string authType = null;
-            define.ResourceConfig.TryGetValue("fs.authType", out authType);
+            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSAUTHTYPE, out authType);
+            Trace.Assert(!authType.IsNullOrEmpty());
             type = AuthTypeOf(authType);
             switch (type)
             {
                 case AuthType.USERNAME:
-                    define.ResourceConfig.TryGetValue("fs.userName", out userName);
+                    define.ResourceConfig.TryGetValue(ResourceConstants.HDFSUSERNAME, out userName);
                     Debug.Assert(!userName.IsNullOrEmpty());
                     break;
                 case AuthType.TOKEN:
-                    define.ResourceConfig.TryGetValue("fs.token", out useToken);
+                    define.ResourceConfig.TryGetValue(ResourceConstants.HDFSTOKEN, out useToken);
                     Debug.Assert(!useToken.IsNullOrEmpty());
                     break;
                 default:

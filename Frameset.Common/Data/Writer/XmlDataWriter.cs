@@ -30,6 +30,25 @@ namespace Frameset.Common.Data.Writer
             xmlwriter.WriteStartElement(collectionNodeName);
         }
 
+        public XmlDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.XML;
+            initalize();
+            MetaDefine.ResourceConfig.TryGetValue("xml.collectionName", out collectionNodeName);
+            MetaDefine.ResourceConfig.TryGetValue("xml.childName", out childNodeName);
+            if (collectionNodeName.IsNullOrEmpty())
+            {
+                collectionNodeName = typeof(T).Name + "s";
+            }
+            if (childNodeName.IsNullOrEmpty())
+            {
+                childNodeName = typeof(T).Name;
+            }
+            xmlwriter = XmlWriter.Create(outputStream);
+            xmlwriter.WriteStartDocument();
+            xmlwriter.WriteStartElement(collectionNodeName);
+        }
+
         public override void FinishWrite()
         {
             xmlwriter.WriteEndElement();

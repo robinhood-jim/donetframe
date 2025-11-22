@@ -16,9 +16,9 @@ namespace Frameset.Common.FileSystem.CloudStorage
         public MinioFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.MINIO;
-            define.ResourceConfig.TryGetValue("fs.accessKey", out accessKey);
-            define.ResourceConfig.TryGetValue("fs.secretKey", out secretKey);
-            define.ResourceConfig.TryGetValue("fs.endpoint", out endpoint);
+            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSACCESSKEY, out accessKey);
+            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSSECRETKEY, out secretKey);
+            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSENDPOINT, out endpoint);
             Debug.Assert(!accessKey.IsNullOrEmpty() && !secretKey.IsNullOrEmpty() && !endpoint.IsNullOrEmpty());
             //client = (MinioClient)new MinioClient().WithCredentials(accessKey, secretKey).WithEndpoint(endpoint).Build();
             AmazonS3Config config = new AmazonS3Config()

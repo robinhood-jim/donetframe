@@ -34,6 +34,14 @@ namespace Frameset.Common.Data.Reader
             useRawStream = true;
             initalize(define.Path);
         }
+
+        public ParquetIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.AVRO;
+            useRawStream = true;
+            initalize(processPath);
+        }
+
         public override void initalize(string path)
         {
             base.initalize(path);

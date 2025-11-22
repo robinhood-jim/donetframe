@@ -26,6 +26,14 @@ namespace Frameset.Common.Data.Reader
             useRawStream = true;
             initalize(define.Path);
         }
+
+        public AvroIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.AVRO;
+            useRawStream = true;
+            initalize(processPath);
+        }
+
         public override void initalize(string path = null)
         {
             base.initalize(path);

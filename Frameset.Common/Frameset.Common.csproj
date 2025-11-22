@@ -22,15 +22,13 @@
   </ItemGroup>
 
   <ItemGroup>
-    <Folder Include="Util\" />
-  </ItemGroup>
-
-  <ItemGroup>
+    <PackageReference Include="Apache.Arrow" Version="22.1.0" />
     <PackageReference Include="Apache.Avro" Version="1.12.1" PrivateAssets="All" />
     <PackageReference Include="Apache.Avro.File.BZip2" Version="1.12.1" PrivateAssets="All" />
     <PackageReference Include="Apache.Avro.File.Snappy" Version="1.12.1" PrivateAssets="All" />
     <PackageReference Include="Apache.Avro.File.XZ" Version="1.12.1" PrivateAssets="All" />
     <PackageReference Include="Apache.Avro.File.Zstandard" Version="1.12.1" PrivateAssets="All" />
+    <PackageReference Include="ApacheOrcDotNet" Version="1.0.0" PrivateAssets="All" />
     <PackageReference Include="AWSSDK.S3" Version="4.0.11.3" PrivateAssets="All" />
     <PackageReference Include="FluentFTP" Version="53.0.2" PrivateAssets="All" />
     <PackageReference Include="Google.Protobuf" Version="3.33.1" PrivateAssets="All" />
