@@ -9,21 +9,29 @@ namespace Frameset.Common.Data.Writer
     public class XmlDataWriter<T> : AbstractDataWriter<T>
     {
         private string collectionNodeName;
-        private string childNodeName;
+        private string entityName;
         private XmlWriter xmlwriter;
         public XmlDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.XML;
             initalize();
-            MetaDefine.ResourceConfig.TryGetValue("xml.collectionName", out collectionNodeName);
-            MetaDefine.ResourceConfig.TryGetValue("xml.childName", out childNodeName);
-            if (collectionNodeName.IsNullOrEmpty())
+            if (IsReturnDictionary())
             {
-                collectionNodeName = "Records";
+                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLCOLLECTIONNAME, out collectionNodeName);
+                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLENTITYIONNAME, out entityName);
+                if (collectionNodeName.IsNullOrEmpty())
+                {
+                    collectionNodeName = ResourceConstants.XMLDEFUALTCOLLECTIONAME;
+                }
+                if (entityName.IsNullOrEmpty())
+                {
+                    entityName = ResourceConstants.XMLDEFAULTENTITYNAME;
+                }
             }
-            if (childNodeName.IsNullOrEmpty())
+            else
             {
-                childNodeName = "Record";
+                collectionNodeName = typeof(T).Name + "s";
+                entityName = typeof(T).Name;
             }
             xmlwriter = XmlWriter.Create(outputStream);
             xmlwriter.WriteStartDocument();
@@ -34,16 +42,8 @@ namespace Frameset.Common.Data.Writer
         {
             Identifier = Constants.FileFormatType.XML;
             initalize();
-            MetaDefine.ResourceConfig.TryGetValue("xml.collectionName", out collectionNodeName);
-            MetaDefine.ResourceConfig.TryGetValue("xml.childName", out childNodeName);
-            if (collectionNodeName.IsNullOrEmpty())
-            {
-                collectionNodeName = typeof(T).Name + "s";
-            }
-            if (childNodeName.IsNullOrEmpty())
-            {
-                childNodeName = typeof(T).Name;
-            }
+            collectionNodeName = typeof(T).Name + "s";
+            entityName = typeof(T).Name;
             xmlwriter = XmlWriter.Create(outputStream);
             xmlwriter.WriteStartDocument();
             xmlwriter.WriteStartElement(collectionNodeName);
@@ -58,7 +58,7 @@ namespace Frameset.Common.Data.Writer
 
         public override void WriteRecord(T value)
         {
-            xmlwriter.WriteStartElement(childNodeName);
+            xmlwriter.WriteStartElement(entityName);
             foreach (DataSetColumnMeta column in MetaDefine.ColumnList)
             {
                 object retVal = GetValue(value, column);

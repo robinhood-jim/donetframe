@@ -1,10 +1,12 @@
-﻿using Frameset.Core.Utils;
+﻿using Frameset.Core.Exceptions;
+using Frameset.Core.Utils;
 using ICSharpCode.SharpZipLib.BZip2;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Zip;
 using K4os.Compression.LZ4.Streams;
 using SharpCompress.Compressors.LZMA;
 using SharpCompress.Compressors.Xz;
+using System.Diagnostics;
 using System.IO.Compression;
 
 
@@ -18,6 +20,7 @@ namespace Frameset.Common.Compress
         }
         public static Stream? GetInputByCompressType(string resourcePath, Stream rawstream, char dirSep = '/')
         {
+            Trace.Assert(rawstream != null);
             Stream inputStream = null;
             FileMeta meta = FileUtil.Parse(resourcePath, dirSep);
             if (meta != null)
@@ -56,7 +59,14 @@ namespace Frameset.Common.Compress
                         break;
                 }
             }
-            return inputStream;
+            if (inputStream != null)
+            {
+                return new BufferedStream(inputStream);
+            }
+            else
+            {
+                throw new OperationFailedException("failed to read from " + resourcePath);
+            }
         }
     }
 }

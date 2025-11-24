@@ -23,7 +23,7 @@ namespace Frameset.Core.FileSystem
         } = new List<DataSetColumnMeta>();
         public string Path
         {
-            get; internal set;
+            get; set;
         }
         public Dictionary<string, string> ResourceConfig
         {

@@ -13,7 +13,7 @@ namespace Frameset.Core.Common
     public class ConvertUtil
     {
         private static string[] DEFAULTFORMATTER = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "MM-dd-yy" };
-        public static object parseByType(Type targetType, object input)
+        public static object ParseByType(Type targetType, object input)
         {
             object retVal = null;
             AssertUtils.ArgumentNotNull(input, "must not be null!");

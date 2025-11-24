@@ -1,10 +1,12 @@
-﻿using Frameset.Core.Utils;
+﻿using Frameset.Core.Exceptions;
+using Frameset.Core.Utils;
 using ICSharpCode.SharpZipLib.BZip2;
 using ICSharpCode.SharpZipLib.GZip;
 using ICSharpCode.SharpZipLib.Zip;
 using K4os.Compression.LZ4.Streams;
 using SharpCompress.Compressors.LZMA;
 using SharpCompress.Compressors.Xz;
+using System.Diagnostics;
 using System.IO.Compression;
 
 namespace Frameset.Common.Compress
@@ -17,6 +19,7 @@ namespace Frameset.Common.Compress
         }
         public static Stream GetOutputByCompressType(string resourcePath, Stream rawstream)
         {
+            Trace.Assert(rawstream != null);
             Stream outStream = null;
             FileMeta meta = FileUtil.Parse(resourcePath, Path.DirectorySeparatorChar);
             if (meta != null)
@@ -56,7 +59,14 @@ namespace Frameset.Common.Compress
                         break;
                 }
             }
-            return outStream;
+            if (outStream != null)
+            {
+                return new BufferedStream(outStream);
+            }
+            else
+            {
+                throw new OperationFailedException("failed to get outputStream from " + resourcePath);
+            }
         }
     }
 }

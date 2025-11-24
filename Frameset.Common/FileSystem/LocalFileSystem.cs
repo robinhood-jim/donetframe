@@ -32,7 +32,7 @@ namespace Frameset.Common.FileSystem
             {
                 return null;
             }
-            return GetInputStreamWithCompress(resourcePath, new FileStream(resourcePath, FileMode.Open));
+            return GetInputStreamWithCompress(resourcePath, new BufferedStream(new FileStream(resourcePath, FileMode.Open)));
         }
         public override Stream? GetOutputStream(string resourcePath)
         {
@@ -48,16 +48,16 @@ namespace Frameset.Common.FileSystem
             {
                 return null;
             }
-            return new FileStream(resourcePath, FileMode.Open);
+            return new BufferedStream(new FileStream(resourcePath, FileMode.Open));
         }
 
         public override Stream? GetRawOutputStream(string resourcePath)
         {
             if (!File.Exists(resourcePath))
             {
-                return new FileStream(resourcePath, FileMode.CreateNew);
+                return new BufferedStream(new FileStream(resourcePath, FileMode.CreateNew));
             }
-            return new FileStream(resourcePath, FileMode.Create);
+            return new BufferedStream(new FileStream(resourcePath, FileMode.Create));
         }
 
 

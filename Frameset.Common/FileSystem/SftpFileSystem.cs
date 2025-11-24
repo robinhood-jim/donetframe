@@ -2,7 +2,6 @@
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
 
@@ -12,10 +11,10 @@ namespace Frameset.Common.FileSystem
     {
         private SftpClient client;
         internal string ftpUri;
-        internal string userName = null;
+        internal string userName;
         internal string host = ResourceConstants.DEFAULTHOST;
-        internal string password = null;
-        int port = 22;
+        internal string password;
+        int port = ResourceConstants.SFTPDEFAULTPORT;
         public SftpFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.SFTP;
@@ -26,14 +25,13 @@ namespace Frameset.Common.FileSystem
             base.Init(define);
             if (define.ResourceConfig.Count > 0)
             {
-                string portStr = null;
-
+                string portStr;
                 string hostStr;
-                define.ResourceConfig.TryGetValue(ResourceConstants.SFTPHOST, out hostStr);
-                if (!hostStr.IsNullOrEmpty())
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPHOST, out hostStr))
                 {
-                    host = hostStr;
+                    host = hostStr ?? ResourceConstants.DEFAULTHOST;
                 }
+
                 if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPORT, out portStr))
                 {
                     port = Convert.ToInt32(portStr);
@@ -47,7 +45,7 @@ namespace Frameset.Common.FileSystem
             }
             else
             {
-                throw new NotSupportedException("must config paramter ftp ");
+                throw new NotSupportedException("must config paramter sftp ");
             }
         }
 
@@ -144,7 +142,7 @@ namespace Frameset.Common.FileSystem
                     ISftpFile file = client.Get(resourcePath);
                     if (file.IsRegularFile)
                     {
-                        return client.OpenRead(resourcePath);
+                        return new BufferedStream(client.OpenRead(resourcePath));
                     }
                     else if (file.IsDirectory)
                     {
@@ -172,7 +170,7 @@ namespace Frameset.Common.FileSystem
                 client.Connect();
                 if (!client.Exists(resourcePath))
                 {
-                    return client.OpenWrite(resourcePath);
+                    return new BufferedStream(client.OpenWrite(resourcePath));
                 }
                 else
                 {

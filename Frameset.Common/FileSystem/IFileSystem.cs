@@ -18,5 +18,6 @@ namespace Frameset.Common.FileSystem
         Stream? GetRawInputStream(string resourcePath);
         Stream? GetRawOutputStream(string resourcePath);
         void FinishWrite(Stream outputStream);
+        void FinishWrite(Stream outputStream, string path);
     }
 }

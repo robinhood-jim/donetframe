@@ -72,7 +72,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 
         }
 
-        internal override void uploadPart(MemoryStream stream, int partNum, long size)
+        internal override async void uploadPart(MemoryStream stream, int partNum, long size)
         {
             UploadPartRequest request = new UploadPartRequest();
             request.BucketName = bucketName;
@@ -81,7 +81,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             request.PartNumber = partNum;
             request.PartSize = size;
             request.InputStream = stream;
-            UploadPartResponse response = client.UploadPartAsync(request).Result;
+            UploadPartResponse response =await client.UploadPartAsync(request);
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 etagMap.TryAdd(partNum, response.ETag);

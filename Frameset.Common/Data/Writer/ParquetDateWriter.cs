@@ -38,7 +38,7 @@ namespace Frameset.Common.Data.Writer
         {
             base.initalize();
             string chunckSizeStr;
-            MetaDefine.ResourceConfig.TryGetValue("fs.parquetGroupSize", out chunckSizeStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.PARQUETGROUPSIZE, out chunckSizeStr);
             if (!chunckSizeStr.IsNullOrEmpty())
             {
                 chunckCapcity = int.Parse(chunckSizeStr);
@@ -105,6 +105,7 @@ namespace Frameset.Common.Data.Writer
             if (totalRow % chunckCapcity == 0)
             {
                 FlushGroup();
+                Flush();
                 groupWriter.Dispose();
                 groupWriter = null;
             }

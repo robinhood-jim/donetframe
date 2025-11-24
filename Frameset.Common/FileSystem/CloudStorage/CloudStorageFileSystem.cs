@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Exceptions;
+﻿using Frameset.Common.FileSystem.CloudStorage.OutputStream;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 
@@ -35,17 +36,17 @@ namespace Frameset.Common.FileSystem.CloudStorage
         }
         public override Stream? GetRawInputStream(string resourcePath)
         {
-            return GetObject(getBucketName(), resourcePath);
+            return new BufferedStream(GetObject(getBucketName(), resourcePath));
         }
         public override Stream? GetRawOutputStream(string resourcePath)
         {
-            return PutObject(resourcePath);
+            return new BufferedStream(PutObject(resourcePath));
         }
         public override bool IsDirectory(string resourcePath)
         {
             throw new MethodNotSupportedException("cloudstorage can not use this function");
         }
-        internal abstract Stream PutObject(string resourcePath);
+        internal abstract UploadPartSupportStream PutObject(string resourcePath);
 
         internal abstract bool PutObject(string bucketName, DataCollectionDefine define, Stream stream, long size);
         internal abstract Stream GetObject(string bucketName, string objectName);

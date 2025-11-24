@@ -1,4 +1,5 @@
 ﻿using Frameset.Common.Compress;
+using Frameset.Common.Data;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
@@ -81,7 +82,7 @@ namespace Frameset.Common.FileSystem
         {
             this.define = define;
             string encodingStr;
-            define.ResourceConfig.TryGetValue("fs.encoding", out encodingStr);
+            define.ResourceConfig.TryGetValue(ResourceConstants.STRINGENCODING, out encodingStr);
             if (!encodingStr.IsNullOrEmpty())
             {
                 encoding = Encoding.GetEncoding(encodingStr);
@@ -90,6 +91,10 @@ namespace Frameset.Common.FileSystem
 
         public abstract bool IsDirectory(string resourcePath);
         public virtual void FinishOperator()
+        {
+
+        }
+        public virtual void FinishWrite(Stream outputStream, string path)
         {
 
         }

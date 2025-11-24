@@ -23,10 +23,10 @@ namespace Frameset.Common.Data.Writer
             string className;
             if (IsReturnDictionary())
             {
-                MetaDefine.ResourceConfig.TryGetValue("orc.dynamicClassName", out className);
+                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.DYNAMICORCCLASSNAME, out className);
                 if (className.IsNullOrEmpty())
                 {
-                    className = "DynamicObject" + DateTime.Now.Second;
+                    className = ResourceConstants.DYNAMICCLASSPREFIX + DateTime.Now.Second;
                 }
                 dynamicType = DynamicClassCreator.CreateDynamicClass(className, MetaDefine.ColumnList);
                 PropertyInfo[] infos = dynamicType.GetProperties();
@@ -56,6 +56,7 @@ namespace Frameset.Common.Data.Writer
         {
             if (orcWriter != null)
             {
+                Flush();
                 orcWriter.Dispose();
             }
         }

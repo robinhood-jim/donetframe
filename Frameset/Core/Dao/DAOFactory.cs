@@ -29,7 +29,13 @@ namespace Frameset.Core.Dao
                 IDeserializer deserializer = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
                 try
                 {
-                    StreamReader reader = File.OpenText(yamlPath);
+                    string baseDirectory = AppDomain.CurrentDomain.BaseDirectory;
+                    string processPath = yamlPath;
+                    if (yamlPath.StartsWith("res:"))
+                    {
+                        processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath.Substring(4, yamlPath.Length);
+                    }
+                    StreamReader reader = File.OpenText(processPath);
                     fact.keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
                     Dictionary<object, object> keyDict = (Dictionary<object, object>)fact.getKeyValues()["dataSource"];
                     int daoSize = keyDict.Keys.Count;

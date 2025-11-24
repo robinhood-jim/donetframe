@@ -12,7 +12,7 @@ namespace Frameset.Core.Common
             Configuration = new ConfigurationBuilder()
             .Add(new JsonConfigurationSource { Path = "appsettings.json", ReloadOnChange = true })
             //根据环境变量读取配置
-            .Add(new JsonConfigurationSource { Path = $"appsettings.{System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", ReloadOnChange = true })
+            //.Add(new JsonConfigurationSource { Path = $"appsettings.{System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", ReloadOnChange = true })
             .Build();
         }
         /// <summary> 
@@ -21,7 +21,7 @@ namespace Frameset.Core.Common
         /// <typeparam name="Entity">要绑定的类型</typeparam> 
         /// <param name="keyPath">配置文件路径</param> 
         /// <returns>绑定的类</returns> 
-        /*public static Entity GetSectionObject<Entity>(string keyPath = null) where Entity : new()
+        public static Entity GetSectionObject<Entity>(string keyPath = null) where Entity : new()
         {
             var entity = new Entity();
             if (string.IsNullOrEmpty(keyPath))
@@ -36,6 +36,6 @@ namespace Frameset.Core.Common
                 section.Bind(entity);
             }
             return entity;
-        }*/
+        }
     }
 }

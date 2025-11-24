@@ -54,7 +54,14 @@ namespace Frameset.Common.Data.Writer
             }
             if (outputStream != null)
             {
-                FileSystem.FinishWrite(outputStream);
+                if (FileSystem is HDFSFileSystem)
+                {
+                    FileSystem.FinishWrite(outputStream, MetaDefine.Path);
+                }
+                else
+                {
+                    FileSystem.FinishWrite(outputStream);
+                }
                 if (outputStream.CanWrite)
                 {
                     outputStream.Close();
@@ -91,15 +98,15 @@ namespace Frameset.Common.Data.Writer
         {
             string dateFormatStr;
             string timestampFormatStr;
-            MetaDefine.ResourceConfig.TryGetValue("output.dateFormat", out dateFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out dateFormatStr);
             if (dateFormatStr.IsNullOrEmpty())
             {
-                dateFormatStr = "yyyy-MM-dd";
+                dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
             }
-            MetaDefine.ResourceConfig.TryGetValue("output.timestampFormat", out timestampFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out timestampFormatStr);
             if (timestampFormatStr.IsNullOrEmpty())
             {
-                timestampFormatStr = "yyyy-MM-dd HH:mm:ss";
+                timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
             }
             dateFormatter = new DateTimeFormatter(dateFormatStr);
             timestampFormatter = new DateTimeFormatter(timestampFormatStr);

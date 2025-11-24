@@ -4,6 +4,7 @@ using Avro.Generic;
 using Frameset.Common.Data.Utils;
 using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Utils;
 
@@ -61,6 +62,8 @@ namespace Frameset.Common.Data.Writer
                 case CompressType.SNAPPY:
                     codec = Codec.CreateCodec(Codec.Type.Snappy);
                     break;
+                default:
+                    throw new OperationNotAllowedException("codec " + compressType + " not supported by avro!");
             }
 
             return codec;
@@ -69,6 +72,7 @@ namespace Frameset.Common.Data.Writer
         public override void FinishWrite()
         {
             fileWriter.Flush();
+            Flush();
             fileWriter.Close();
         }
 

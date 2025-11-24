@@ -22,7 +22,8 @@ namespace Frameset.Core.Reflect
                     {
                         GetMethod = prop.GetGetMethod(),
                         SetMethod = prop.GetSetMethod(),
-                        ParamType = prop.GetGetMethod().ReturnType
+                        ParamType = prop.GetGetMethod().ReturnType,
+                        PropertyInfo = prop
                     };
                     dict.TryAdd(name, param);
                 }
@@ -53,6 +54,10 @@ namespace Frameset.Core.Reflect
             get; internal set;
         }
         public Type ParamType
+        {
+            get; internal set;
+        }
+        public PropertyInfo PropertyInfo
         {
             get; internal set;
         }

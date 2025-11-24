@@ -102,7 +102,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             return false;
         }
 
-        internal override Stream PutObject(string resourcePath)
+        internal override UploadPartSupportStream PutObject(string resourcePath)
         {
             return new AmazonS3OutputStream(client, define, bucketName, resourcePath);
         }

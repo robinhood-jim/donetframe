@@ -99,7 +99,7 @@ namespace Frameset.Core.Dao
                         }
                         if (!Convert.IsDBNull(value) && content != null)
                         {
-                            content.SetMethold.Invoke(entity, new object[] { ConvertUtil.parseByType(content.GetMethold.ReturnType, value) });
+                            content.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethold.ReturnType, value) });
                         }
                     }
                     retList.Add(entity);
@@ -221,7 +221,7 @@ namespace Frameset.Core.Dao
 
                         if (methodMap.TryGetValue(mappingColumn, out param))
                         {
-                            param.SetMethod.Invoke(entity, new object[] { ConvertUtil.parseByType(param.ParamType, reader[col]) });
+                            param.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
                         }
                     }
                     if (ifRetMap)
@@ -248,7 +248,7 @@ namespace Frameset.Core.Dao
                 object genId = command.ExecuteScalar();
                 if (genId != null)
                 {
-                    segment.GenKeyMethod.Invoke(entity, new object[] { ConvertUtil.parseByType(segment.GenKeyMethod.GetParameters()[0].ParameterType, genId) });
+                    segment.GenKeyMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(segment.GenKeyMethod.GetParameters()[0].ParameterType, genId) });
                 }
             }
             else
@@ -322,7 +322,7 @@ namespace Frameset.Core.Dao
                         }
                         if (methodMap.TryGetValue(map.MappingColumns[name], out param))
                         {
-                            param.SetMethod.Invoke(ret, new object[] { ConvertUtil.parseByType(param.ParamType, reader[col]) });
+                            param.SetMethod.Invoke(ret, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
                         }
                     }
                     if (retMap)

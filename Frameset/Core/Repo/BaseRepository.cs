@@ -188,7 +188,7 @@ namespace Frameset.Core.Repo
                     }
                     if (!Convert.IsDBNull(value))
                     {
-                        content.SetMethold.Invoke(entity, new object[] { ConvertUtil.parseByType(content.GetMethold.ReturnType, value) });
+                        content.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethold.ReturnType, value) });
                     }
                 }
 
@@ -373,11 +373,11 @@ namespace Frameset.Core.Repo
                                 {
                                     if (!retMap)
                                     {
-                                        methodMap[generateKey].SetMethod.Invoke(input, new object[] { ConvertUtil.parseByType(methodMap[generateKey].ParamType, genId) });
+                                        methodMap[generateKey].SetMethod.Invoke(input, new object[] { ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId) });
                                     }
                                     else
                                     {
-                                        paramMap[generateKey] = ConvertUtil.parseByType(methodMap[generateKey].ParamType, genId);
+                                        paramMap[generateKey] = ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId);
                                     }
                                 }
                                 return 1;
@@ -466,59 +466,59 @@ namespace Frameset.Core.Repo
             }
         }
     }
-    public class Builder<V, P> where V : BaseEntity
+    public class RepositoryBuilder<V, P> where V : BaseEntity
     {
         private BaseRepository<V, P> repository;
-        public Builder()
+        public RepositoryBuilder()
         {
             repository = new BaseRepository<V, P>();
         }
-        public Builder<V, P> SaveFunction(Func<V, bool> insertFunction)
+        public RepositoryBuilder<V, P> SaveFunction(Func<V, bool> insertFunction)
         {
             repository.saveFunc = insertFunction;
             return this;
         }
-        public Builder<V, P> UpdateFunction(Func<V, bool> updateFunc)
+        public RepositoryBuilder<V, P> UpdateFunction(Func<V, bool> updateFunc)
         {
             repository.updateFunc = updateFunc;
             return this;
         }
-        public Builder<V, P> SaveBeforeAction(Action<V> action)
+        public RepositoryBuilder<V, P> SaveBeforeAction(Action<V> action)
         {
             repository.insertBeforeAction = action;
             return this;
         }
-        public Builder<V, P> UpdateBeforeAction(Action<V> action)
+        public RepositoryBuilder<V, P> UpdateBeforeAction(Action<V> action)
         {
             repository.updateBeforeAction = action;
             return this;
         }
-        public Builder<V, P> DeleteBeforeAction(Action<V> action)
+        public RepositoryBuilder<V, P> DeleteBeforeAction(Action<V> action)
         {
             repository.deleteBeforeAction = action;
             return this;
         }
-        public Builder<V, P> DeleteAfterAction(Action<DbCommand, V> action)
+        public RepositoryBuilder<V, P> DeleteAfterAction(Action<DbCommand, V> action)
         {
             repository.deleteAfterAction = action;
             return this;
         }
-        public Builder<V, P> SaveAfterAction(Func<DbCommand, V, bool> action)
+        public RepositoryBuilder<V, P> SaveAfterAction(Func<DbCommand, V, bool> action)
         {
             repository.insertAfterAction = action;
             return this;
         }
-        public Builder<V, P> UpdateAfterAction(Func<DbCommand, V, bool> action)
+        public RepositoryBuilder<V, P> UpdateAfterAction(Func<DbCommand, V, bool> action)
         {
             repository.updateAfterAction = action;
             return this;
         }
-        public Builder<V, P> TransctionManager(Func<DbConnection, DbTransaction> func)
+        public RepositoryBuilder<V, P> TransctionManager(Func<DbConnection, DbTransaction> func)
         {
             repository.transcationFunc = func;
             return this;
         }
-        public Builder<V, P> DeleteFunc(Func<IList<P>, int> func)
+        public RepositoryBuilder<V, P> DeleteFunc(Func<IList<P>, int> func)
         {
             repository.deleteFunc = func;
             return this;

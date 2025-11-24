@@ -32,6 +32,7 @@ namespace Frameset.Common.Data.Writer
             {
                 jsonWriter.WriteEndArray();
                 jsonWriter.Flush();
+                Flush();
                 jsonWriter.Close();
             }
         }

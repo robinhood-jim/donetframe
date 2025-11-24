@@ -10,10 +10,10 @@ namespace Frameset.Common.FileSystem
     {
 
         internal string ftpUri;
-        internal string userName = null;
+        internal string userName;
         internal string host = ResourceConstants.DEFAULTHOST;
-        internal string password = null;
-        int port = 21;
+        internal string password;
+        int port = ResourceConstants.FTPDEFAULTPORT;
         FtpClient client;
         public FtpFileSystem(DataCollectionDefine define) : base(define)
         {
@@ -27,7 +27,7 @@ namespace Frameset.Common.FileSystem
 
             if (define.ResourceConfig.Count > 0)
             {
-                string portStr = null;
+                string portStr;
                 string hostStr;
                 ;
                 if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPHOST, out hostStr))
@@ -120,7 +120,7 @@ namespace Frameset.Common.FileSystem
                 {
                     return null;
                 }
-                return client.OpenRead(resourcePath);
+                return new BufferedStream(client.OpenRead(resourcePath));
             }
             catch (Exception ex)
             {
@@ -140,7 +140,7 @@ namespace Frameset.Common.FileSystem
                 {
                     throw new OperationNotAllowedException("resource Exists!");
                 }
-                return client.OpenWrite(resourcePath);
+                return new BufferedStream(client.OpenWrite(resourcePath));
             }
             catch (Exception ex)
             {

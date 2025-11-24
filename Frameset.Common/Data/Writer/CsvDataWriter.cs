@@ -17,7 +17,7 @@ namespace Frameset.Common.Data.Writer
             useWriter = true;
             contents = new List<string>(define.ColumnList.Count);
             string separatorStr;
-            define.ResourceConfig.TryGetValue("csv.splitter", out separatorStr);
+            define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out separatorStr);
             if (!separatorStr.IsNullOrEmpty())
             {
                 sepearotr = separatorStr[0];
@@ -31,7 +31,7 @@ namespace Frameset.Common.Data.Writer
             useWriter = true;
             contents = new List<string>(methodMap.Count);
             string separatorStr;
-            MetaDefine.ResourceConfig.TryGetValue("csv.splitter", out separatorStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out separatorStr);
             if (!separatorStr.IsNullOrEmpty())
             {
                 sepearotr = separatorStr[0];

@@ -11,6 +11,7 @@ namespace Frameset.Common.FileSystem
     {
         private HdfsClient client;
 
+
         public HDFSFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.HDFS;
@@ -52,19 +53,28 @@ namespace Frameset.Common.FileSystem
 
         public override Stream? GetOutputStream(string resourcePath)
         {
-            return GetOutputStremWithCompress(resourcePath, new MemoryStream());
+            Stream outputStream = new MemoryStream();
+            return GetOutputStremWithCompress(resourcePath, outputStream);
         }
-        public bool FlushOut(Stream outputStream, string resourcePath)
+        public override void FinishWrite(Stream outputStream, string path)
+        {
+            if (outputStream != null)
+            {
+                FlushOut(outputStream, path);
+            }
+
+        }
+        internal bool FlushOut(Stream outputStream, string resourcePath)
         {
             return client.WriteStream(outputStream, resourcePath).Result;
         }
         public override Stream? GetRawInputStream(string resourcePath)
         {
-            MemoryStream stream = new MemoryStream();
-            bool okTag = client.ReadStream(stream, resourcePath).Result;
+            Stream outputStream = new MemoryStream();
+            bool okTag = client.ReadStream(outputStream, resourcePath).Result;
             if (okTag)
             {
-                return stream;
+                return outputStream;
             }
             else
             {
@@ -80,7 +90,15 @@ namespace Frameset.Common.FileSystem
 
         public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
         {
-            throw new NotImplementedException();
+            Stream? input = GetInputStream(resourcePath);
+            if (input != null)
+            {
+                return Tuple.Create(input, new StreamReader(input));
+            }
+            else
+            {
+                return null;
+            }
         }
 
         public override long GetStreamSize(string resourcePath)

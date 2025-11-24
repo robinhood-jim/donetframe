@@ -50,7 +50,7 @@ namespace Frameset.Common.Data.Reader
         {
             MetaDefine = define;
             string reuseCurrentStr;
-            MetaDefine.ResourceConfig.TryGetValue("fs.reUseCurrent", out reuseCurrentStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
@@ -86,7 +86,7 @@ namespace Frameset.Common.Data.Reader
             MetaDefine = define;
             FileSystem = fileSystem;
             string reuseCurrentStr;
-            MetaDefine.ResourceConfig.TryGetValue("fs.reUseCurrent", out reuseCurrentStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
@@ -107,16 +107,7 @@ namespace Frameset.Common.Data.Reader
         {
             if (FileSystem == null)
             {
-                switch (MetaDefine.FsType)
-                {
-                    case Constants.FileSystemType.LOCAL:
-                        FileSystem = LocalFileSystem.GetInstance();
-                        break;
-                    case Constants.FileSystemType.FTP:
-                        FileSystem = new FtpFileSystem(MetaDefine);
-                        break;
-
-                }
+                FileSystem = FileSystemFactory.GetFileSystem(MetaDefine);
             }
         }
         public virtual void initalize(string filePath = null)
@@ -126,22 +117,18 @@ namespace Frameset.Common.Data.Reader
             Trace.Assert(!processPath.IsNullOrEmpty(), "path must not be null");
             string dateFormatStr;
             string timestampFormatStr;
-            MetaDefine.ResourceConfig.TryGetValue("output.dateFormat", out dateFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTDATEFORMATTER, out dateFormatStr);
             if (dateFormatStr.IsNullOrEmpty())
             {
-                dateFormatStr = "yyyy-MM-dd";
+                dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
             }
-            MetaDefine.ResourceConfig.TryGetValue("output.timestampFormat", out timestampFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTTIMESTAMPFORMATTER, out timestampFormatStr);
             if (timestampFormatStr.IsNullOrEmpty())
             {
-                timestampFormatStr = "yyyy-MM-dd HH:mm:ss";
+                timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
             }
             dateFormatter = new DateTimeFormatter(dateFormatStr);
             timestampFormatter = new DateTimeFormatter(timestampFormatStr);
-            if (FileSystem == null)
-            {
-                FileSystem = FileSystemFactory.GetFileSystem(MetaDefine);
-            }
             if (useReader)
             {
 
@@ -213,14 +200,13 @@ namespace Frameset.Common.Data.Reader
                     MethodParam param = null;
                     if (methodMap.TryGetValue(item.Key, out param))
                     {
-                        param.SetMethod.Invoke(current, new object[] { ConvertUtil.parseByType(param.GetMethod.ReturnType, item.Value) });
+                        param.SetMethod.Invoke(current, new object[] { ConvertUtil.ParseByType(param.GetMethod.ReturnType, item.Value) });
                     }
                 }
             }
         }
         public abstract IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null);
 
-        //internal abstract bool GoNext();
 
         internal bool filterRecord()
         {
