@@ -10,8 +10,8 @@ Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution items", "Solution 
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset", "Frameset\Frameset.csproj", "{51605B5D-4FE2-410E-8FD3-77314D04D3EC}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frametest", "Frametest\Frametest.csproj", "{14CAA93C-D660-4928-B806-6349212B5CA8}"
-EndProject
+#Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frametest", "Frametest\Frametest.csproj", "{14CAA93C-D660-4928-B806-6349212B5CA8}"
+#EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Common", "Frameset.Common\Frameset.Common.csproj", "{D484DCC9-065F-4EE0-A543-FF31E4BFD0F0}"
 EndProject
 Global
