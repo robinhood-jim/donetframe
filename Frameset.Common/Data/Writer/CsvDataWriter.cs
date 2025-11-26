@@ -10,19 +10,18 @@ namespace Frameset.Common.Data.Writer
     public class CsvDataWriter<T> : AbstractDataWriter<T>
     {
         private List<string> contents;
-        private char sepearotr = ',';
+        private char sepearotr = ResourceConstants.CSVDEFAULTSPILTTER[0];
         public CsvDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useWriter = true;
             contents = new List<string>(define.ColumnList.Count);
-            string separatorStr;
-            define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out separatorStr);
+            define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string separatorStr);
             if (!separatorStr.IsNullOrEmpty())
             {
                 sepearotr = separatorStr[0];
             }
-            initalize();
+            Initalize();
         }
 
         public CsvDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
@@ -36,7 +35,7 @@ namespace Frameset.Common.Data.Writer
             {
                 sepearotr = separatorStr[0];
             }
-            initalize();
+            Initalize();
         }
 
         public override void FinishWrite()

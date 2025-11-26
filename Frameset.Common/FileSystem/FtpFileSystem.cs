@@ -69,7 +69,7 @@ namespace Frameset.Common.FileSystem
             }
         }
 
-        public override Stream? GetInputStream(string resourcePath)
+        public override Stream GetInputStream(string resourcePath)
         {
             BeginOperator();
             try
@@ -89,7 +89,7 @@ namespace Frameset.Common.FileSystem
 
         }
 
-        public override Stream? GetOutputStream(string resourcePath)
+        public override Stream GetOutputStream(string resourcePath)
         {
             BeginOperator();
             try
@@ -110,7 +110,7 @@ namespace Frameset.Common.FileSystem
 
         }
 
-        public override Stream? GetRawInputStream(string resourcePath)
+        public override Stream GetRawInputStream(string resourcePath)
         {
             BeginOperator();
             try
@@ -212,7 +212,7 @@ namespace Frameset.Common.FileSystem
         }
 
 
-        public override void Dispose()
+        public override void Dispose(bool disposeable)
         {
             if (client != null)
             {
@@ -222,7 +222,7 @@ namespace Frameset.Common.FileSystem
                 }
                 client.Dispose();
             }
-
+            GC.SuppressFinalize(this);
         }
         public override void FinishWrite(Stream outputStream)
         {

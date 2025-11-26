@@ -22,7 +22,7 @@ namespace Frameset.Common.FileSystem
         }
 
 
-        public override void Dispose()
+        public override void Dispose(bool disposable)
         {
             if (client != null)
             {
@@ -37,7 +37,7 @@ namespace Frameset.Common.FileSystem
         }
 
 
-        public override Stream? GetInputStream(string resourcePath)
+        public override Stream GetInputStream(string resourcePath)
         {
             Stream stream = new MemoryStream();
             bool oktag = client.ReadStream(stream, resourcePath).Result;
@@ -51,7 +51,7 @@ namespace Frameset.Common.FileSystem
             }
         }
 
-        public override Stream? GetOutputStream(string resourcePath)
+        public override Stream GetOutputStream(string resourcePath)
         {
             Stream outputStream = new MemoryStream();
             return GetOutputStremWithCompress(resourcePath, outputStream);
@@ -68,7 +68,7 @@ namespace Frameset.Common.FileSystem
         {
             return client.WriteStream(outputStream, resourcePath).Result;
         }
-        public override Stream? GetRawInputStream(string resourcePath)
+        public override Stream GetRawInputStream(string resourcePath)
         {
             Stream outputStream = new MemoryStream();
             bool okTag = client.ReadStream(outputStream, resourcePath).Result;
@@ -83,7 +83,7 @@ namespace Frameset.Common.FileSystem
 
         }
 
-        public override Stream? GetRawOutputStream(string resourcePath)
+        public override Stream GetRawOutputStream(string resourcePath)
         {
             return new MemoryStream();
         }

@@ -41,15 +41,15 @@ namespace Frameset.Core.Repo
         internal IJdbcDao dao;
         private Type entityType;
         private Type pkType;
-        private IList<FieldContent> fields;
+        private IList<FieldContent> fieldContents;
 
         internal BaseRepository()
         {
             Type[] genericType = GetType().GetGenericArguments();
             AssertUtils.IsTrue(genericType[0].IsSubclassOf(typeof(BaseEntity)));
             content = EntityReflectUtils.GetEntityInfo(genericType[0]);
-            fields = EntityReflectUtils.GetFieldsContent(genericType[0]);
-            pkColumn = fields.Where(x => x.IfPrimary).ToList()[0];
+            fieldContents = EntityReflectUtils.GetFieldsContent(genericType[0]);
+            pkColumn = fieldContents.Where(x => x.IfPrimary).ToList()[0];
             entityType = genericType[0];
             pkType = genericType[1];
             if (content.DsName != null)
@@ -175,20 +175,20 @@ namespace Frameset.Core.Repo
                 }
 
                 Dictionary<string, object> map = list[0];
-                foreach (FieldContent content in fields)
+                foreach (FieldContent fieldContent in fieldContents)
                 {
-                    object value = map[content.PropertyName];
-                    if (Convert.IsDBNull(value) && map.ContainsKey(content.PropertyName.ToLower()))
+                    object value = map[fieldContent.PropertyName];
+                    if (Convert.IsDBNull(value) && map.ContainsKey(fieldContent.PropertyName.ToLower()))
                     {
-                        value = map[content.PropertyName.ToLower()];
+                        value = map[fieldContent.PropertyName.ToLower()];
                     }
-                    if (Convert.IsDBNull(value) && map.ContainsKey(content.PropertyName.ToUpper()))
+                    if (Convert.IsDBNull(value) && map.ContainsKey(fieldContent.PropertyName.ToUpper()))
                     {
-                        value = map[content.PropertyName.ToUpper()];
+                        value = map[fieldContent.PropertyName.ToUpper()];
                     }
                     if (!Convert.IsDBNull(value))
                     {
-                        content.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethold.ReturnType, value) });
+                        fieldContent.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.GetMethold.ReturnType, value) });
                     }
                 }
 
@@ -198,13 +198,13 @@ namespace Frameset.Core.Repo
         }
         public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
-            IJdbcDao dao = DAOFactory.getInstance().getJdbcDao(dsName);
-            using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
+            IJdbcDao queryDao = DAOFactory.getInstance().getJdbcDao(dsName);
+            using (DbConnection connection = queryDao.GetDialect().GetDbConnection(queryDao.GetConnectString()))
             {
                 connection.Open();
-                using (DbCommand command = dao.GetDialect().GetDbCommand(connection, sql))
+                using (DbCommand command = queryDao.GetDialect().GetDbCommand(connection, sql))
                 {
-                    return dao.QueryBySql(command, values);
+                    return queryDao.QueryBySql(command, values);
                 }
             }
         }
@@ -212,11 +212,10 @@ namespace Frameset.Core.Repo
         {
             string propName = info.Name;
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
-            FieldContent content = null;
-            if (fieldMap.TryGetValue(propName, out content))
+            if (fieldMap.TryGetValue(propName, out FieldContent fieldContent))
             {
                 StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
-                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, content, builder, 0, oper, values);
+                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, oper, values);
                 if (!orderByStr.IsNullOrEmpty())
                 {
                     builder.Append(" order by ").Append(orderByStr);
@@ -243,18 +242,18 @@ namespace Frameset.Core.Repo
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             if (!fields.IsNullOrEmpty())
             {
-                FieldContent content = fields.Where(x => string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).First();
-                if (content == null)
+                FieldContent fielContent = fields.First(x => string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
+                if (fielContent == null)
                 {
-                    content = fields.Where(x => string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase)).First();
+                    fielContent = fields.First(x => string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase));
                 }
-                if (content == null)
+                if (fielContent == null)
                 {
                     throw new BaseSqlException("propertyName " + propertyName + " not found in Model");
                 }
                 StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
 
-                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, content, builder, 0, oper, values);
+                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, oper, values);
                 if (!orderByStr.IsNullOrEmpty())
                 {
                     builder.Append(" order by ").Append(orderByStr);
@@ -412,9 +411,7 @@ namespace Frameset.Core.Repo
         }
         public int InsertBatch(IList<V> models)
         {
-            DataTable dataTable = new DataTable();
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
-            InsertSegment segment = SqlUtils.GetInsertSegment(dao, models[0]);
 
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
@@ -468,7 +465,7 @@ namespace Frameset.Core.Repo
     }
     public class RepositoryBuilder<V, P> where V : BaseEntity
     {
-        private BaseRepository<V, P> repository;
+        private readonly BaseRepository<V, P> repository;
         public RepositoryBuilder()
         {
             repository = new BaseRepository<V, P>();

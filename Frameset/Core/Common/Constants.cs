@@ -81,7 +81,7 @@ namespace Frameset.Core.Common
             PARQUET,
             PROTOBUF
         }
-        public static List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
+        public static readonly List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
         public static DbType DbTypeOf(string dbType)
         {
             DbType retType = DbType.Unknow;
@@ -135,7 +135,7 @@ namespace Frameset.Core.Common
             }
             return resType;
         }
-        public static string VALID = "1";
-        public static string INVALID = "0";
+        public static readonly string VALID = "1";
+        public static readonly string INVALID = "0";
     }
 }

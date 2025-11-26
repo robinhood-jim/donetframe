@@ -31,7 +31,7 @@ namespace Frameset.Common.Data.Writer
         internal Dictionary<string, object> cachedValue
         {
             get; set;
-        } = new Dictionary<string, object>();
+        } = [];
         internal Stream outputStream;
         internal StreamWriter writer;
         internal bool useWriter = false;
@@ -43,6 +43,15 @@ namespace Frameset.Common.Data.Writer
         internal DateTimeFormatter timestampFormatter;
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposable)
+        {
+            if (!disposable)
+            {
+                return;
+            }
             FinishWrite();
             if (writer != null)
             {
@@ -68,7 +77,7 @@ namespace Frameset.Common.Data.Writer
                 }
             }
         }
-        internal AbstractDataWriter(DataCollectionDefine define, IFileSystem fileSystem)
+        protected AbstractDataWriter(DataCollectionDefine define, IFileSystem fileSystem)
         {
             this.MetaDefine = define;
             this.FileSystem = fileSystem;
@@ -83,7 +92,7 @@ namespace Frameset.Common.Data.Writer
             }
             ConstructDateFormatter();
         }
-        internal AbstractDataWriter(IFileSystem fileSystem, string processPath)
+        protected AbstractDataWriter(IFileSystem fileSystem, string processPath)
         {
             useDictOutput = false;
             Trace.Assert(fileSystem != null && !typeof(T).Equals(typeof(Dictionary<string, object>)));
@@ -96,14 +105,12 @@ namespace Frameset.Common.Data.Writer
 
         private void ConstructDateFormatter()
         {
-            string dateFormatStr;
-            string timestampFormatStr;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out dateFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out string dateFormatStr);
             if (dateFormatStr.IsNullOrEmpty())
             {
                 dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
             }
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out timestampFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out string timestampFormatStr);
             if (timestampFormatStr.IsNullOrEmpty())
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
@@ -112,7 +119,7 @@ namespace Frameset.Common.Data.Writer
             timestampFormatter = new DateTimeFormatter(timestampFormatStr);
         }
 
-        internal virtual void initalize()
+        internal virtual void Initalize()
         {
             Trace.Assert(!MetaDefine.Path.IsNullOrEmpty());
             if (outputStream == null)
@@ -145,8 +152,7 @@ namespace Frameset.Common.Data.Writer
             }
             else
             {
-                MethodParam param = null;
-                methodMap.TryGetValue(column.ColumnCode, out param);
+                methodMap.TryGetValue(column.ColumnCode, out MethodParam param);
                 if (param != null)
                 {
                     retValue = param.GetMethod.Invoke(input, null);
@@ -218,10 +224,7 @@ namespace Frameset.Common.Data.Writer
         public abstract void WriteRecord(T value);
         public virtual void Flush()
         {
-            if (writer != null)
-            {
-                writer.Flush();
-            }
+            writer?.Flush();
             outputStream.Flush();
         }
         public bool IsReturnDictionary()

@@ -15,10 +15,7 @@ namespace Frameset.Common.FileSystem
             return fileSystem;
         }
 
-        public override void Dispose()
-        {
 
-        }
 
         public override bool Exist(string resourcePath)
         {
@@ -26,15 +23,15 @@ namespace Frameset.Common.FileSystem
         }
 
 
-        public override Stream? GetInputStream(string resourcePath)
+        public override Stream GetInputStream(string resourcePath)
         {
             if (!File.Exists(resourcePath))
             {
-                return null;
+                throw new FileNotFoundException("resourcePath" + resourcePath + "not found!");
             }
             return GetInputStreamWithCompress(resourcePath, new BufferedStream(new FileStream(resourcePath, FileMode.Open)));
         }
-        public override Stream? GetOutputStream(string resourcePath)
+        public override Stream GetOutputStream(string resourcePath)
         {
             if (!File.Exists(resourcePath))
             {
@@ -42,16 +39,16 @@ namespace Frameset.Common.FileSystem
             }
             return GetOutputStremWithCompress(resourcePath, new FileStream(resourcePath, FileMode.Create));
         }
-        public override Stream? GetRawInputStream(string resourcePath)
+        public override Stream GetRawInputStream(string resourcePath)
         {
             if (!File.Exists(resourcePath))
             {
-                return null;
+                throw new FileNotFoundException("resourcePath" + resourcePath + "not found!");
             }
             return new BufferedStream(new FileStream(resourcePath, FileMode.Open));
         }
 
-        public override Stream? GetRawOutputStream(string resourcePath)
+        public override Stream GetRawOutputStream(string resourcePath)
         {
             if (!File.Exists(resourcePath))
             {

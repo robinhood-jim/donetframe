@@ -21,7 +21,7 @@ namespace Frameset.Core.Dao
 {
     public class JdbcDao : IJdbcDao
     {
-        private string connectionStr;
+        private readonly string connectionStr;
         private string dbTypeStr = "Mysql";
         private AbstractSqlDialect dataMeta;
         private Constants.DbType dbType;
@@ -131,7 +131,7 @@ namespace Frameset.Core.Dao
         }
         DbParameter[] parseParameter(DbCommand command, object[] obj)
         {
-            if (obj != null && obj.Count() > 0)
+            if (obj != null && obj.Length > 0)
             {
                 DbParameter[] paramters = new DbParameter[obj.Length];
                 for (int i = 0; i < obj.Length; i++)
@@ -353,7 +353,7 @@ namespace Frameset.Core.Dao
                 using (DbCommand command = dataMeta.GetDbCommand(connection, sql))
                 {
                     DbParameter[] parameters = parseParameter(command, obj);
-                    if (parameters != null && parameters.Count() > 0)
+                    if (parameters != null && parameters.Length > 0)
                     {
                         command.Parameters.AddRange(parameters);
                     }

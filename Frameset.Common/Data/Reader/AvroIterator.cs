@@ -17,26 +17,26 @@ namespace Frameset.Common.Data.Reader
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public AvroIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public AvroIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
-            initalize(processPath);
+            Initalize(processPath);
         }
 
-        public override void initalize(string path = null)
+        public override void Initalize(string path = null)
         {
-            base.initalize(path);
+            base.Initalize(path);
             fileReader = DataFileReader<GenericRecord>.OpenReader(inputStream);
             schema = (RecordSchema)fileReader.GetSchema();
         }
@@ -64,7 +64,7 @@ namespace Frameset.Common.Data.Reader
 
         public override async IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
         {
-            initalize(path);
+            Initalize(path);
             base.MoveNext();
             cachedValue.Clear();
             while (fileReader.HasNext())

@@ -14,7 +14,7 @@ namespace Frameset.Common.Data.Writer
         public XmlDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.XML;
-            initalize();
+            Initalize();
             if (IsReturnDictionary())
             {
                 MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLCOLLECTIONNAME, out collectionNodeName);
@@ -41,7 +41,7 @@ namespace Frameset.Common.Data.Writer
         public XmlDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.XML;
-            initalize();
+            Initalize();
             collectionNodeName = typeof(T).Name + "s";
             entityName = typeof(T).Name;
             xmlwriter = XmlWriter.Create(outputStream);

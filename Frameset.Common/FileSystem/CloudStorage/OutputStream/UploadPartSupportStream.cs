@@ -30,6 +30,12 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         internal int partSize = 20 * 1024 * 1024;
         internal bool finish = false;
         internal bool writeTag = true;
+        protected UploadPartSupportStream(DataCollectionDefine define, string bucketName, string key)
+        {
+            this.define = define;
+            this.bucketName = bucketName;
+            this.key = key;
+        }
         internal void doInit()
         {
             string configPartSizeStr;

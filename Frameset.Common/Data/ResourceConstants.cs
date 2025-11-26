@@ -3,6 +3,7 @@
     public static class ResourceConstants
     {
         public static readonly string CSVSPLITTER = "csv.splitter";
+        public static readonly string CSVDEFAULTSPILTTER = ",";
         //Ftp Configuration
         public static readonly string DEFAULTHOST = "localhost";
         public static readonly string FTPHOST = "ftp.host";
@@ -40,5 +41,9 @@
         public static readonly string XMLENTITYIONNAME = "xml.entityName";
         public static readonly string XMLDEFUALTCOLLECTIONAME = "Records";
         public static readonly string XMLDEFAULTENTITYNAME = "Record";
+        //kafka
+        public static readonly string KAFKABROKERURL = "kafka.brokerUrl";
+        public static readonly string CONSUMERGROUPID = "kafka.consumerGroupId";
+
     }
 }

@@ -10,12 +10,10 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
     public class AmazonS3OutputStream : UploadPartSupportStream
     {
         private AmazonS3Client client;
-        public AmazonS3OutputStream(AmazonS3Client client, DataCollectionDefine define, string bucketName, string key)
+        public AmazonS3OutputStream(AmazonS3Client client, DataCollectionDefine define, string bucketName, string key) : base(define, bucketName, key)
         {
             this.client = client;
-            this.bucketName = bucketName;
-            this.key = key;
-            this.define = define;
+
             doInit();
         }
 
@@ -81,7 +79,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             request.PartNumber = partNum;
             request.PartSize = size;
             request.InputStream = stream;
-            UploadPartResponse response =await client.UploadPartAsync(request);
+            UploadPartResponse response = await client.UploadPartAsync(request);
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 etagMap.TryAdd(partNum, response.ETag);

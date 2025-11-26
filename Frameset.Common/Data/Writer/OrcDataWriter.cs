@@ -19,11 +19,10 @@ namespace Frameset.Common.Data.Writer
         public OrcDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.ORC;
-            initalize();
-            string className;
+            Initalize();
             if (IsReturnDictionary())
             {
-                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.DYNAMICORCCLASSNAME, out className);
+                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.DYNAMICORCCLASSNAME, out string className);
                 if (className.IsNullOrEmpty())
                 {
                     className = ResourceConstants.DYNAMICCLASSPREFIX + DateTime.Now.Second;
@@ -47,7 +46,7 @@ namespace Frameset.Common.Data.Writer
         {
             Trace.Assert(!IsReturnDictionary());
             Identifier = Constants.FileFormatType.ORC;
-            initalize();
+            Initalize();
             dynamicType = typeof(T);
             orcWriter = new OrcWriter(dynamicType, outputStream, new WriterConfiguration());
         }

@@ -14,6 +14,10 @@ namespace Frameset.Office.Excel.Util
     public class MapSpiltter : IEnumerable<Dictionary<string, object>>
     {
         private MapEnumerator enumerator;
+        public MapSpiltter(WorkBook workBook, Stream stream, ExcelSheetProp sheetProp, bool reuseCurrent)
+        {
+            enumerator = new MapEnumerator(workBook, stream, sheetProp, reuseCurrent);
+        }
 
         public IEnumerator<Dictionary<string, object>> GetEnumerator()
         {
@@ -100,7 +104,7 @@ namespace Frameset.Office.Excel.Util
                     {
                         if (cells[i] != null && cells[i].GetValue() != null)
                         {
-                            param.SetMethod.Invoke(Current, new object[] { ConvertUtil.parseByType(param.GetMethod.ReturnType, cells[i].GetValue()) });
+                            param.SetMethod.Invoke(Current, new object[] { ConvertUtil.ParseByType(param.GetMethod.ReturnType, cells[i].GetValue()) });
                         }
                         else
                         {

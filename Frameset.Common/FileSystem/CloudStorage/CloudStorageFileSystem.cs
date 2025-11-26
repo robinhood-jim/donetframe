@@ -17,28 +17,30 @@ namespace Frameset.Common.FileSystem.CloudStorage
         public CloudStorageFileSystem(DataCollectionDefine define) : base(define)
         {
             bucketName = getBucketName();
+            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSACCESSKEY, out accessKey);
+            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSSECRETKEY, out secretKey);
+            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSENDPOINT, out endpoint);
         }
         internal string getBucketName()
         {
-            string readBucket;
-            define.ResourceConfig.TryGetValue(StorageConstants.BUCKET_NAME, out readBucket);
+            define.ResourceConfig.TryGetValue(StorageConstants.BUCKET_NAME, out string readBucket);
             return bucketName.IsNullOrEmpty() ? readBucket : bucketName;
         }
-        public override Stream? GetInputStream(string resourcePath)
+        public override Stream GetInputStream(string resourcePath)
         {
             Stream inputStream = GetObject(getBucketName(), resourcePath);
             return GetInputStreamWithCompress(resourcePath, inputStream);
         }
-        public override Stream? GetOutputStream(string resourcePath)
+        public override Stream GetOutputStream(string resourcePath)
         {
             Stream outputStream = PutObject(resourcePath);
             return GetOutputStremWithCompress(resourcePath, outputStream);
         }
-        public override Stream? GetRawInputStream(string resourcePath)
+        public override Stream GetRawInputStream(string resourcePath)
         {
             return new BufferedStream(GetObject(getBucketName(), resourcePath));
         }
-        public override Stream? GetRawOutputStream(string resourcePath)
+        public override Stream GetRawOutputStream(string resourcePath)
         {
             return new BufferedStream(PutObject(resourcePath));
         }

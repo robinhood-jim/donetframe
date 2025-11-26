@@ -3,6 +3,7 @@ using Frameset.Common.Data;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Text;
@@ -19,17 +20,17 @@ namespace Frameset.Common.FileSystem
         internal bool busyTag = false;
         internal long count = 1;
         internal Encoding encoding = Encoding.UTF8;
-        internal AbstractFileSystem(DataCollectionDefine define)
+        protected AbstractFileSystem(DataCollectionDefine define)
         {
             this.define = define;
 
         }
 
-        internal Stream GetInputStreamWithCompress(string path, Stream inputStream)
+        internal static Stream GetInputStreamWithCompress(string path, Stream inputStream)
         {
             return StreamDecoder.GetInputByCompressType(path, inputStream);
         }
-        internal Stream GetOutputStremWithCompress(string path, Stream inputStrem)
+        internal static Stream GetOutputStremWithCompress(string path, Stream inputStrem)
         {
             return StreamEncoder.GetOutputByCompressType(path, inputStrem);
         }
@@ -38,19 +39,29 @@ namespace Frameset.Common.FileSystem
             return new StreamReader(GetInputStreamWithCompress(path, inputStream), encoding);
         }
 
-        public abstract void Dispose();
+        public void Dispose()
+        {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        public virtual void Dispose(bool disposable)
+        {
+            if (!disposable)
+            {
+                return;
+            }
+        }
         public abstract bool Exist(string resourcePath);
-        //public abstract void FinishWrite(Stream outStream);
 
         public Constants.FileSystemType GetIndentifier()
         {
             return identifier;
         }
 
-        public abstract Stream? GetInputStream(string resourcePath);
-        public abstract Stream? GetOutputStream(string resourcePath);
-        public abstract Stream? GetRawInputStream(string resourcePath);
-        public abstract Stream? GetRawOutputStream(string resourcePath);
+        public abstract Stream GetInputStream(string resourcePath);
+        public abstract Stream GetOutputStream(string resourcePath);
+        public abstract Stream GetRawInputStream(string resourcePath);
+        public abstract Stream GetRawOutputStream(string resourcePath);
         public virtual Tuple<Stream, StreamReader>? GetReader(string resourcePath)
         {
             Trace.Assert(!resourcePath.IsNullOrEmpty(), "path must not be null");
@@ -82,10 +93,17 @@ namespace Frameset.Common.FileSystem
         {
             this.define = define;
             string encodingStr;
-            define.ResourceConfig.TryGetValue(ResourceConstants.STRINGENCODING, out encodingStr);
-            if (!encodingStr.IsNullOrEmpty())
+            if (define.Encode.IsNullOrEmpty())
             {
-                encoding = Encoding.GetEncoding(encodingStr);
+                define.ResourceConfig.TryGetValue(ResourceConstants.STRINGENCODING, out encodingStr);
+                if (!encodingStr.IsNullOrEmpty())
+                {
+                    encoding = Encoding.GetEncoding(encodingStr);
+                }
+            }
+            else
+            {
+                encoding = Encoding.GetEncoding(define.Encode);
             }
         }
 
@@ -111,6 +129,11 @@ namespace Frameset.Common.FileSystem
             }
             Interlocked.Decrement(ref count);
 
+        }
+        protected string GetContentType(DataCollectionDefine meta)
+        {
+            FileMeta fileMeta = FileUtil.Parse(meta.Path);
+            return fileMeta?.ContentType;
         }
     }
 }

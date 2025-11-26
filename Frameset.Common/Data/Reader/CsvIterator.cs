@@ -12,33 +12,33 @@ namespace Frameset.Common.Data.Reader
         public string Splitter
         {
             get; set;
-        } = ",";
+        } = ResourceConstants.CSVDEFAULTSPILTTER;
         internal long pos;
 
         public CsvIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public CsvIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public CsvIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
-            initalize(processPath);
+            Initalize(processPath);
         }
 
-        public override void initalize(string filePath = null)
+        public override void Initalize(string filePath = null)
         {
-            base.initalize(filePath);
+            base.Initalize(filePath);
             string splitterStr;
             MetaDefine.ResourceConfig.TryGetValue("csv.splitter", out splitterStr);
             if (!splitterStr.IsNullOrEmpty())
@@ -62,11 +62,6 @@ namespace Frameset.Common.Data.Reader
                 ConstructReturn();
             }
             return hasNext;
-        }
-
-        public override void Dispose()
-        {
-
         }
         private bool doProcess(string readStr)
         {
@@ -107,7 +102,7 @@ namespace Frameset.Common.Data.Reader
             {
 
             }
-            initalize(path);
+            Initalize(path);
             while ((line = await reader.ReadLineAsync()) != null)
             {
                 if (doProcess(line))

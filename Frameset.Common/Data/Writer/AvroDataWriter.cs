@@ -4,7 +4,6 @@ using Avro.Generic;
 using Frameset.Common.Data.Utils;
 using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
-using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Utils;
 
@@ -20,53 +19,38 @@ namespace Frameset.Common.Data.Writer
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawOutputStream = true;
-            initalize();
+            Initalize();
         }
 
         public AvroDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawOutputStream = true;
-            initalize();
+            Initalize();
         }
 
-        internal override void initalize()
+        internal override void Initalize()
         {
-            base.initalize();
+            base.Initalize();
             schema = AvroUtils.GetSchema(MetaDefine);
             datumWriter = new GenericDatumWriter<GenericRecord>(schema);
-            Codec codec = Codec.CreateCodec(Codec.Type.Null);
             CompressType compressType = GetCompressType();
-            codec = GetCodec(codec, compressType);
-
+            Codec codec = GetCodec(compressType);
             fileWriter = (DataFileWriter<GenericRecord>)DataFileWriter<GenericRecord>.OpenWriter(datumWriter, outputStream, codec);
 
         }
 
-        private static Codec GetCodec(Codec codec, CompressType compressType)
+        private static Codec GetCodec(CompressType compressType)
         {
-            switch (compressType)
+            return compressType switch
             {
-                case CompressType.BZ2:
-                    codec = Codec.CreateCodec(Codec.Type.BZip2);
-                    break;
-                case CompressType.ZIP:
-                    codec = Codec.CreateCodec(Codec.Type.Deflate);
-                    break;
-                case CompressType.XZ:
-                    codec = Codec.CreateCodec(Codec.Type.XZ);
-                    break;
-                case CompressType.ZSTD:
-                    codec = Codec.CreateCodec(Codec.Type.Zstandard);
-                    break;
-                case CompressType.SNAPPY:
-                    codec = Codec.CreateCodec(Codec.Type.Snappy);
-                    break;
-                default:
-                    throw new OperationNotAllowedException("codec " + compressType + " not supported by avro!");
-            }
-
-            return codec;
+                CompressType.BZ2 => Codec.CreateCodec(Codec.Type.BZip2),
+                CompressType.ZIP => Codec.CreateCodec(Codec.Type.Deflate),
+                CompressType.XZ => Codec.CreateCodec(Codec.Type.XZ),
+                CompressType.ZSTD => Codec.CreateCodec(Codec.Type.Zstandard),
+                CompressType.SNAPPY => Codec.CreateCodec(Codec.Type.Snappy),
+                _ => Codec.CreateCodec(Codec.Type.Null)
+            };
         }
 
         public override void FinishWrite()
@@ -78,7 +62,7 @@ namespace Frameset.Common.Data.Writer
 
         public override void WriteRecord(T value)
         {
-            GenericRecord record = new GenericRecord(schema);
+            GenericRecord record = new(schema);
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 object retVal = GetValue(value, MetaDefine.ColumnList[i]);

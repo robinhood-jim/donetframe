@@ -1,0 +1,55 @@
+﻿using COSXML;
+using COSXML.Model.Object;
+using Frameset.Core.FileSystem;
+using Serilog;
+
+namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
+{
+    public class CosOutputStream : UploadPartSupportStream
+    {
+        private CosXmlServer server;
+        public CosOutputStream(CosXmlServer server, DataCollectionDefine define, string bucketName, string key) : base(define, bucketName, key)
+        {
+            this.server = server;
+        }
+
+        internal override string completeMultiUpload()
+        {
+            CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest(bucketName, key, UploadId);
+            for (int i = 0; i < partNum; i++)
+            {
+                request.SetPartNumberAndETag(i + 1, etagMap[i]);
+            }
+            CompleteMultipartUploadResult result = server.CompleteMultiUpload(request);
+            return result?.httpCode == 200 ? result.completeResult.eTag : null;
+        }
+
+        internal override void initiateUpload()
+        {
+            InitMultipartUploadResult result = server.InitMultipartUpload(new InitMultipartUploadRequest(bucketName, key));
+            UploadId = result.httpCode == 200 ? result.initMultipartUpload.uploadId : null;
+        }
+
+        internal override void uploadAsync()
+        {
+            PutObjectResult result = server.PutObject(new PutObjectRequest(bucketName, key, partMemMap[0]));
+            if (result.httpCode == 200)
+            {
+                Log.Information("put object " + key + " success");
+            }
+            else
+            {
+                Log.Error("put object " + key + " failed");
+            }
+        }
+
+        internal override void uploadPart(MemoryStream stream, int partNum, long size)
+        {
+            UploadPartResult result = server.UploadPart(new UploadPartRequest(bucketName, key, partNum, UploadId, stream.GetBuffer()));
+            if (result.httpCode == 200)
+            {
+                etagMap.TryAdd(partNum, result.eTag);
+            }
+        }
+    }
+}

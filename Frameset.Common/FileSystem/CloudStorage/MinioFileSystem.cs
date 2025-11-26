@@ -20,7 +20,6 @@ namespace Frameset.Common.FileSystem.CloudStorage
             define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSSECRETKEY, out secretKey);
             define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSENDPOINT, out endpoint);
             Debug.Assert(!accessKey.IsNullOrEmpty() && !secretKey.IsNullOrEmpty() && !endpoint.IsNullOrEmpty());
-            //client = (MinioClient)new MinioClient().WithCredentials(accessKey, secretKey).WithEndpoint(endpoint).Build();
             AmazonS3Config config = new AmazonS3Config()
             {
                 ServiceURL = endpoint
@@ -29,7 +28,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         }
 
-        public override void Dispose()
+        public override void Dispose(bool disposeable)
         {
             if (client != null)
             {
@@ -96,6 +95,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
                 Key = define.Path,
                 InputStream = stream
             };
+            request.ContentType = GetContentType(define);
             PutObjectResponse response = client.PutObjectAsync(request).Result;
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {

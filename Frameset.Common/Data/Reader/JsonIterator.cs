@@ -18,26 +18,26 @@ namespace Frameset.Common.Data.Reader
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public JsonIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public JsonIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.CSV;
             useReader = true;
-            initalize(processPath);
+            Initalize(processPath);
         }
 
-        public override void initalize(string filePath = null)
+        public override void Initalize(string filePath = null)
         {
-            base.initalize(filePath);
+            base.Initalize(filePath);
             jsonReader = new JsonTextReader(reader);
             if (jsonReader != null)
             {
@@ -53,7 +53,7 @@ namespace Frameset.Common.Data.Reader
 
         public override async IAsyncEnumerable<T> ReadAsync(string path, string filterSql = null)
         {
-            base.initalize(path);
+            base.Initalize(path);
 
             await foreach (var map in System.Text.Json.JsonSerializer.DeserializeAsyncEnumerable<Dictionary<string, object>>(inputStream))
             {

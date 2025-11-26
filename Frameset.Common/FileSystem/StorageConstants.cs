@@ -7,5 +7,7 @@
         public static readonly string CLOUDFSACCESSKEY = "cloudfs.accessKey";
         public static readonly string CLOUDFSSECRETKEY = "cloudfs.secretKey";
         public static readonly string CLOUDFSENDPOINT = "cloudfs.endpoint";
+        public static readonly string CLOUDREGION = "cloudfs.region";
+        public static readonly string COSDEFAULTREGION = "ap-guanzhou";
     }
 }

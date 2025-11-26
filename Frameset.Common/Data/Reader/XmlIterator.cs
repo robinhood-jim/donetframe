@@ -17,24 +17,24 @@ namespace Frameset.Common.Data.Reader
         public XmlIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.XML;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public XmlIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.XML;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public XmlIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.XML;
-            initalize(processPath);
+            Initalize(processPath);
         }
 
-        public override void initalize(string filePath = null)
+        public override void Initalize(string filePath = null)
         {
-            base.initalize(filePath);
+            base.Initalize(filePath);
             xmlReader = XmlReader.Create(inputStream);
             while (xmlReader.Read())
             {
@@ -59,7 +59,7 @@ namespace Frameset.Common.Data.Reader
 
         public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
         {
-            base.initalize(path);
+            base.Initalize(path);
             return aysncQuery();
 
         }

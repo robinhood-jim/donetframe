@@ -161,7 +161,7 @@ namespace Frameset.Office.Core
             {
                 stream.Close();
             }
-
+            GC.SuppressFinalize(this);
         }
     }
 }

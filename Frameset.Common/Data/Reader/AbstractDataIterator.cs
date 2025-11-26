@@ -1,5 +1,6 @@
 ﻿using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
@@ -39,23 +40,22 @@ namespace Frameset.Common.Data.Reader
         internal Dictionary<string, object> cachedValue
         {
             get; set;
-        } = new Dictionary<string, object>();
+        } = [];
         internal Stream inputStream;
         internal StreamReader reader;
         internal bool useReader = false;
         internal bool useRawStream = false;
         Dictionary<string, MethodParam> methodMap;
 
-        public AbstractDataIterator(DataCollectionDefine define)
+        protected AbstractDataIterator(DataCollectionDefine define)
         {
             MetaDefine = define;
-            string reuseCurrentStr;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out string reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
             }
-
+            FileSystem = FileSystemFactory.GetFileSystem(MetaDefine);
             if (!IsReturnDictionary())
             {
                 readAsDict = false;
@@ -69,7 +69,7 @@ namespace Frameset.Common.Data.Reader
             }
             current = System.Activator.CreateInstance<T>();
         }
-        public AbstractDataIterator(IFileSystem fileSystem, string processPath)
+        protected AbstractDataIterator(IFileSystem fileSystem, string processPath)
         {
             Trace.Assert(fileSystem != null);
             DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
@@ -81,12 +81,12 @@ namespace Frameset.Common.Data.Reader
             methodMap = AnnotationUtils.ReflectObject(typeof(T));
             current = System.Activator.CreateInstance<T>();
         }
-        public AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem)
+        protected AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem)
         {
+            Trace.Assert(fileSystem != null);
             MetaDefine = define;
             FileSystem = fileSystem;
-            string reuseCurrentStr;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out string reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
@@ -103,26 +103,18 @@ namespace Frameset.Common.Data.Reader
             }
             current = System.Activator.CreateInstance<T>();
         }
-        internal void InitDefaultFs()
+
+        public virtual void Initalize(string filePath = null)
         {
-            if (FileSystem == null)
-            {
-                FileSystem = FileSystemFactory.GetFileSystem(MetaDefine);
-            }
-        }
-        public virtual void initalize(string filePath = null)
-        {
-            InitDefaultFs();
+            Trace.Assert(FileSystem != null);
             string processPath = filePath.IsNullOrEmpty() ? MetaDefine.Path : filePath;
             Trace.Assert(!processPath.IsNullOrEmpty(), "path must not be null");
-            string dateFormatStr;
-            string timestampFormatStr;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTDATEFORMATTER, out dateFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTDATEFORMATTER, out string dateFormatStr);
             if (dateFormatStr.IsNullOrEmpty())
             {
                 dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
             }
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTTIMESTAMPFORMATTER, out timestampFormatStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTTIMESTAMPFORMATTER, out string timestampFormatStr);
             if (timestampFormatStr.IsNullOrEmpty())
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
@@ -151,28 +143,29 @@ namespace Frameset.Common.Data.Reader
                 }
             }
         }
-        public virtual void Dispose()
+        public void Dispose()
         {
-            if (reader != null)
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposable)
+        {
+            if (!disposable)
             {
-                reader.Dispose();
+                return;
             }
-            if (inputStream != null)
-            {
-                inputStream.Close();
-            }
+            reader?.Dispose();
+            inputStream?.Close();
+
         }
 
         public virtual bool MoveNext()
         {
-            if (current == null)
+            if (current == null || !reUseCurrent)
             {
                 current = System.Activator.CreateInstance<T>();
             }
-            else if (!reUseCurrent)
-            {
-                current = System.Activator.CreateInstance<T>();
-            }
+
             return false;
         }
         public bool IsReturnDictionary()
@@ -197,10 +190,9 @@ namespace Frameset.Common.Data.Reader
             {
                 foreach (var item in cachedValue)
                 {
-                    MethodParam param = null;
-                    if (methodMap.TryGetValue(item.Key, out param))
+                    if (methodMap.TryGetValue(item.Key, out MethodParam param))
                     {
-                        param.SetMethod.Invoke(current, new object[] { ConvertUtil.ParseByType(param.GetMethod.ReturnType, item.Value) });
+                        param.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param.GetMethod.ReturnType, item.Value)]);
                     }
                 }
             }
@@ -208,18 +200,9 @@ namespace Frameset.Common.Data.Reader
         public abstract IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null);
 
 
-        internal bool filterRecord()
-        {
-            return true;
-        }
-        internal void parseSql(string filterSql)
-        {
-
-        }
-
         public void Reset()
         {
-            throw new NotImplementedException();
+            throw new OperationNotAllowedException("reset not supported!");
         }
     }
 

@@ -48,7 +48,6 @@ namespace Frameset.Office.Excel
             get; internal set;
         } = false;
         internal ShardingStrings shardingStrings;
-        //internal Dictionary<int, Stream> sheetTmpStreamMap = new Dictionary<int, Stream>();
 
         private Dictionary<int, XmlBufferWriter> sheetWriterMap = new Dictionary<int, XmlBufferWriter>();
         internal XmlBufferWriter writer;
@@ -480,10 +479,7 @@ namespace Frameset.Office.Excel
                 }
                 Directory.Delete(localTmpPath);
             }
-            else
-            {
 
-            }
             Finished = true;
 
         }

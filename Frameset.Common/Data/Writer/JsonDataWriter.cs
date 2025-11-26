@@ -12,7 +12,7 @@ namespace Frameset.Common.Data.Writer
         {
             Identifier = Constants.FileFormatType.JSON;
             useWriter = true;
-            base.initalize();
+            base.Initalize();
             jsonWriter = new JsonTextWriter(writer);
             jsonWriter.WriteStartArray();
         }
@@ -21,7 +21,7 @@ namespace Frameset.Common.Data.Writer
         {
             Identifier = Constants.FileFormatType.JSON;
             useWriter = true;
-            base.initalize();
+            base.Initalize();
             jsonWriter = new JsonTextWriter(writer);
             jsonWriter.WriteStartArray();
         }

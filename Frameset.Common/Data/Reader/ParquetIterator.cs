@@ -25,26 +25,26 @@ namespace Frameset.Common.Data.Reader
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public ParquetIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
-            initalize(define.Path);
+            Initalize(define.Path);
         }
 
         public ParquetIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
-            initalize(processPath);
+            Initalize(processPath);
         }
 
-        public override void initalize(string path)
+        public override void Initalize(string path)
         {
-            base.initalize(path);
+            base.Initalize(path);
             preader = ParquetReader.CreateAsync(inputStream).Result;
             if (MetaDefine.ColumnList.IsNullOrEmpty())
             {

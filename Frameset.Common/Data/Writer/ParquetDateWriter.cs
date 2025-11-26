@@ -15,28 +15,28 @@ namespace Frameset.Common.Data.Writer
         private ParquetWriter pwriter;
         private ParquetRowGroupWriter groupWriter;
         private ParquetSchema schema;
-        private List<DataField> fields = new List<DataField>();
-        private Dictionary<int, ArrayList> chunckMap = new Dictionary<int, ArrayList>();
-        private int chunckCapcity = 2000;
+        private List<DataField> fields = new();
+        private Dictionary<int, ArrayList> chunckMap = new();
+        private int chunckCapcity = 20000;
         private long totalRow = 0;
 
         public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.PARQUET;
             useRawOutputStream = true;
-            initalize();
+            Initalize();
         }
 
         public ParquetDateWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
             Identifier = Constants.FileFormatType.PARQUET;
             useRawOutputStream = true;
-            initalize();
+            Initalize();
         }
 
-        internal override void initalize()
+        internal override void Initalize()
         {
-            base.initalize();
+            base.Initalize();
             string chunckSizeStr;
             MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.PARQUETGROUPSIZE, out chunckSizeStr);
             if (!chunckSizeStr.IsNullOrEmpty())
@@ -50,32 +50,18 @@ namespace Frameset.Common.Data.Writer
             }
             pwriter = ParquetWriter.CreateAsync(schema, outputStream).Result;
             CompressType compressType = GetCompressType();
-            CompressionMethod method = CompressionMethod.None;
-            switch (compressType)
+            CompressionMethod method = compressType switch
             {
-                case CompressType.SNAPPY:
-                    method = CompressionMethod.Snappy;
-                    break;
-                case CompressType.GZ:
-                    method = CompressionMethod.Gzip;
-                    break;
-                case CompressType.LZO:
-                    method = CompressionMethod.Lzo;
-                    break;
-                case CompressType.LZ4:
-                    method = CompressionMethod.LZ4;
-                    break;
-                case CompressType.ZSTD:
-                    method = CompressionMethod.Zstd;
-                    break;
-                case CompressType.BROTLI:
-                    method = CompressionMethod.Brotli;
-                    break;
-                case CompressType.LZMA:
-                    method = CompressionMethod.Lz4Raw;
-                    break;
+                CompressType.SNAPPY => CompressionMethod.Snappy,
+                CompressType.GZ => CompressionMethod.Gzip,
+                CompressType.LZO => CompressionMethod.Lzo,
+                CompressType.LZ4 => CompressionMethod.LZ4,
+                CompressType.ZSTD => CompressionMethod.Zstd,
+                CompressType.BROTLI => CompressionMethod.Brotli,
+                CompressType.LZMA => CompressionMethod.Lz4Raw,
+                _ => CompressionMethod.None
+            };
 
-            }
             pwriter.CompressionMethod = method;
         }
 
@@ -92,10 +78,7 @@ namespace Frameset.Common.Data.Writer
 
         public override void WriteRecord(T value)
         {
-            if (groupWriter == null)
-            {
-                groupWriter = pwriter.CreateRowGroup();
-            }
+            groupWriter ??= pwriter.CreateRowGroup();
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 object retVal = GetValue(value, MetaDefine.ColumnList[i]);
@@ -112,7 +95,7 @@ namespace Frameset.Common.Data.Writer
         }
         internal bool FlushGroup()
         {
-            List<Task> tasks = new List<Task>();
+            List<Task> tasks = new();
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 Array array = chunckMap[i].ToArray(fields[i].ClrType);

@@ -10,18 +10,22 @@ namespace Frameset.Core.Mapper
 {
     public class SqlMapperConfigure
     {
-        public static string SELECT = "select";
-        public static string RESULTMAP = "resultMap";
-        public static string INSERT = "insert";
-        public static string UPDATE = "update";
-        public static string BATCH = "batch";
-        public static string INCLUDE = "include";
-        public static string SCRIPT = "script";
-        public static string SQL = "sql";
+        public static readonly string SELECT = "select";
+        public static readonly string RESULTMAP = "resultMap";
+        public static readonly string INSERT = "insert";
+        public static readonly string UPDATE = "update";
+        public static readonly string BATCH = "batch";
+        public static readonly string INCLUDE = "include";
+        public static readonly string SCRIPT = "script";
+        public static readonly string SQL = "sql";
         private static Dictionary<string, MapperConfig> configMap = new Dictionary<string, MapperConfig>();
         private static Dictionary<string, Dictionary<string, AbstractSegment>> executeMap = new Dictionary<string, Dictionary<string, AbstractSegment>>();
 
         private static IList<string> operType = new string[] { "select", "update", "delete", "insert" }.ToList();
+        protected SqlMapperConfigure()
+        {
+
+        }
         public static void DoInit(string mapperPath)
         {
             FileInfo[] infos = ConfigResourceScanner.DoScan(mapperPath);

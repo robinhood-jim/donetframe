@@ -20,7 +20,7 @@ namespace Frameset.Core.FileSystem
         public IList<DataSetColumnMeta> ColumnList
         {
             get; internal set;
-        } = new List<DataSetColumnMeta>();
+        } = [];
         public string Path
         {
             get; set;
@@ -29,7 +29,7 @@ namespace Frameset.Core.FileSystem
         {
             get;
 
-        } = new Dictionary<string, string>();
+        } = [];
         public string ValueClassName
         {
             get; internal set;
@@ -45,7 +45,7 @@ namespace Frameset.Core.FileSystem
         public Dictionary<string, int> ColumnNameMap
         {
             get; internal set;
-        } = new Dictionary<string, int>();
+        } = [];
         internal string defaultTimestampFormat = "yyyy-MM-dd HH:mm:ss";
         public string ResType
         {
@@ -81,13 +81,6 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(new DataSetColumnMeta(columnName, columnType, flushOut));
             ColumnNameMap.TryAdd(columnName, 1);
         }
-        public void AddNotNullColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue)
-        {
-            DataSetColumnMeta meta = new DataSetColumnMeta(columnName, columnType, defaultValue);
-            meta.Required = true;
-            ColumnList.Add(meta);
-            ColumnNameMap.TryAdd(columnName, 1);
-        }
         public void AddColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue, bool required, string dateFormat)
         {
             ColumnList.Add(new DataSetColumnMeta(columnName, columnType, defaultValue, required, dateFormat));
@@ -98,6 +91,14 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(meta);
             ColumnNameMap.TryAdd(meta.ColumnName, 1);
         }
+        public void AddNotNullColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue)
+        {
+            DataSetColumnMeta meta = new DataSetColumnMeta(columnName, columnType, defaultValue);
+            meta.Required = true;
+            ColumnList.Add(meta);
+            ColumnNameMap.TryAdd(columnName, 1);
+        }
+
         public void ParseType(Type type)
         {
             PropertyInfo[] infos = type.GetProperties();
