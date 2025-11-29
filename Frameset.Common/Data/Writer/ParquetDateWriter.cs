@@ -12,9 +12,9 @@ namespace Frameset.Common.Data.Writer
 {
     public class ParquetDateWriter<T> : AbstractDataWriter<T>
     {
-        private ParquetWriter pwriter;
-        private ParquetRowGroupWriter groupWriter;
-        private ParquetSchema schema;
+        private ParquetWriter pwriter=null!;
+        private ParquetRowGroupWriter groupWriter=null!;
+        private ParquetSchema schema=null!;
         private List<DataField> fields = new();
         private Dictionary<int, ArrayList> chunckMap = new();
         private int chunckCapcity = 20000;
@@ -37,11 +37,12 @@ namespace Frameset.Common.Data.Writer
         internal override void Initalize()
         {
             base.Initalize();
-            string chunckSizeStr;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.PARQUETGROUPSIZE, out chunckSizeStr);
-            if (!chunckSizeStr.IsNullOrEmpty())
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.PARQUETGROUPSIZE, out string? chunckSizeStr))
             {
-                chunckCapcity = int.Parse(chunckSizeStr);
+                if (!chunckSizeStr.IsNullOrEmpty())
+                {
+                    chunckCapcity = int.Parse(chunckSizeStr);
+                }
             }
             schema = ParquetUtils.GetSchema(MetaDefine, fields);
             for (int pos = 0; pos < MetaDefine.ColumnList.Count; pos++)
@@ -81,7 +82,7 @@ namespace Frameset.Common.Data.Writer
             groupWriter ??= pwriter.CreateRowGroup();
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
-                object retVal = GetValue(value, MetaDefine.ColumnList[i]);
+                object? retVal = GetValue(value, MetaDefine.ColumnList[i]);
                 chunckMap[i].Add(retVal);
             }
             totalRow++;
@@ -90,7 +91,6 @@ namespace Frameset.Common.Data.Writer
                 FlushGroup();
                 Flush();
                 groupWriter.Dispose();
-                groupWriter = null;
             }
         }
         internal bool FlushGroup()

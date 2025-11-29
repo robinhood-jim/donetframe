@@ -7,7 +7,7 @@ namespace Frameset.Office.Annotation
     public class ExcelSheetAttribute(string sheetName) : Attribute
     {
 
-        public string? Name { get; set; } = sheetName;
+        public string Name { get; set; } = sheetName;
         public SheetVisibility? Visibility { get; set; }
         public int MaxRows { get; set; } = -1;
         public bool FillHeader { get; set; } = true;

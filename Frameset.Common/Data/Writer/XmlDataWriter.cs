@@ -8,9 +8,9 @@ namespace Frameset.Common.Data.Writer
 {
     public class XmlDataWriter<T> : AbstractDataWriter<T>
     {
-        private string collectionNodeName;
-        private string entityName;
-        private XmlWriter xmlwriter;
+        private readonly string collectionNodeName;
+        private readonly string entityName=null!;
+        private readonly XmlWriter xmlwriter;
         public XmlDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.XML;
@@ -61,12 +61,16 @@ namespace Frameset.Common.Data.Writer
             xmlwriter.WriteStartElement(entityName);
             foreach (DataSetColumnMeta column in MetaDefine.ColumnList)
             {
-                object retVal = GetValue(value, column);
+                object? retVal = GetValue(value, column);
                 if (retVal != null)
                 {
-                    xmlwriter.WriteStartElement(column.ColumnCode);
-                    xmlwriter.WriteValue(GetOutput(column, retVal));
-                    xmlwriter.WriteEndElement();
+                    object? getValue = GetOutput(column, retVal);
+                    if (getValue != null)
+                    {
+                        xmlwriter.WriteStartElement(column.ColumnCode);
+                        xmlwriter.WriteValue(getValue);
+                        xmlwriter.WriteEndElement();
+                    }
                 }
             }
             xmlwriter.WriteEndElement();

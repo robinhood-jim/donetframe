@@ -67,7 +67,7 @@ namespace Frameset.Office.Excel.Util
             }
             r.GotoElement("sheetData");
         }
-        internal void readHeader()
+        protected void ReadHeader()
         {
             int trackedColIndex = 0;
             while (r.GoTo(() => r.IsStartElement("c") || r.IsEndElement("row")))
@@ -76,7 +76,7 @@ namespace Frameset.Office.Excel.Util
                 {
                     break;
                 }
-                Cell cell = parseCell(trackedColIndex++, false);
+                Cell cell = ParseCell(trackedColIndex++, false);
                 if (needIdentifyColumn && cell.GetValue() != null)
                 {
                     prop.AddCellProp(new ExcelCellProp(cell.GetValue().ToString(), cell.GetValue().ToString(), Constants.MetaType.STRING));
@@ -84,26 +84,26 @@ namespace Frameset.Office.Excel.Util
             }
             InitCells();
         }
-        internal Cell parseCell(int trackedColIndex, bool isMultiplex)
+        protected Cell ParseCell(int trackedColIndex, bool isMultiplex)
         {
-            CellAddress addr = getCellAddressWithFallback(trackedColIndex);
+            CellAddress addr = GetCellAddressWithFallback(trackedColIndex);
 
             processor.SetValue(r, workBook, addr);
 
             if ("inlineStr".Equals(processor.GetCellTypeStr()))
             {
-                return parseInlineStr(addr, processor, isMultiplex);
+                return ParseInlineStr(addr, processor, isMultiplex);
             }
             else if ("s".Equals(processor.GetCellTypeStr()))
             {
-                return parseString(addr, processor, isMultiplex);
+                return ParseString(addr, processor, isMultiplex);
             }
             else
             {
-                return parseOther(addr, processor, isMultiplex);
+                return ParseOther(addr, processor, isMultiplex);
             }
         }
-        CellAddress getCellAddressWithFallback(int trackedColIndex)
+        CellAddress GetCellAddressWithFallback(int trackedColIndex)
         {
             string cellRefOrNull = r.GetAttribute("r");
             CellAddress address = null;
@@ -125,7 +125,7 @@ namespace Frameset.Office.Excel.Util
             }
             return address;
         }
-        Cell parseInlineStr(CellAddress addr, CellProcessor processor, bool isMultiplex)
+        Cell ParseInlineStr(CellAddress addr, CellProcessor processor, bool isMultiplex)
         {
             while (r.GoTo(() => r.IsStartElement("is") || r.IsEndElement("c") || r.IsStartElement("f")))
             {
@@ -144,23 +144,23 @@ namespace Frameset.Office.Excel.Util
                 }
             }
             processor.CellType = processor.Formula == null ? CellType.STRING : CellType.FORMULA;
-            return returnCell(isMultiplex, workBook, processor, addr);
+            return ReturnCell(isMultiplex, workBook, processor, addr);
         }
-        Cell empty(CellAddress addr, CellType type)
+        Cell Empty(CellAddress addr, CellType type)
         {
             return new Cell(workBook, type, "", addr, null, "");
         }
-        Cell parseString(CellAddress addr, CellProcessor processor, bool isMultiplex)
+        Cell ParseString(CellAddress addr, CellProcessor processor, bool isMultiplex)
         {
             r.GoTo(() => r.IsStartElement("v") || r.IsEndElement("c"));
             if (r.IsEndElement("c"))
             {
-                return empty(addr, CellType.STRING);
+                return Empty(addr, CellType.STRING);
             }
             string v = r.GetValueUntilEndElement("v");
             if (v.IsNullOrEmpty())
             {
-                return empty(addr, CellType.STRING);
+                return Empty(addr, CellType.STRING);
             }
             int index = Convert.ToInt32(v);
             string sharedStringValue = workBook.shardingStrings.GetValues()[index].Value;
@@ -168,9 +168,9 @@ namespace Frameset.Office.Excel.Util
             processor.Formula = null;
             processor.RawValue = sharedStringValue;
             processor.CellType = CellType.STRING;
-            return returnCell(isMultiplex, workBook, processor, addr);
+            return ReturnCell(isMultiplex, workBook, processor, addr);
         }
-        internal Cell parseOther(CellAddress addr, CellProcessor processor, bool isMultiplex)
+        protected Cell ParseOther(CellAddress addr, CellProcessor processor, bool isMultiplex)
         {
             CellType definedType = ParseType(processor.GetCellTypeStr());
             Func<string, CellAddress, object> parser = GetParserForType(definedType);
@@ -204,18 +204,18 @@ namespace Frameset.Office.Excel.Util
                 processor.CellType = CellType.EMPTY;
                 processor.Value = null;
                 processor.Formula = null;
-                return returnCell(isMultiplex, workBook, processor, addr);
+                return ReturnCell(isMultiplex, workBook, processor, addr);
             }
             else
             {
                 processor.CellType = processor.Formula.IsNullOrEmpty() ? CellType.FORMULA : definedType;
-                return returnTypeCell(isMultiplex, workBook, processor, addr);
+                return ReturnTypeCell(isMultiplex, workBook, processor, addr);
             }
         }
 
-        internal Cell returnCell(bool isMultiplex, WorkBook workBook, CellProcessor processor, CellAddress addr)
+        protected Cell ReturnCell(bool isMultiplex, WorkBook workBook, CellProcessor processor, CellAddress addr)
         {
-            if (!isMultiplex || valueAllEmpty() || cells[addr.GetColumn()] == null)
+            if (!isMultiplex || ValueAllEmpty() || cells[addr.GetColumn()] == null)
             {
                 return new Cell(workBook, processor, addr);
             }
@@ -230,9 +230,9 @@ namespace Frameset.Office.Excel.Util
             }
         }
 
-        Cell returnTypeCell(bool isMultiplex, WorkBook workBook, CellProcessor processor, CellAddress addr)
+        Cell ReturnTypeCell(bool isMultiplex, WorkBook workBook, CellProcessor processor, CellAddress addr)
         {
-            if (!isMultiplex || valueAllEmpty() || cells[addr.GetColumn()] == null)
+            if (!isMultiplex || ValueAllEmpty() || cells[addr.GetColumn()] == null)
             {
                 return new Cell(workBook, processor.CellType, processor.Value, addr, processor.Formula, processor.RawValue, processor.DataFormatId, processor.DataFormatString);
             }
@@ -246,7 +246,7 @@ namespace Frameset.Office.Excel.Util
                 return cell;
             }
         }
-        bool valueAllEmpty()
+        bool ValueAllEmpty()
         {
             if (!CollectionUtils.IsEmpty(cells))
             {
@@ -288,17 +288,17 @@ namespace Frameset.Office.Excel.Util
             switch (type)
             {
                 case CellType.BOOLEAN:
-                    return parseBoolean;
+                    return ParseBoolean;
                 case CellType.NUMBER:
-                    return parseNumber;
+                    return ParseNumber;
                 case CellType.FORMULA:
                 case CellType.ERROR:
-                    return defaultValue;
+                    return DefaultValue;
                 default:
                     return null;
             }
         }
-        internal static object parseNumber(string s, CellAddress address)
+        protected static object ParseNumber(string s, CellAddress address)
         {
 
             if (s.IsNullOrEmpty())
@@ -315,17 +315,17 @@ namespace Frameset.Office.Excel.Util
                 switch (columnProp.ColumnType)
                 {
                     case Constants.MetaType.INTEGER:
-                        if (tmpVal.Contains("."))
+                        if (tmpVal.Contains('.'))
                         {
-                            int pos = tmpVal.IndexOf(".");
+                            int pos = tmpVal.IndexOf('.');
                             tmpVal = tmpVal.Substring(0, pos);
                         }
                         retObj = Convert.ToInt32(tmpVal);
                         break;
                     case Constants.MetaType.BIGINT:
-                        if (tmpVal.Contains("."))
+                        if (tmpVal.Contains('.'))
                         {
-                            int pos = tmpVal.IndexOf(".");
+                            int pos = tmpVal.IndexOf('.');
                             tmpVal = tmpVal.Substring(0, pos);
                         }
                         retObj = Convert.ToInt64(tmpVal);
@@ -352,12 +352,12 @@ namespace Frameset.Office.Excel.Util
             }
             return retObj;
         }
-        internal static string defaultValue(string s, CellAddress address)
+        protected static string DefaultValue(string s, CellAddress address)
         {
             return s;
         }
 
-        internal static object parseBoolean(string s, CellAddress address)
+        protected static object ParseBoolean(string s, CellAddress address)
         {
             if ("0".Equals(s))
             {
@@ -391,7 +391,7 @@ namespace Frameset.Office.Excel.Util
             }
             if (containHeaders && !finishReadHeader)
             {
-                readHeader();
+                ReadHeader();
                 finishReadHeader = true;
             }
             if (r.GoTo(() => r.IsStartElement("row") || r.IsEndElement("sheetData")))

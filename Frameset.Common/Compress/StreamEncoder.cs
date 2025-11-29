@@ -13,52 +13,29 @@ namespace Frameset.Common.Compress
 {
     public class StreamEncoder
     {
-        internal StreamEncoder()
+        private StreamEncoder()
         {
 
         }
         public static Stream GetOutputByCompressType(string resourcePath, Stream rawstream)
         {
             Trace.Assert(rawstream != null);
-            Stream outStream = null;
             FileMeta meta = FileUtil.Parse(resourcePath, Path.DirectorySeparatorChar);
-            if (meta != null)
+            Trace.Assert(meta != null);
+            Stream outStream = meta.CompressCodec switch
             {
-                switch (meta.CompressCodec)
-                {
-                    case CompressType.GZ:
-                        outStream = new GZipOutputStream(rawstream);
-                        break;
-                    case CompressType.LZ4:
-                        outStream = LZ4Stream.Encode(rawstream);
-                        break;
-                    case CompressType.ZIP:
-                        outStream = new ZipOutputStream(rawstream);
-                        ((ZipOutputStream)outStream).PutNextEntry(new ZipEntry(meta.FileName + "." + meta.FileFormat));
-                        break;
-                    case CompressType.BZ2:
-                        outStream = new BZip2OutputStream(rawstream);
-                        break;
-                    case CompressType.ZSTD:
-                        outStream = new ZstdSharp.CompressionStream(rawstream);
-                        break;
-                    case CompressType.BROTLI:
-                        outStream = new BrotliStream(rawstream, CompressionMode.Compress);
-                        break;
-                    case CompressType.LZMA:
-                        outStream = new LzmaStream(LzmaEncoderProperties.Default, false, rawstream);
-                        break;
-                    case CompressType.XZ:
-                        outStream = new XZStream(rawstream);
-                        break;
-                    case CompressType.SNAPPY:
-                        outStream = new Snappier.SnappyStream(rawstream, CompressionMode.Compress);
-                        break;
-                    default:
-                        outStream = rawstream;
-                        break;
-                }
-            }
+                CompressType.GZ => new GZipOutputStream(rawstream),
+                CompressType.LZ4 => LZ4Stream.Encode(rawstream),
+                CompressType.ZIP => GetZipOutput(rawstream, meta),
+                CompressType.BZ2 => new BZip2OutputStream(rawstream),
+                CompressType.ZSTD => new ZstdSharp.CompressionStream(rawstream),
+                CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Compress),
+                CompressType.LZMA => new LzmaStream(LzmaEncoderProperties.Default, false, rawstream),
+                CompressType.XZ => new XZStream(rawstream),
+                CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Compress),
+                _ => rawstream
+            };
+
             if (outStream != null)
             {
                 return new BufferedStream(outStream);
@@ -68,5 +45,12 @@ namespace Frameset.Common.Compress
                 throw new OperationFailedException("failed to get outputStream from " + resourcePath);
             }
         }
+        private static Stream GetZipOutput(Stream rawstream, FileMeta meta)
+        {
+            Stream outStream = new ZipOutputStream(rawstream);
+            ((ZipOutputStream)outStream).PutNextEntry(new ZipEntry(meta.FileName + "." + meta.FileFormat));
+            return outStream;
+        }
     }
+
 }

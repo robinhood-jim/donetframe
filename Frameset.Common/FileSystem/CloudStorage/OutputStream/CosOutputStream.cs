@@ -2,6 +2,7 @@
 using COSXML.Model.Object;
 using Frameset.Core.FileSystem;
 using Serilog;
+using Frameset.Core.Exceptions;
 
 namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 {
@@ -13,24 +14,35 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             this.server = server;
         }
 
-        internal override string completeMultiUpload()
+        protected override string completeMultiUpload()
         {
-            CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest(bucketName, key, UploadId);
+            CompleteMultipartUploadRequest request = new(bucketName, key, UploadId);
             for (int i = 0; i < partNum; i++)
             {
                 request.SetPartNumberAndETag(i + 1, etagMap[i]);
             }
             CompleteMultipartUploadResult result = server.CompleteMultiUpload(request);
-            return result?.httpCode == 200 ? result.completeResult.eTag : null;
+            if (result?.httpCode == 200)
+            {
+                return result.completeResult.eTag;
+            }
+            throw new OperationFailedException("complete multiUpload failed");
         }
 
-        internal override void initiateUpload()
+        protected override void initiateUpload()
         {
-            InitMultipartUploadResult result = server.InitMultipartUpload(new InitMultipartUploadRequest(bucketName, key));
-            UploadId = result.httpCode == 200 ? result.initMultipartUpload.uploadId : null;
+            InitMultipartUploadResult result = server.InitMultipartUpload(new(bucketName, key));
+            if (result.httpCode == 200)
+            {
+                UploadId = result.initMultipartUpload.uploadId;
+            }
+            else
+            {
+                throw new OperationFailedException("initiateUpload failed!");
+            }
         }
 
-        internal override void uploadAsync()
+        protected override void uploadAsync()
         {
             PutObjectResult result = server.PutObject(new PutObjectRequest(bucketName, key, partMemMap[0]));
             if (result.httpCode == 200)
@@ -43,7 +55,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             }
         }
 
-        internal override void uploadPart(MemoryStream stream, int partNum, long size)
+        protected override void uploadPart(MemoryStream stream, int partNum, long size)
         {
             UploadPartResult result = server.UploadPart(new UploadPartRequest(bucketName, key, partNum, UploadId, stream.GetBuffer()));
             if (result.httpCode == 200)

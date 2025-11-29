@@ -9,8 +9,8 @@ namespace Frameset.Common.Data.Reader
 {
     public class AvroIterator<T> : AbstractDataIterator<T>
     {
-        private RecordSchema schema;
-        private IFileReader<GenericRecord> fileReader;
+        private RecordSchema schema=null!;
+        private IFileReader<GenericRecord> fileReader=null!;
 
 
         public AvroIterator(DataCollectionDefine define) : base(define)
@@ -34,7 +34,7 @@ namespace Frameset.Common.Data.Reader
             Initalize(processPath);
         }
 
-        public override void Initalize(string path = null)
+        public override sealed void Initalize(string? path = null)
         {
             base.Initalize(path);
             fileReader = DataFileReader<GenericRecord>.OpenReader(inputStream);
@@ -43,7 +43,7 @@ namespace Frameset.Common.Data.Reader
         public override bool MoveNext()
         {
             base.MoveNext();
-            cachedValue.Clear();
+            CachedValue.Clear();
             if (fileReader.HasNext())
             {
                 GenericRecord record = fileReader.Next();
@@ -53,7 +53,7 @@ namespace Frameset.Common.Data.Reader
                     object value = record.GetValue(field.Pos);
                     if (value != null)
                     {
-                        cachedValue.TryAdd(field.Name, value);
+                        CachedValue.TryAdd(field.Name, value);
                     }
                 }
                 ConstructReturn();
@@ -62,11 +62,11 @@ namespace Frameset.Common.Data.Reader
             return false;
         }
 
-        public override async IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
+        public override async IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)
         {
             Initalize(path);
             base.MoveNext();
-            cachedValue.Clear();
+            CachedValue.Clear();
             while (fileReader.HasNext())
             {
                 GenericRecord record = fileReader.Next();
@@ -76,7 +76,7 @@ namespace Frameset.Common.Data.Reader
                     object value = record.GetValue(field.Pos);
                     if (value != null)
                     {
-                        cachedValue.TryAdd(field.Name, value);
+                        CachedValue.TryAdd(field.Name, value);
                     }
                 }
                 ConstructReturn();

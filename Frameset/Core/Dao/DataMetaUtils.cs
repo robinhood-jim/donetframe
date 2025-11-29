@@ -5,6 +5,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
+using Frameset.Core.Exceptions;
 
 namespace Frameset.Core.Dao
 {
@@ -53,6 +54,7 @@ namespace Frameset.Core.Dao
             }
             catch (Exception ex)
             {
+                throw new OperationFailedException(ex.Message, ex);
             }
             return list;
         }

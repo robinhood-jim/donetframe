@@ -11,23 +11,40 @@ namespace Frameset.Common.Data.Writer
 {
     public class OrcDataWriter<T> : AbstractDataWriter<T>
     {
-        private OrcWriter orcWriter;
-        private Type dynamicType;
-        private Dictionary<string, PropertyInfo> propMap = new Dictionary<string, PropertyInfo>();
+        private OrcWriter orcWriter=null!;
+        private Type dynamicType=null!;
+        private Dictionary<string, PropertyInfo> propMap = [];
 
 
         public OrcDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.ORC;
+            useRawOutputStream = true;
             Initalize();
+
+        }
+
+        public OrcDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Trace.Assert(!IsReturnDictionary());
+            Identifier = Constants.FileFormatType.ORC;
+            useRawOutputStream = true;
+            Initalize();
+        }
+        internal sealed override void Initalize()
+        {
+            base.Initalize();
             if (IsReturnDictionary())
             {
-                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.DYNAMICORCCLASSNAME, out string className);
-                if (className.IsNullOrEmpty())
+                string assignClassName = ResourceConstants.DYNAMICCLASSPREFIX + DateTime.Now.Second;
+                if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.DYNAMICORCCLASSNAME, out string? className))
                 {
-                    className = ResourceConstants.DYNAMICCLASSPREFIX + DateTime.Now.Second;
+                    if (!className.IsNullOrEmpty())
+                    {
+                        assignClassName = className;
+                    }
                 }
-                dynamicType = DynamicClassCreator.CreateDynamicClass(className, MetaDefine.ColumnList);
+                dynamicType = DynamicClassCreator.CreateDynamicClass(assignClassName, MetaDefine.ColumnList);
                 PropertyInfo[] infos = dynamicType.GetProperties();
                 foreach (PropertyInfo info in infos)
                 {
@@ -39,15 +56,6 @@ namespace Frameset.Common.Data.Writer
             {
                 dynamicType = typeof(T);
             }
-            orcWriter = new OrcWriter(dynamicType, outputStream, new WriterConfiguration());
-        }
-
-        public OrcDataWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
-        {
-            Trace.Assert(!IsReturnDictionary());
-            Identifier = Constants.FileFormatType.ORC;
-            Initalize();
-            dynamicType = typeof(T);
             orcWriter = new OrcWriter(dynamicType, outputStream, new WriterConfiguration());
         }
 
@@ -64,12 +72,14 @@ namespace Frameset.Common.Data.Writer
         {
             if (useDictOutput)
             {
-                dynamic targetObject = System.Activator.CreateInstance(dynamicType);
+                dynamic? targetObject = Activator.CreateInstance(dynamicType);
                 for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
                 {
-                    object retVal = GetValue(value, MetaDefine.ColumnList[i]);
+                    object? retVal = GetValue(value, MetaDefine.ColumnList[i]);
                     if (retVal != null)
                     {
+                        PropertyInfo? info = null;
+                        propMap.TryGetValue(MetaDefine.ColumnList[i].ColumnCode, out info);
                         if (MetaDefine.ColumnList[i].ColumnType == Constants.MetaType.TIMESTAMP)
                         {
                             object ts;
@@ -83,13 +93,14 @@ namespace Frameset.Common.Data.Writer
                             }
                             else
                             {
-                                ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal.ToString())).LocalDateTime;
+                                ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal?.ToString())).LocalDateTime;
                             }
-                            propMap[MetaDefine.ColumnList[i].ColumnCode].SetMethod.Invoke(targetObject, new object[] { ts });
+                            
+                            info?.SetMethod?.Invoke(targetObject, new object[] { ts });
                         }
                         else
                         {
-                            propMap[MetaDefine.ColumnList[i].ColumnCode].SetMethod.Invoke(targetObject, new object[] { retVal });
+                            info?.SetMethod?.Invoke(targetObject, new object[] { retVal });
                         }
                     }
                 }

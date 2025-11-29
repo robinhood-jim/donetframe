@@ -26,11 +26,11 @@ namespace Frameset.Common.FileSystem
 
         }
 
-        internal static Stream GetInputStreamWithCompress(string path, Stream inputStream)
+        internal Stream GetInputStreamWithCompress(string path, Stream inputStream)
         {
-            return StreamDecoder.GetInputByCompressType(path, inputStream);
+            return StreamDecoder.GetInputByCompressType(path, inputStream, GetStreamSize(path));
         }
-        internal static Stream GetOutputStremWithCompress(string path, Stream inputStrem)
+        internal Stream GetOutputStremWithCompress(string path, Stream inputStrem)
         {
             return StreamEncoder.GetOutputByCompressType(path, inputStrem);
         }
@@ -92,7 +92,7 @@ namespace Frameset.Common.FileSystem
         public virtual void Init(DataCollectionDefine define)
         {
             this.define = define;
-            string encodingStr;
+            string? encodingStr;
             if (define.Encode.IsNullOrEmpty())
             {
                 define.ResourceConfig.TryGetValue(ResourceConstants.STRINGENCODING, out encodingStr);
@@ -133,7 +133,7 @@ namespace Frameset.Common.FileSystem
         protected string GetContentType(DataCollectionDefine meta)
         {
             FileMeta fileMeta = FileUtil.Parse(meta.Path);
-            return fileMeta?.ContentType;
+            return fileMeta.ContentType;
         }
     }
 }

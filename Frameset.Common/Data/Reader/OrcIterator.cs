@@ -10,10 +10,10 @@ namespace Frameset.Common.Data.Reader
 {
     public class OrcIterator<T> : AbstractDataIterator<T>
     {
-        private OrcReader orcreader;
-        private Type dynamicType;
-        private Dictionary<string, PropertyInfo> propMap = new Dictionary<string, PropertyInfo>();
-        private IEnumerator<object> values;
+        private OrcReader orcreader=null!;
+        private Type dynamicType=null!;
+        private readonly Dictionary<string, PropertyInfo> propMap = [];
+        private IEnumerator<object> values=null!;
         public OrcIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.AVRO;
@@ -34,11 +34,10 @@ namespace Frameset.Common.Data.Reader
             Initalize(processPath);
         }
 
-        public override void Initalize(string filePath = null)
+        public override sealed void Initalize(string? filePath = null)
         {
             base.Initalize(filePath);
-            string className;
-            MetaDefine.ResourceConfig.TryGetValue("orc.dynamicClassName", out className);
+            MetaDefine.ResourceConfig.TryGetValue("orc.dynamicClassName", out string? className);
             if (className.IsNullOrEmpty())
             {
                 className = "DynamicObject" + DateTime.Now.Second;
@@ -54,7 +53,7 @@ namespace Frameset.Common.Data.Reader
             values = orcreader.Read().GetEnumerator();
         }
 
-        public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
+        public override IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)
         {
             throw new NotImplementedException();
         }
@@ -64,14 +63,16 @@ namespace Frameset.Common.Data.Reader
             bool hasNext = values.MoveNext();
             if (hasNext)
             {
-                cachedValue.Clear();
+                CachedValue.Clear();
                 object obj = values.Current;
                 foreach (DataSetColumnMeta column in MetaDefine.ColumnList)
                 {
-                    object value = propMap[column.ColumnCode].GetGetMethod().Invoke(obj, null);
+                    PropertyInfo? info;
+                    propMap.TryGetValue(column.ColumnCode, out info);
+                    object? value = info?.GetGetMethod()?.Invoke(obj, null);
                     if (value != null)
                     {
-                        cachedValue.TryAdd(column.ColumnCode, value);
+                        CachedValue.TryAdd(column.ColumnCode, value);
                     }
                 }
                 ConstructReturn();

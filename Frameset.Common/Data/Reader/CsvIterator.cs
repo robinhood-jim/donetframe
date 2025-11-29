@@ -36,11 +36,11 @@ namespace Frameset.Common.Data.Reader
             Initalize(processPath);
         }
 
-        public override void Initalize(string filePath = null)
+        public override sealed void Initalize(string? filePath = null)
         {
             base.Initalize(filePath);
-            string splitterStr;
-            MetaDefine.ResourceConfig.TryGetValue("csv.splitter", out splitterStr);
+            string? splitterStr;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out splitterStr);
             if (!splitterStr.IsNullOrEmpty())
             {
                 Splitter = splitterStr;
@@ -49,38 +49,45 @@ namespace Frameset.Common.Data.Reader
         public override bool MoveNext()
         {
             base.MoveNext();
-            cachedValue.Clear();
+            CachedValue.Clear();
             bool hasNext = false;
-            if (reader != null)
+            try
             {
-                string readStr = reader.ReadLine();
-                pos++;
-                hasNext = doProcess(readStr);
+                if (reader != null)
+                {
+                    string? readStr = reader?.ReadLine();
+                    pos++;
+                    hasNext = doProcess(readStr);
+                }
+                if (hasNext)
+                {
+                    ConstructReturn();
+                }
             }
-            if (hasNext)
+            catch (EndOfStreamException ex)
             {
-                ConstructReturn();
+                Log.Error("end of stream {Message}", ex.Message);
             }
             return hasNext;
         }
-        private bool doProcess(string readStr)
+        private bool doProcess(string? readStr)
         {
             bool hasNext = false;
             if (!readStr.IsNullOrEmpty())
             {
-                string[] arr = readStr.Split(Splitter);
-                if (arr.Length >= MetaDefine.ColumnList.Count)
+                string[] arr = readStr?.Split(Splitter);
+                if (arr?.Length >= MetaDefine.ColumnList.Count)
                 {
                     for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
                     {
                         DataSetColumnMeta meta = MetaDefine.ColumnList[i];
                         if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
                         {
-                            cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormatter));
+                            CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormatter));
                         }
                         else
                         {
-                            cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, timestampFormatter));
+                            CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, timestampFormatter));
                         }
                         hasNext = true;
                     }
@@ -95,9 +102,9 @@ namespace Frameset.Common.Data.Reader
         }
 
 
-        public override async IAsyncEnumerable<T> ReadAsync(string path, string filterSql = null)
+        public override async IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)
         {
-            string line;
+            string? line;
             if (!filterSql.IsNullOrEmpty())
             {
 

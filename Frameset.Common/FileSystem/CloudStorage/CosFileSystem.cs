@@ -12,9 +12,9 @@ namespace Frameset.Common.FileSystem.CloudStorage
     public class CosFileSystem : CloudStorageFileSystem
     {
         private CosXmlServer server;
-        private string region;
-        private TransferManager transferManager;
-        private string tmpFile;
+        private readonly string? region;
+        private readonly TransferManager transferManager;
+        private string tmpFile=null!;
         public CosFileSystem(DataCollectionDefine define) : base(define)
         {
             if (!define.ResourceConfig.TryGetValue(StorageConstants.CLOUDREGION, out region))
@@ -24,13 +24,13 @@ namespace Frameset.Common.FileSystem.CloudStorage
             CosXmlConfig config = new CosXmlConfig.Builder().IsHttps(true).SetRegion(region).Build();
             QCloudCredentialProvider provider = new DefaultQCloudCredentialProvider(accessKey, secretKey, 600);
             server = new CosXmlServer(config, provider);
-            TransferConfig transferConfig = new TransferConfig();
-            transferManager = new TransferManager(server, transferConfig);
+            TransferConfig transferConfig = new();
+            transferManager = new(server, transferConfig);
         }
 
         public override bool Exist(string resourcePath)
         {
-            DoesObjectExistRequest request = new DoesObjectExistRequest(getBucketName(), resourcePath);
+            DoesObjectExistRequest request = new(GetBucketName(), resourcePath);
             return server.DoesObjectExist(request);
         }
 
@@ -38,23 +38,22 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             if (Exist(resourcePath))
             {
-                HeadObjectResult result = server.HeadObject(new HeadObjectRequest(getBucketName(), resourcePath));
+                HeadObjectResult result = server.HeadObject(new HeadObjectRequest(GetBucketName(), resourcePath));
                 return result.size;
             }
             throw new OperationFailedException("key " + resourcePath + " not found in bucket");
         }
 
-        internal override bool bucketExists(string bucketName)
+        internal override bool BucketExists(string bucketName)
         {
             return server.DoesBucketExist(new COSXML.Model.Bucket.DoesBucketExistRequest(bucketName));
         }
 
         internal override Stream GetObject(string bucketName, string objectName)
         {
-            Stream stream;
             FileMeta meta = FileUtil.Parse(objectName);
             tmpFile = Path.GetTempPath() + Path.PathSeparator + meta.FileName + "." + meta.FileFormat;
-            GetObjectResult result = server.GetObject(new GetObjectRequest(getBucketName(), objectName, Path.GetTempPath(), meta.FileName + "." + meta.FileFormat));
+            GetObjectResult result = server.GetObject(new GetObjectRequest(GetBucketName(), objectName, Path.GetTempPath(), meta.FileName + "." + meta.FileFormat));
             if (result.httpCode == 200)
             {
                 return new FileStream(tmpFile, FileMode.Open);
@@ -64,14 +63,14 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         internal override UploadPartSupportStream PutObject(string resourcePath)
         {
-            return new CosOutputStream(server, define, getBucketName(), resourcePath);
+            return new CosOutputStream(server, define, GetBucketName(), resourcePath);
         }
 
         internal override bool PutObject(string bucketName, DataCollectionDefine define, Stream stream, long size)
         {
 
-            PutObjectRequest request = new PutObjectRequest(getBucketName(), define.Path, stream);
-            COSXMLUploadTask task = new COSXMLUploadTask(request);
+            PutObjectRequest request = new(GetBucketName(), define.Path, stream);
+            COSXMLUploadTask task = new(request);
 
             COSXMLUploadTask.UploadTaskResult result = transferManager.UploadAsync(task).Result;
             return result.httpCode == 200;
@@ -82,7 +81,6 @@ namespace Frameset.Common.FileSystem.CloudStorage
             {
                 File.Delete(tmpFile);
             }
-            server = null;
         }
     }
 }

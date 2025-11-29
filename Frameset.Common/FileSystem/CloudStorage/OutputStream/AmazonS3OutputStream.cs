@@ -17,7 +17,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             doInit();
         }
 
-        internal override string completeMultiUpload()
+        protected override string completeMultiUpload()
         {
             CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest();
             request.BucketName = bucketName;
@@ -36,20 +36,24 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             }
             else
             {
-                throw new OperationFailedException("uploadPar completa failed");
+                throw new OperationFailedException("complete multiUpload failed");
             }
         }
 
-        internal override void initiateUpload()
+        protected override void initiateUpload()
         {
             InitiateMultipartUploadResponse response = client.InitiateMultipartUploadAsync(bucketName, key).Result;
             if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 UploadId = response.UploadId;
             }
+            else
+            {
+                throw new OperationFailedException("initiateUpload failed!");
+            }
         }
 
-        internal override void uploadAsync()
+        protected override void uploadAsync()
         {
             PutObjectRequest request = new PutObjectRequest
             {
@@ -70,7 +74,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 
         }
 
-        internal override async void uploadPart(MemoryStream stream, int partNum, long size)
+        protected override async void uploadPart(MemoryStream stream, int partNum, long size)
         {
             UploadPartRequest request = new UploadPartRequest();
             request.BucketName = bucketName;

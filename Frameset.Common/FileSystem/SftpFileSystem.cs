@@ -9,11 +9,11 @@ namespace Frameset.Common.FileSystem
 {
     public class SftpFileSystem : AbstractFileSystem
     {
-        private SftpClient client;
-        internal string ftpUri;
-        internal string userName;
+        private SftpClient client=null!;
+        internal string ftpUri=null!;
+        internal string? userName;
         internal string host = ResourceConstants.DEFAULTHOST;
-        internal string password;
+        internal string? password;
         int port = ResourceConstants.SFTPDEFAULTPORT;
         public SftpFileSystem(DataCollectionDefine define) : base(define)
         {
@@ -25,14 +25,13 @@ namespace Frameset.Common.FileSystem
             base.Init(define);
             if (define.ResourceConfig.Count > 0)
             {
-                string portStr;
-                string hostStr;
-                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPHOST, out hostStr))
+               
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPHOST, out string? hostStr))
                 {
                     host = hostStr ?? ResourceConstants.DEFAULTHOST;
                 }
 
-                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPORT, out portStr))
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPORT, out string? portStr))
                 {
                     port = Convert.ToInt32(portStr);
                 }
@@ -107,7 +106,7 @@ namespace Frameset.Common.FileSystem
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
-            return null;
+            throw new NotSupportedException("source is Path,can not open!");
         }
 
         public override Stream GetOutputStream(string resourcePath)
@@ -160,7 +159,7 @@ namespace Frameset.Common.FileSystem
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
-            return null;
+            throw new OperationFailedException("failed to getInputStream " + resourcePath);
         }
 
         public override Stream GetRawOutputStream(string resourcePath)
@@ -185,16 +184,16 @@ namespace Frameset.Common.FileSystem
             }
         }
 
-        public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
+        public override Tuple<Stream, StreamReader> GetReader(string resourcePath)
         {
-            Stream? input = GetInputStream(resourcePath);
+            Stream input = GetInputStream(resourcePath);
             if (input != null)
             {
                 return Tuple.Create(input, new StreamReader(input));
             }
             else
             {
-                return null;
+                throw new OperationFailedException("failed " + resourcePath);
             }
         }
 

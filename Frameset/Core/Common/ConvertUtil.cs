@@ -140,17 +140,17 @@ namespace Frameset.Core.Common
                 string value = valueObj.ToString();
                 if (columnType.Equals(Constants.MetaType.INTEGER))
                 {
-                    if (value.Contains("."))
+                    if (value.Contains('.'))
                     {
-                        value = value.Substring(0, value.IndexOf("."));
+                        value = value.Substring(0, value.IndexOf('.'));
                     }
                     retObj = Convert.ToInt32(value);
                 }
                 else if (columnType.Equals(Constants.MetaType.BIGINT))
                 {
-                    if (value.Contains("."))
+                    if (value.Contains('.'))
                     {
-                        value = value.Substring(0, value.IndexOf("."));
+                        value = value.Substring(0, value.IndexOf('.'));
                     }
                     retObj = Convert.ToInt64(value);
                 }
@@ -178,7 +178,7 @@ namespace Frameset.Core.Common
             }
             catch (Exception ex)
             {
-                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + valueObj + "failed! type mismatch,Please check!");
+                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + valueObj + "failed! type mismatch,Please check! ex:"+ex.Message);
             }
             return retObj;
         }

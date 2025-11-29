@@ -9,32 +9,30 @@ namespace Frameset.Common.FileSystem
     public class FtpFileSystem : AbstractFileSystem
     {
 
-        internal string ftpUri;
-        internal string userName;
+        internal string ftpUri=null!;
+        internal string? userName;
         internal string host = ResourceConstants.DEFAULTHOST;
-        internal string password;
+        internal string? password;
         int port = ResourceConstants.FTPDEFAULTPORT;
-        FtpClient client;
+        FtpClient client=null!;
         public FtpFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.FTP;
             Init(define);
         }
-        public override void Init(DataCollectionDefine define)
+        public sealed override void Init(DataCollectionDefine define)
         {
             base.Init(define);
 
 
             if (define.ResourceConfig.Count > 0)
             {
-                string portStr;
-                string hostStr;
-                ;
-                if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPHOST, out hostStr))
+                
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPHOST, out string? hostStr))
                 {
                     host = hostStr ?? ResourceConstants.DEFAULTHOST;
                 }
-                if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPPORT, out portStr))
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPPORT, out string? portStr))
                 {
                     port = Convert.ToInt32(portStr);
                 }
@@ -77,7 +75,7 @@ namespace Frameset.Common.FileSystem
                 client.Connect();
                 if (!client.FileExists(resourcePath))
                 {
-                    return null;
+                    throw new FileNotFoundException(resourcePath);
                 }
                 return GetInputStreamWithCompress(resourcePath, client.OpenRead(resourcePath));
             }
@@ -118,7 +116,7 @@ namespace Frameset.Common.FileSystem
                 client.Connect();
                 if (!client.FileExists(resourcePath))
                 {
-                    return null;
+                    throw new FileNotFoundException(resourcePath);
                 }
                 return new BufferedStream(client.OpenRead(resourcePath));
             }
@@ -149,16 +147,16 @@ namespace Frameset.Common.FileSystem
 
         }
 
-        public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
+        public override Tuple<Stream, StreamReader> GetReader(string resourcePath)
         {
-            Stream? input = GetInputStream(resourcePath);
+            Stream input = GetInputStream(resourcePath);
             if (input != null)
             {
                 return Tuple.Create(input, new StreamReader(input));
             }
             else
             {
-                return null;
+                throw new OperationFailedException("getreader " + resourcePath + " failed!");
             }
         }
 
@@ -212,7 +210,7 @@ namespace Frameset.Common.FileSystem
         }
 
 
-        public override void Dispose(bool disposeable)
+        public override void Dispose(bool disposable)
         {
             if (client != null)
             {

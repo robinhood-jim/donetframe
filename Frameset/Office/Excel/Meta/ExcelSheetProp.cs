@@ -19,7 +19,7 @@ namespace Frameset.Office.Excel.Meta
         {
 
         }
-        public string? SheetName
+        public string SheetName
         {
             get; internal set;
         }
@@ -59,7 +59,7 @@ namespace Frameset.Office.Excel.Meta
         {
             get; internal set;
         }
-        internal Dictionary<string, FieldContent> fieldInfoMap = new Dictionary<string, FieldContent>();
+        internal Dictionary<string, FieldContent> fieldInfoMap = new ();
         public Type EntityType
         {
             get; internal set;
@@ -88,7 +88,7 @@ namespace Frameset.Office.Excel.Meta
             ExcelSheetProp propDef = new ExcelSheetProp();
             propDef.EntityType = entityType;
             object[] attributes = entityType.GetCustomAttributes(false);
-            Dictionary<int, ExcelCellProp> cellMap = new Dictionary<int, ExcelCellProp>();
+            Dictionary<int, ExcelCellProp> cellMap = new();
             if (attributes.Length > 0)
             {
                 for (int i = 0; i < attributes.Length; i++)
@@ -123,7 +123,7 @@ namespace Frameset.Office.Excel.Meta
                         {
                             parseAttribute(propAttr, cellProp, columnName, totalNum);
                         }
-                        FieldBuilder builder = new FieldBuilder();
+                        FieldBuilder builder = new();
                         builder.PropertyName(propName).FieldName(columnName).DataType(metaType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                         propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                         cellMap.TryAdd(cellProp.Index, cellProp);
@@ -149,7 +149,7 @@ namespace Frameset.Office.Excel.Meta
                                 parseAttribute(propAttr, cellProp, columnName, totalNum);
                             }
 
-                            FieldBuilder builder = new FieldBuilder();
+                            FieldBuilder builder = new();
                             builder.PropertyName(propName).FieldName(columnName).DataType(cellProp.ColumnType).FieldInfo(field);
                             propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                             cellMap.TryAdd(cellProp.Index, cellProp);
@@ -178,7 +178,7 @@ namespace Frameset.Office.Excel.Meta
                 {
                     nameMapping.TryGetValue(propName, out columName);
                 }
-                ExcelCellProp cellProp = new ExcelCellProp(columName, propName, metaType);
+                ExcelCellProp cellProp = new(columName, propName, metaType);
                 if (Constants.MetaType.DATE.Equals(metaType) || Constants.MetaType.TIMESTAMP.Equals(metaType))
                 {
                     cellProp.Format = timeFormat;
@@ -241,22 +241,22 @@ namespace Frameset.Office.Excel.Meta
         }
         public static SheetPropBuilder NewBuilder()
         {
-            SheetPropBuilder b = new SheetPropBuilder();
+            SheetPropBuilder b = new();
             return b;
         }
         public SheetPropBuilder AddCellProp(string columnName, string columnCode, Constants.MetaType columnType)
         {
-            prop.CellProps.Add(new ExcelCellProp(columnName, columnCode, columnType));
+            prop.CellProps.Add(new(columnName, columnCode, columnType));
             return this;
         }
         public SheetPropBuilder AddCellProp(string columnName, string columnCode, Constants.MetaType columnType, string formula)
         {
-            prop.CellProps.Add(new ExcelCellProp(columnName, columnCode, columnType, formula));
+            prop.CellProps.Add(new(columnName, columnCode, columnType, formula));
             return this;
         }
         public SheetPropBuilder AddCellProp(string columnName, string columnCode, Constants.MetaType columnType, bool needMerge)
         {
-            prop.CellProps.Add(new ExcelCellProp(columnName, columnCode, columnType, needMerge));
+            prop.CellProps.Add(new(columnName, columnCode, columnType, needMerge));
             return this;
         }
         public SheetPropBuilder AddCellProp(ExcelCellProp cellprop)

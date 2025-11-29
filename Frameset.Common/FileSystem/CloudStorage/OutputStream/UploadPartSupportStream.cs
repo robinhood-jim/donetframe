@@ -18,35 +18,34 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         public override long Position { get => pos; set => this.pos = value; }
         long pos;
 
-        internal DataCollectionDefine define;
-        internal string bucketName;
-        internal string region;
-        internal string UploadId;
-        internal string key;
-        internal Dictionary<int, string> etagMap = new Dictionary<int, string>();
-        internal Dictionary<int, int> errorPartMap = new Dictionary<int, int>();
-        internal Dictionary<int, MemoryStream> partMemMap = new Dictionary<int, MemoryStream>();
-        internal int partNum = 0;
-        internal int partSize = 20 * 1024 * 1024;
-        internal bool finish = false;
-        internal bool writeTag = true;
+        protected DataCollectionDefine define;
+        protected string bucketName;
+        protected string region=null!;
+        protected string UploadId=null!;
+        protected string key;
+        protected Dictionary<int, string> etagMap = [];
+        protected Dictionary<int, int> errorPartMap = [];
+        protected Dictionary<int, MemoryStream> partMemMap =[];
+        protected int partNum = 0;
+        protected int partSize = 20 * 1024 * 1024;
+        protected bool finish = false;
+        protected bool writeTag = true;
         protected UploadPartSupportStream(DataCollectionDefine define, string bucketName, string key)
         {
             this.define = define;
             this.bucketName = bucketName;
             this.key = key;
         }
-        internal void doInit()
+        protected void doInit()
         {
-            string configPartSizeStr;
-            define.ResourceConfig.TryGetValue("fs.UploadPartSize", out configPartSizeStr);
+            define.ResourceConfig.TryGetValue("fs.UploadPartSize", out string? configPartSizeStr);
             if (!configPartSizeStr.IsNullOrEmpty())
             {
                 partSize = int.Parse(configPartSizeStr);
             }
             initNewPart(0);
         }
-        internal void initNewPart(int partNum)
+        protected void initNewPart(int partNum)
         {
             var currentStream = new MemoryStream(partSize);
             partMemMap.TryAdd(partNum, currentStream);
@@ -81,7 +80,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             {
                 partMemMap[partNum].Write(b, offset, size);
                 pos += size;
-                flushIfNecessary(false);
+                FlushIfNecessary(false);
                 offset += size;
                 length -= size;
             }
@@ -91,7 +90,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
                 pos += length;
             }
         }
-        internal void flushIfNecessary(bool force)
+        protected void FlushIfNecessary(bool force)
         {
             if (UploadId.IsNullOrEmpty())
             {
@@ -121,7 +120,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
                     string etag = completeMultiUpload();
                     if (!etag.IsNullOrEmpty())
                     {
-                        Log.Information("upload " + key + " with etag {}", etag);
+                        Log.Information("upload " + key + " with etag {Etag}", etag);
                     }
                     else
                     {
@@ -141,9 +140,9 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             }
         }
 
-        internal abstract void initiateUpload();
-        internal abstract void uploadPart(MemoryStream stream, int partNum, long size);
-        internal abstract void uploadAsync();
-        internal abstract string completeMultiUpload();
+        protected abstract void initiateUpload();
+        protected abstract void uploadPart(MemoryStream stream, int partNum, long size);
+        protected abstract void uploadAsync();
+        protected abstract string completeMultiUpload();
     }
 }

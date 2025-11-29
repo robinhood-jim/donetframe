@@ -12,18 +12,18 @@ namespace Frameset.Common.FileSystem.utils
     public class HdfsClient : IDisposable
     {
         private readonly HttpClient client;
-        private readonly string baseUrl;
-        private readonly string userName;
-        private readonly string useToken;
+        private readonly string? baseUrl;
+        private readonly string? userName;
+        private readonly string? useToken;
         private readonly AuthType type = AuthType.USERNAME;
         private long count = 1;
-        public HdfsClient(DataCollectionDefine define, HttpMessageHandler handler = null)
+        public HdfsClient(DataCollectionDefine define, HttpMessageHandler? handler = null)
         {
             Debug.Assert(!define.ResourceConfig.IsNullOrEmpty());
             define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out baseUrl);
             Debug.Assert(!baseUrl.IsNullOrEmpty());
-            string authType = null;
-            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSAUTHTYPE, out authType);
+
+            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSAUTHTYPE, out string? authType);
             Trace.Assert(!authType.IsNullOrEmpty());
             type = AuthTypeOf(authType);
             switch (type)
@@ -62,21 +62,21 @@ namespace Frameset.Common.FileSystem.utils
             }
             return resType;
         }
-        public string wrapRequest(string resourcePath, Dictionary<string, string> paramMap)
+        public string WrapRequest(string resourcePath, Dictionary<string, string> paramMap)
         {
             StringBuilder builder = new StringBuilder(baseUrl).Append(resourcePath);
             switch (type)
             {
                 case AuthType.USERNAME:
-                    builder.Append("?user.name=").Append(userName).Append("&");
+                    builder.Append("?user.name=").Append(userName).Append('&');
                     break;
                 case AuthType.TOKEN:
-                    builder.Append("?delegation=").Append(useToken).Append("&");
+                    builder.Append("?delegation=").Append(useToken).Append('&');
                     break;
                 default:
                     break;
             }
-            string oper;
+            string? oper;
             paramMap.Remove("op", out oper);
             if (builder.Length > 0)
             {
@@ -88,15 +88,15 @@ namespace Frameset.Common.FileSystem.utils
             }
             foreach (var item in paramMap)
             {
-                builder.Append("&").Append(item.Key).Append("=").Append(item.Value);
+                builder.Append('&').Append(item.Key).Append('=').Append(item.Value);
             }
             return builder.ToString();
         }
-        private void operators(Dictionary<string, string> paramMap, string value)
+        private void Operators(Dictionary<string, string> paramMap, string value)
         {
             paramMap.TryAdd("op", value);
         }
-        private void setParameter(Dictionary<string, string> paramMap, string name, object value, object defaultValue = null)
+        private void SetParameter(Dictionary<string, string> paramMap, string name, object? value, object? defaultValue = null)
         {
             if (value != null && !value.ToString().IsNullOrEmpty())
             {
@@ -110,8 +110,8 @@ namespace Frameset.Common.FileSystem.utils
         public async Task<bool> Exists(string path)
         {
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
-            operators(paramMap, "GETFILESTATUS");
-            string requestUrl = wrapRequest(path, paramMap);
+            Operators(paramMap, "GETFILESTATUS");
+            string requestUrl = WrapRequest(path, paramMap);
             HttpResponseMessage message = await client.GetAsync(requestUrl);
             HttpResponseMessage okmessage = message.EnsureSuccessStatusCode();
             return okmessage.IsSuccessStatusCode;
@@ -119,33 +119,44 @@ namespace Frameset.Common.FileSystem.utils
         public async Task<Dictionary<string, object>> FileStatus(string path)
         {
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
-            operators(paramMap, "GETFILESTATUS");
-            string requestUrl = wrapRequest(path, paramMap);
+            Operators(paramMap, "GETFILESTATUS");
+            string requestUrl = WrapRequest(path, paramMap);
             HttpResponseMessage message = await client.GetAsync(requestUrl);
             message.EnsureSuccessStatusCode();
-            Dictionary<string, object> valueMap = JsonSerializer.Deserialize<Dictionary<string, object>>(message.Content.ReadAsStream());
+            Dictionary<string, object>? valueMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await message.Content.ReadAsStreamAsync());
             return valueMap["FileStatus"] as Dictionary<string, object>;
 
         }
         public async Task<Dictionary<string, object>> ContentSummary(string path)
         {
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
-            operators(paramMap, "GETCONTENTSUMMARY");
-            string requestUrl = wrapRequest(path, paramMap);
+            Operators(paramMap, "GETCONTENTSUMMARY");
+            string requestUrl = WrapRequest(path, paramMap);
             HttpResponseMessage message = await client.GetAsync(requestUrl);
             message.EnsureSuccessStatusCode();
-            Dictionary<string, object> valueMap = JsonSerializer.Deserialize<Dictionary<string, object>>(message.Content.ReadAsStream());
+            Dictionary<string, object>? valueMap =await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await message.Content.ReadAsStreamAsync());
             return valueMap["ContentSummary"] as Dictionary<string, object>;
         }
         public async Task<bool> IsDirectory(string path)
         {
             Dictionary<string, object> statusMap = await FileStatus(path);
-            object type;
-            object filestatusMap;
+            object? filestatusMap;
             statusMap.TryGetValue("FileStatus", out filestatusMap);
-            Dictionary<string, object> sMap = filestatusMap as Dictionary<string, object>;
-            sMap.TryGetValue("type", out type);
-            return string.Equals(type.ToString(), "DIRECTORY", StringComparison.OrdinalIgnoreCase);
+            if (filestatusMap != null)
+            {
+                Dictionary<string, object>? sMap = filestatusMap as Dictionary<string, object>;
+                object? type = null;
+                sMap?.TryGetValue("type", out type);
+                if (type != null)
+                {
+                    return string.Equals(type.ToString(), "DIRECTORY", StringComparison.OrdinalIgnoreCase);
+                }
+                else
+                {
+                    return false;
+                }
+            }
+            return false;
         }
         public async Task<bool> ReadStream(Stream stream, string path, long? offset = null, long? length = null, int? buffersize = null)
         {
@@ -153,11 +164,11 @@ namespace Frameset.Common.FileSystem.utils
             if (isExist)
             {
                 Dictionary<string, string> paramMap = new Dictionary<string, string>();
-                operators(paramMap, "OPEN");
-                setParameter(paramMap, "offset", offset);
-                setParameter(paramMap, "length", length);
-                setParameter(paramMap, "buffersize", buffersize);
-                HttpResponseMessage response = await client.GetAsync(wrapRequest(path, paramMap));
+                Operators(paramMap, "OPEN");
+                SetParameter(paramMap, "offset", offset);
+                SetParameter(paramMap, "length", length);
+                SetParameter(paramMap, "buffersize", buffersize);
+                HttpResponseMessage response = await client.GetAsync(WrapRequest(path, paramMap));
                 if (response.StatusCode.Equals(HttpStatusCode.RedirectKeepVerb))
                 {
                     HttpResponseMessage response2 = await client.GetAsync(response.Headers.Location);
@@ -176,19 +187,19 @@ namespace Frameset.Common.FileSystem.utils
                 throw new OperationNotAllowedException("path " + path + " dose't exists!");
             }
         }
-        public async Task<bool> WriteStream(Stream stream, string path, bool overwrite = false, long? blocksize = null, short? replication = null, string permission = null, int? buffersize = null)
+        public async Task<bool> WriteStream(Stream stream, string path, bool overwrite = false, long? blocksize = null, short? replication = null, string? permission = null, int? buffersize = null)
         {
             bool isExist = await Exists(path);
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
-            setParameter(paramMap, "overwrite", overwrite, "false");
+            SetParameter(paramMap, "overwrite", overwrite, "false");
             if (!isExist || string.Equals("true", paramMap["overwrite"], StringComparison.OrdinalIgnoreCase))
             {
-                operators(paramMap, "OPEN");
-                setParameter(paramMap, "blocksize", blocksize);
-                setParameter(paramMap, "buffersize", buffersize);
-                setParameter(paramMap, "replication", replication);
-                setParameter(paramMap, "permission", permission);
-                HttpResponseMessage response = await client.PutAsync(wrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
+                Operators(paramMap, "OPEN");
+                SetParameter(paramMap, "blocksize", blocksize);
+                SetParameter(paramMap, "buffersize", buffersize);
+                SetParameter(paramMap, "replication", replication);
+                SetParameter(paramMap, "permission", permission);
+                HttpResponseMessage response = await client.PutAsync(WrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
                 if (response.StatusCode.Equals(HttpStatusCode.RedirectKeepVerb))
                 {
                     HttpResponseMessage obj = await client.PutAsync(response.Headers.Location, new StreamContent(stream));
@@ -205,11 +216,11 @@ namespace Frameset.Common.FileSystem.utils
         public async Task<IList<Dictionary<string, object>>> ListDirectory(string path)
         {
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
-            operators(paramMap, "LISTSTATUS");
-            HttpResponseMessage obj = await client.GetAsync(wrapRequest(path, paramMap));
+            Operators(paramMap, "LISTSTATUS");
+            HttpResponseMessage obj = await client.GetAsync(WrapRequest(path, paramMap));
             obj.EnsureSuccessStatusCode();
-            Dictionary<string, object> dictMap = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.Content.ReadAsStream());
-            Object list;
+            Dictionary<string, object>? dictMap =await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
+            object? list;
             (dictMap["FileStatuses"] as Dictionary<string, object>).TryGetValue("FileStatus", out list);
             if (list != null)
             {
@@ -220,18 +231,18 @@ namespace Frameset.Common.FileSystem.utils
                 throw new OperationNotAllowedException("path " + path + " not exists!");
             }
         }
-        public async Task<bool> MakeDirectory(string path, string permission = null)
+        public async Task<bool> MakeDirectory(string path, string? permission = null)
         {
             bool isExist = await Exists(path);
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
             if (!isExist)
             {
-                operators(paramMap, "MKDIR");
-                setParameter(paramMap, "permission", permission);
-                HttpResponseMessage obj = await client.PutAsync(wrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
+                Operators(paramMap, "MKDIR");
+                SetParameter(paramMap, "permission", permission);
+                HttpResponseMessage obj = await client.PutAsync(WrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
                 obj.EnsureSuccessStatusCode();
-                Dictionary<string, object> dictMap = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.Content.ReadAsStream());
-                return (Boolean)dictMap["boolean"];
+                Dictionary<string, object>? dictMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
+                return (Boolean)dictMap?["boolean"];
             }
             else
             {
@@ -242,12 +253,12 @@ namespace Frameset.Common.FileSystem.utils
         {
             bool isExist = await Exists(path);
             Dictionary<string, string> paramMap = new Dictionary<string, string>();
-            operators(paramMap, "RENAME");
-            setParameter(paramMap, "destination", target);
-            HttpResponseMessage obj = await client.PutAsync(wrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
+            Operators(paramMap, "RENAME");
+            SetParameter(paramMap, "destination", target);
+            HttpResponseMessage obj = await client.PutAsync(WrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
             obj.EnsureSuccessStatusCode();
-            Dictionary<string, object> dictMap = JsonSerializer.Deserialize<Dictionary<string, object>>(obj.Content.ReadAsStream());
-            return (Boolean)dictMap["boolean"];
+            Dictionary<string, object>? dictMap =await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
+            return (Boolean)dictMap?["boolean"];
         }
 
         public void Dispose()

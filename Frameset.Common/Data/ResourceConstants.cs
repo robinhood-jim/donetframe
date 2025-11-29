@@ -44,6 +44,27 @@
         //kafka
         public static readonly string KAFKABROKERURL = "kafka.brokerUrl";
         public static readonly string CONSUMERGROUPID = "kafka.consumerGroupId";
+        public static readonly string KAFKASERIALIZER = "kafka.serializer";
+        public static readonly string KAFKACONSUMERGROUPID = "kafka.groupId";
+        public enum SerializeType
+        {
+            JSON,
+            XML,
+            AVRO
+        }
+        public static SerializeType SerialzeTypeOf(string serialzeType)
+        {
+            SerializeType resType = SerializeType.JSON;
+            foreach (SerializeType rtype in Enum.GetValues(typeof(SerializeType)))
+            {
+                if (rtype.ToString().ToUpper().Equals(serialzeType.ToUpper()))
+                {
+                    resType = rtype;
+                    break;
+                }
+            }
+            return resType;
+        }
 
     }
 }

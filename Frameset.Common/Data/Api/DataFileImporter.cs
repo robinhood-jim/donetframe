@@ -12,85 +12,53 @@ namespace Frameset.Common.Data.Api
 {
     public static partial class DataFileImporter
     {
-        public static AbstractDataIterator<T> GetDataReader<T>(this DataCollectionDefine collectionDefine, string processPath = null)
+        public static AbstractDataIterator<T> GetDataReader<T>(this DataCollectionDefine collectionDefine, string? processPath = null)
         {
             string processFile = processPath ?? collectionDefine.Path;
             FileMeta meta = FileUtil.Parse(processFile);
+            Trace.Assert(meta != null);
             collectionDefine.Path = processFile;
             IFileSystem fileSystem = FileSystemFactory.GetFileSystem(collectionDefine);
-            AbstractDataIterator<T> iterator = null;
-            if (meta != null)
-            {
-                iterator = GetEnumerator<T>(collectionDefine, meta, fileSystem);
-            }
-            else
-            {
-                throw new OperationFailedException("GetReader failed with Path" + processFile);
-            }
-            return iterator;
+            return GetEnumerator<T>(collectionDefine, meta, fileSystem);
         }
         public static AbstractDataIterator<T> GetReaderByType<T>(this IFileSystem fileSystem, string processPath)
         {
             Trace.Assert(!processPath.IsNullOrEmpty());
             FileMeta meta = FileUtil.Parse(processPath);
-            AbstractDataIterator<T> iterator = null;
-            if (meta != null)
+            Trace.Assert(meta != null);
+            return Constants.FileFormatTypeOf(meta.FileFormat) switch
             {
-                switch (Constants.FileFormatTypeOf(meta.FileFormat))
-                {
-                    case Constants.FileFormatType.CSV:
-                        iterator = new CsvIterator<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.XML:
-                        iterator = new XmlIterator<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.JSON:
-                        iterator = new JsonIterator<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.AVRO:
-                        iterator = new AvroIterator<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.PARQUET:
-                        iterator = new ParquetIterator<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.ORC:
-                        iterator = new OrcIterator<T>(fileSystem, processPath);
-                        break;
+                Constants.FileFormatType.CSV => new CsvIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.XML => new XmlIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.JSON => new JsonIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.AVRO => new AvroIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.PARQUET => new ParquetIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.ORC => new OrcIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.XLSX => throw new NotImplementedException(),
+                Constants.FileFormatType.ARFF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                _ => throw new NotImplementedException()
+            };
 
-                }
-            }
-            return iterator;
 
         }
         private static AbstractDataIterator<T> GetEnumerator<T>(DataCollectionDefine collectionDefine, FileMeta meta, IFileSystem fileSystem)
         {
-            AbstractDataIterator<T> iterator = null;
-            switch (Constants.FileFormatTypeOf(meta.FileFormat))
+            return Constants.FileFormatTypeOf(meta.FileFormat) switch
             {
-                case Constants.FileFormatType.CSV:
-                    iterator = new CsvIterator<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.XML:
-                    iterator = new XmlIterator<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.JSON:
-                    iterator = new JsonIterator<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.AVRO:
-                    iterator = new AvroIterator<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.PARQUET:
-                    iterator = new ParquetIterator<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.ORC:
-                    iterator = new OrcIterator<T>(collectionDefine, fileSystem);
-                    break;
-
-            }
-
-            return iterator;
+                Constants.FileFormatType.CSV => new CsvIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.XML => new XmlIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.JSON => new JsonIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.AVRO => new AvroIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.PARQUET => new ParquetIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.ORC => new OrcIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.XLSX => throw new NotImplementedException(),
+                Constants.FileFormatType.ARFF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                _ => throw new NotImplementedException()
+            };
         }
-        public static IEnumerable<T> GetEnumerable<T>(this DataCollectionDefine define, string processPath = null)
+        public static IEnumerable<T> GetEnumerable<T>(this DataCollectionDefine define, string? processPath = null)
         {
             return new ObjectEnumerable<T>(define, processPath);
 

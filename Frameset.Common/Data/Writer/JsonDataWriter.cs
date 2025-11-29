@@ -7,7 +7,7 @@ namespace Frameset.Common.Data.Writer
 {
     public class JsonDataWriter<T> : AbstractDataWriter<T>
     {
-        private JsonWriter jsonWriter;
+        private readonly JsonWriter jsonWriter;
         public JsonDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.JSON;
@@ -42,11 +42,15 @@ namespace Frameset.Common.Data.Writer
             jsonWriter.WriteStartObject();
             foreach (DataSetColumnMeta column in MetaDefine.ColumnList)
             {
-                object retVal = GetValue(value, column);
+                object? retVal = GetValue(value, column);
                 if (retVal != null)
                 {
                     jsonWriter.WritePropertyName(column.ColumnCode);
-                    jsonWriter.WriteValue(GetOutput(column, retVal));
+                    object? getValue = GetOutput(column, retVal);
+                    if (getValue != null)
+                    {
+                        jsonWriter.WriteValue(getValue);
+                    }
                 }
             }
             jsonWriter.WriteEndObject();

@@ -17,40 +17,45 @@ namespace Frameset.Common.Data.Reader
     /// <typeparam name="T">return Row type</typeparam>
     public abstract class AbstractDataIterator<T> : IEnumerator<T>
     {
-        internal bool reUseCurrent = false;
+        internal bool reUseCurrent = true;
         internal T current;
         public T Current => current;
         internal bool readAsDict = true;
-        internal DateTimeFormatter dateFormatter;
-        internal DateTimeFormatter timestampFormatter;
+        internal DateTimeFormatter? dateFormatter = null;
+        internal DateTimeFormatter? timestampFormatter = null;
         public DataCollectionDefine MetaDefine
         {
             get; internal set;
         }
 
-        object IEnumerator.Current => Current;
+        object IEnumerator.Current => GetCurrent;
         public IFileSystem FileSystem
         {
             get; internal set;
+        }
+        private T GetCurrent()
+        {
+            return current != null ? current : System.Activator.CreateInstance<T>();
         }
         public Constants.FileFormatType Identifier
         {
             get; internal set;
         }
-        internal Dictionary<string, object> cachedValue
+        internal Dictionary<string, object> CachedValue
         {
             get; set;
         } = [];
-        internal Stream inputStream;
-        internal StreamReader reader;
+        internal Stream inputStream=null!;
+        internal StreamReader reader=null!;
         internal bool useReader = false;
         internal bool useRawStream = false;
-        Dictionary<string, MethodParam> methodMap;
+        readonly Dictionary<string, MethodParam> MethodMap = [];
 
         protected AbstractDataIterator(DataCollectionDefine define)
         {
             MetaDefine = define;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out string reuseCurrentStr);
+            string? reuseCurrentStr = null;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
@@ -65,7 +70,7 @@ namespace Frameset.Common.Data.Reader
                 }
                 define.ParseType(typeof(T));
 
-                methodMap = AnnotationUtils.ReflectObject(typeof(T));
+                MethodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
             current = System.Activator.CreateInstance<T>();
         }
@@ -78,7 +83,7 @@ namespace Frameset.Common.Data.Reader
             MetaDefine = builder.Build();
             FileSystem = fileSystem;
             readAsDict = false;
-            methodMap = AnnotationUtils.ReflectObject(typeof(T));
+            MethodMap = AnnotationUtils.ReflectObject(typeof(T));
             current = System.Activator.CreateInstance<T>();
         }
         protected AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem)
@@ -86,7 +91,8 @@ namespace Frameset.Common.Data.Reader
             Trace.Assert(fileSystem != null);
             MetaDefine = define;
             FileSystem = fileSystem;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out string reuseCurrentStr);
+            string? reuseCurrentStr = null;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
@@ -99,22 +105,24 @@ namespace Frameset.Common.Data.Reader
                     define.ColumnList.Clear();
                 }
                 define.ParseType(typeof(T));
-                methodMap = AnnotationUtils.ReflectObject(typeof(T));
+                MethodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
             current = System.Activator.CreateInstance<T>();
         }
 
-        public virtual void Initalize(string filePath = null)
+        public virtual void Initalize(string? filePath = null)
         {
             Trace.Assert(FileSystem != null);
-            string processPath = filePath.IsNullOrEmpty() ? MetaDefine.Path : filePath;
+            string processPath = filePath ?? MetaDefine.Path;
             Trace.Assert(!processPath.IsNullOrEmpty(), "path must not be null");
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTDATEFORMATTER, out string dateFormatStr);
+            string? dateFormatStr = null;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTDATEFORMATTER, out dateFormatStr);
             if (dateFormatStr.IsNullOrEmpty())
             {
                 dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
             }
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTTIMESTAMPFORMATTER, out string timestampFormatStr);
+            string? timestampFormatStr = null;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.INPUTTIMESTAMPFORMATTER, out timestampFormatStr);
             if (timestampFormatStr.IsNullOrEmpty())
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
@@ -124,7 +132,7 @@ namespace Frameset.Common.Data.Reader
             if (useReader)
             {
 
-                Tuple<Stream, StreamReader> tuple = FileSystem.GetReader(processPath);
+                Tuple<Stream, StreamReader>? tuple = FileSystem.GetReader(processPath);
                 if (tuple != null)
                 {
                     inputStream = tuple.Item1;
@@ -174,30 +182,40 @@ namespace Frameset.Common.Data.Reader
         }
         internal void ConstructReturn()
         {
+            if (current == null)
+            {
+                current = System.Activator.CreateInstance<T>();
+            }
             if (readAsDict)
             {
-                dynamic tmp = Convert.ChangeType(current, typeof(Dictionary<string, object>));
+                dynamic? tmp = Convert.ChangeType(current, typeof(Dictionary<string, object>));
                 if (reUseCurrent)
                 {
-                    tmp.Clear();
+                    tmp?.Clear();
                 }
-                foreach (var item in cachedValue)
+                foreach (var item in CachedValue)
                 {
-                    tmp.TryAdd(item.Key, item.Value);
+                    tmp?.TryAdd(item.Key, item.Value);
                 }
             }
             else
             {
-                foreach (var item in cachedValue)
+                foreach (var item in CachedValue)
                 {
-                    if (methodMap.TryGetValue(item.Key, out MethodParam param))
+                    MethodParam? param = null;
+                    if (MethodMap.TryGetValue(item.Key, out param))
                     {
-                        param.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param.GetMethod.ReturnType, item.Value)]);
+                        param?.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param?.GetMethod.ReturnType, item.Value)]);
                     }
+                    else
+                    {
+                        throw new OperationFailedException("param " + item.Key + " not exists!");
+                    }
+
                 }
             }
         }
-        public abstract IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null);
+        public abstract IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null);
 
 
         public void Reset()

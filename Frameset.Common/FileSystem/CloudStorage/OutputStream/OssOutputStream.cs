@@ -1,4 +1,5 @@
 ﻿using Aliyun.OSS;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Serilog;
 using System.Net;
@@ -14,21 +15,28 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             this.ossClient = client;
         }
 
-        internal override string completeMultiUpload()
+        protected override string completeMultiUpload()
         {
             CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest(bucketName, key, UploadId);
             CompleteMultipartUploadResult result = ossClient.CompleteMultipartUpload(request);
             return result.ETag;
         }
 
-        internal override void initiateUpload()
+        protected override void initiateUpload()
         {
-            InitiateMultipartUploadRequest request = new InitiateMultipartUploadRequest(bucketName, key);
+            InitiateMultipartUploadRequest request = new(bucketName, key);
             InitiateMultipartUploadResult result = ossClient.InitiateMultipartUpload(request);
-            UploadId = result.UploadId;
+            if (result.HttpStatusCode == HttpStatusCode.OK)
+            {
+                UploadId = result.UploadId;
+            }
+            else
+            {
+                throw new OperationFailedException("initiateUpload failed!");
+            }
         }
 
-        internal override void uploadAsync()
+        protected override void uploadAsync()
         {
             PutObjectRequest request = new PutObjectRequest(bucketName, key, partMemMap[0]);
             PutObjectResult result = ossClient.PutObject(request);
@@ -42,7 +50,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             }
         }
 
-        internal override void uploadPart(MemoryStream stream, int partNum, long size)
+        protected override void uploadPart(MemoryStream stream, int partNum, long size)
         {
             UploadPartRequest request = new UploadPartRequest(bucketName, key, UploadId);
             request.InputStream = stream;

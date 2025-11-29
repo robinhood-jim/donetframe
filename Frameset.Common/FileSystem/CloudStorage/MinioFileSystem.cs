@@ -2,8 +2,8 @@
 using Amazon.S3.Model;
 using Frameset.Common.FileSystem.CloudStorage.OutputStream;
 using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Net;
 
@@ -16,10 +16,6 @@ namespace Frameset.Common.FileSystem.CloudStorage
         public MinioFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.MINIO;
-            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSACCESSKEY, out accessKey);
-            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSSECRETKEY, out secretKey);
-            define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSENDPOINT, out endpoint);
-            Debug.Assert(!accessKey.IsNullOrEmpty() && !secretKey.IsNullOrEmpty() && !endpoint.IsNullOrEmpty());
             AmazonS3Config config = new AmazonS3Config()
             {
                 ServiceURL = endpoint
@@ -28,7 +24,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         }
 
-        public override void Dispose(bool disposeable)
+        public override void Dispose(bool disposable)
         {
             if (client != null)
             {
@@ -40,7 +36,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             GetObjectMetadataResponse response = client.GetObjectMetadataAsync(new GetObjectMetadataRequest()
             {
-                BucketName = getBucketName(),
+                BucketName = GetBucketName(),
                 Key = resourcePath
 
             }).Result;
@@ -56,10 +52,15 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         public override long GetStreamSize(string resourcePath)
         {
-            throw new NotImplementedException();
+            if (Exist(resourcePath))
+            {
+                GetObjectMetadataResponse response = client.GetObjectMetadataAsync(GetBucketName(), resourcePath).Result;
+                return response.HttpStatusCode == HttpStatusCode.OK ? response.ContentLength : -1;
+            }
+            throw new OperationFailedException("key " + resourcePath + " not found in bucket");
         }
 
-        internal override bool bucketExists(string bucketName)
+        internal override bool BucketExists(string bucketName)
         {
             Debug.Assert(client != null);
             GetBucketLocationResponse response = client.GetBucketLocationAsync(new GetBucketLocationRequest()
@@ -80,11 +81,11 @@ namespace Frameset.Common.FileSystem.CloudStorage
                 BucketName = bucketName,
                 Key = objectName
             }).Result;
-            if (response.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            if (response.HttpStatusCode == HttpStatusCode.OK)
             {
                 return response.ResponseStream;
             }
-            return null;
+            throw new OperationFailedException("get "+objectName+" failed!");
         }
 
         internal override bool PutObject(string bucketName, DataCollectionDefine define, Stream stream, long size)

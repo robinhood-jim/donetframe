@@ -15,8 +15,7 @@ namespace Frameset.Common.FileSystem
         public HDFSFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.HDFS;
-            string apiUrl;
-            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out apiUrl);
+            define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out string? apiUrl);
             client = new HdfsClient(define);
 
         }
@@ -88,16 +87,16 @@ namespace Frameset.Common.FileSystem
             return new MemoryStream();
         }
 
-        public override Tuple<Stream, StreamReader>? GetReader(string resourcePath)
+        public override Tuple<Stream, StreamReader> GetReader(string resourcePath)
         {
-            Stream? input = GetInputStream(resourcePath);
+            Stream input = GetInputStream(resourcePath);
             if (input != null)
             {
                 return Tuple.Create(input, new StreamReader(input));
             }
             else
             {
-                return null;
+                throw new OperationFailedException("failed " + resourcePath);
             }
         }
 

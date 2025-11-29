@@ -3,6 +3,7 @@ using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 
 
 namespace Frameset.Common.Data.Writer
@@ -16,7 +17,7 @@ namespace Frameset.Common.Data.Writer
             Identifier = Constants.FileFormatType.CSV;
             useWriter = true;
             contents = new List<string>(define.ColumnList.Count);
-            define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string separatorStr);
+            define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string? separatorStr);
             if (!separatorStr.IsNullOrEmpty())
             {
                 sepearotr = separatorStr[0];
@@ -29,8 +30,7 @@ namespace Frameset.Common.Data.Writer
             Identifier = Constants.FileFormatType.CSV;
             useWriter = true;
             contents = new List<string>(methodMap.Count);
-            string separatorStr;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out separatorStr);
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string? separatorStr);
             if (!separatorStr.IsNullOrEmpty())
             {
                 sepearotr = separatorStr[0];
@@ -51,17 +51,16 @@ namespace Frameset.Common.Data.Writer
                 if (useDictOutput)
                 {
                     Dictionary<string, object> valueMap = value as Dictionary<string, object>;
-                    object retValue;
-                    valueMap.TryGetValue(meta.ColumnCode, out retValue);
+                    object? retValue = null;
+                    valueMap?.TryGetValue(meta.ColumnCode, out retValue);
                     contents.Add(GetOutputString(meta, retValue));
                 }
                 else
                 {
-                    MethodParam param;
-                    methodMap.TryGetValue(meta.ColumnCode, out param);
+                    methodMap.TryGetValue(meta.ColumnCode, out MethodParam? param);
                     if (param != null)
                     {
-                        object retValue = param.GetMethod.Invoke(value, null);
+                        object retValue = param?.GetMethod.Invoke(value, null);
                         contents.Add(GetOutputString(meta, retValue));
                     }
                     else

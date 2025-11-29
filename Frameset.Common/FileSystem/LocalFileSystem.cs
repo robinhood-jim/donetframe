@@ -6,7 +6,8 @@ namespace Frameset.Common.FileSystem
     public class LocalFileSystem : AbstractFileSystem
     {
         static LocalFileSystem fileSystem = new LocalFileSystem(null);
-        internal LocalFileSystem(DataCollectionDefine define) : base(define)
+        
+        private LocalFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.LOCAL;
         }
@@ -29,7 +30,7 @@ namespace Frameset.Common.FileSystem
             {
                 throw new FileNotFoundException("resourcePath" + resourcePath + "not found!");
             }
-            return GetInputStreamWithCompress(resourcePath, new BufferedStream(new FileStream(resourcePath, FileMode.Open)));
+            return GetInputStreamWithCompress(resourcePath, new FileStream(resourcePath, FileMode.Open));
         }
         public override Stream GetOutputStream(string resourcePath)
         {
@@ -54,7 +55,7 @@ namespace Frameset.Common.FileSystem
             {
                 return new BufferedStream(new FileStream(resourcePath, FileMode.CreateNew));
             }
-            return new BufferedStream(new FileStream(resourcePath, FileMode.Create));
+            return new FileStream(resourcePath, FileMode.Create);
         }
 
 
@@ -70,13 +71,6 @@ namespace Frameset.Common.FileSystem
             {
                 return -1;
             }
-        }
-
-
-
-        public override void Init(DataCollectionDefine define)
-        {
-            base.Init(define);
         }
 
         public override bool IsDirectory(string resourcePath)

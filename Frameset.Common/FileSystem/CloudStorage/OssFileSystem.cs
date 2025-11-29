@@ -3,8 +3,6 @@ using Frameset.Common.FileSystem.CloudStorage.OutputStream;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics;
 using System.Net;
 
 namespace Frameset.Common.FileSystem.CloudStorage
@@ -15,32 +13,26 @@ namespace Frameset.Common.FileSystem.CloudStorage
         public OssFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.S3;
-            Debug.Assert(!accessKey.IsNullOrEmpty() && !secretKey.IsNullOrEmpty() && !endpoint.IsNullOrEmpty());
             ossClient = new OssClient(endpoint, accessKey, secretKey);
 
         }
 
-        public override void Dispose(bool disposable)
-        {
-            ossClient = null;
-        }
-
         public override bool Exist(string resourcePath)
         {
-            return ossClient.DoesObjectExist(getBucketName(), resourcePath);
+            return ossClient.DoesObjectExist(GetBucketName(), resourcePath);
         }
 
         public override long GetStreamSize(string resourcePath)
         {
             if (Exist(resourcePath))
             {
-                ObjectMetadata metadata = ossClient.GetObjectMetadata(getBucketName(), resourcePath);
+                ObjectMetadata metadata = ossClient.GetObjectMetadata(GetBucketName(), resourcePath);
                 return metadata.ContentLength;
             }
             return -1;
         }
 
-        internal override bool bucketExists(string bucketName)
+        internal override bool BucketExists(string bucketName)
         {
             return ossClient.DoesBucketExist(bucketName);
         }
@@ -57,12 +49,12 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         internal override UploadPartSupportStream PutObject(string resourcePath)
         {
-            return new OssOutputStream(ossClient, define, getBucketName(), resourcePath);
+            return new OssOutputStream(ossClient, define, GetBucketName(), resourcePath);
         }
 
         internal override bool PutObject(string bucketName, DataCollectionDefine define, Stream stream, long size)
         {
-            PutObjectRequest request = new PutObjectRequest(getBucketName(), define.Path, stream);
+            PutObjectRequest request = new(GetBucketName(), define.Path, stream);
             ObjectMetadata metadata = new ObjectMetadata();
             metadata.ContentType = GetContentType(define);
             metadata.ContentLength = size;

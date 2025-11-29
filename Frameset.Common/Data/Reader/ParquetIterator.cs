@@ -6,18 +6,19 @@ using Microsoft.IdentityModel.Tokens;
 using Parquet;
 using Parquet.Data;
 using Parquet.Schema;
+using System.Reflection;
 
 namespace Frameset.Common.Data.Reader
 {
     public class ParquetIterator<T> : AbstractDataIterator<T>
     {
-        private ParquetReader preader;
-        private ParquetSchema schema;
-        private List<DataField> fields = new List<DataField>();
-        private Dictionary<DataField, DataColumn> groupMap = new Dictionary<DataField, DataColumn>();
+        private ParquetReader preader=null!;
+        private ParquetSchema schema=null!;
+        private List<DataField> fields = [];
+        private readonly Dictionary<DataField, DataColumn> groupMap = new Dictionary<DataField, DataColumn>();
         int groupCount;
-        IReadOnlyList<IParquetRowGroupReader> groupReaders;
-        IParquetRowGroupReader currentReader;
+        IReadOnlyList<IParquetRowGroupReader> groupReaders=null!;
+        IParquetRowGroupReader currentReader=null!;
         int currentGroup = 0;
         long rowCount = 0;
         long readLines = 0;
@@ -42,9 +43,9 @@ namespace Frameset.Common.Data.Reader
             Initalize(processPath);
         }
 
-        public override void Initalize(string path)
+        public override sealed void Initalize(string? filePath=null)
         {
-            base.Initalize(path);
+            base.Initalize(filePath);
             preader = ParquetReader.CreateAsync(inputStream).Result;
             if (MetaDefine.ColumnList.IsNullOrEmpty())
             {
@@ -80,13 +81,16 @@ namespace Frameset.Common.Data.Reader
                     groupMap.TryAdd(fields[i], currentReader.ReadColumnAsync(fields[i]).Result);
                 }
             }
-            cachedValue.Clear();
+            CachedValue.Clear();
             foreach (DataField field in fields)
             {
-                object value = groupMap[field].Data.GetValue(readLines);
+                DataColumn? dataColumn = null;
+                groupMap.TryGetValue(field, out dataColumn);
+
+                object? value = dataColumn?.Data.GetValue(readLines);
                 if (value != null)
                 {
-                    cachedValue.TryAdd(field.Name, value);
+                    CachedValue.TryAdd(field.Name, value);
                 }
             }
             ConstructReturn();
@@ -94,7 +98,7 @@ namespace Frameset.Common.Data.Reader
             return true;
         }
 
-        public override async IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
+        public override async IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)
         {
             base.MoveNext();
             if (currentGroup < groupCount)
@@ -111,13 +115,16 @@ namespace Frameset.Common.Data.Reader
                         groupMap.TryAdd(fields[i], await currentReader.ReadColumnAsync(fields[i]));
                     }
                 }
-                cachedValue.Clear();
+                CachedValue.Clear();
                 foreach (DataField field in fields)
                 {
-                    object value = groupMap[field].Data.GetValue(readLines);
+                    DataColumn? dataColumn;
+                    groupMap.TryGetValue(field, out dataColumn);
+                    
+                    object? value = dataColumn?.Data.GetValue(readLines);
                     if (value != null)
                     {
-                        cachedValue.TryAdd(field.Name, value);
+                        CachedValue.TryAdd(field.Name, value);
                     }
                 }
                 ConstructReturn();

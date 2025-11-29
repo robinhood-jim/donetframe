@@ -14,51 +14,27 @@ namespace Frameset.Common.Compress
 {
     public class StreamDecoder
     {
-        internal StreamDecoder()
+        private StreamDecoder()
         {
 
         }
-        public static Stream GetInputByCompressType(string resourcePath, Stream rawstream, char dirSep = '/')
+        public static Stream GetInputByCompressType(string resourcePath, Stream rawstream, long streamSize, char dirSep = '/')
         {
             Trace.Assert(rawstream != null);
-            Stream inputStream = null;
             FileMeta meta = FileUtil.Parse(resourcePath, dirSep);
-            if (meta != null)
+            Stream inputStream = meta.CompressCodec switch
             {
-                switch (meta.CompressCodec)
-                {
-                    case CompressType.GZ:
-                        inputStream = new GZipInputStream(rawstream);
-                        break;
-                    case CompressType.LZ4:
-                        inputStream = LZ4Stream.Decode(rawstream);
-                        break;
-                    case CompressType.ZIP:
-                        inputStream = new ZipInputStream(rawstream);
-                        break;
-                    case CompressType.BZ2:
-                        inputStream = new BZip2InputStream(rawstream);
-                        break;
-                    case CompressType.ZSTD:
-                        inputStream = new ZstdSharp.DecompressionStream(rawstream);
-                        break;
-                    case CompressType.BROTLI:
-                        inputStream = new BrotliStream(rawstream, CompressionMode.Decompress);
-                        break;
-                    case CompressType.LZMA:
-                        inputStream = new LzmaStream(LzmaEncoderProperties.Default, false, rawstream);
-                        break;
-                    case CompressType.XZ:
-                        inputStream = new XZStream(rawstream);
-                        break;
-                    case CompressType.SNAPPY:
-                        inputStream = new Snappier.SnappyStream(rawstream, CompressionMode.Decompress);
-                        break;
-                    default:
-                        inputStream = rawstream;
-                        break;
-                }
-            }
+                CompressType.GZ => new GZipInputStream(rawstream),
+                CompressType.LZ4 => LZ4Stream.Decode(rawstream),
+                CompressType.ZIP => new ZipInputStream(rawstream),
+                CompressType.BZ2 => new BZip2InputStream(rawstream),
+                CompressType.ZSTD => new ZstdSharp.DecompressionStream(rawstream),
+                CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Decompress),
+                CompressType.LZMA => GetLzmaStream(rawstream, streamSize),
+                CompressType.XZ => new XZStream(rawstream),
+                CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Decompress),
+                _ => rawstream
+            };
             if (inputStream != null)
             {
                 return new BufferedStream(inputStream);
@@ -67,6 +43,13 @@ namespace Frameset.Common.Compress
             {
                 throw new OperationFailedException("failed to read from " + resourcePath);
             }
+        }
+        private static Stream GetLzmaStream(Stream rawstream, long compressLength)
+        {
+            var lzmaEncodingStream = new LzmaStream(LzmaEncoderProperties.Default, false, rawstream);
+            var properties = lzmaEncodingStream.Properties;
+            lzmaEncodingStream.Close();
+            return new LzmaStream(properties, rawstream, compressLength);
         }
     }
 }

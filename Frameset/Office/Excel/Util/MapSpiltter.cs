@@ -72,7 +72,7 @@ namespace Frameset.Office.Excel.Util
 
         public override void ProcessCell(int trackedColIndex)
         {
-            Cell cell = parseCell(trackedColIndex, false);
+            Cell cell = ParseCell(trackedColIndex, false);
             CellAddress addr = cell.GetAddress();
             cells[addr.GetColumn()] = cell;
         }
@@ -122,7 +122,7 @@ namespace Frameset.Office.Excel.Util
 
         public override void ProcessCell(int trackedColIndex)
         {
-            Cell cell = parseCell(trackedColIndex, false);
+            Cell cell = ParseCell(trackedColIndex, false);
             CellAddress addr = cell.GetAddress();
             cells[addr.GetColumn()] = cell;
         }

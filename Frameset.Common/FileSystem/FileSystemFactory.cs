@@ -1,37 +1,27 @@
 ﻿using Frameset.Common.FileSystem.CloudStorage;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
+using System.Diagnostics;
 
 namespace Frameset.Common.FileSystem
 {
-    public class FileSystemFactory
+    public static class FileSystemFactory
     {
         public static IFileSystem GetFileSystem(DataCollectionDefine define)
         {
-            IFileSystem fileSystem = LocalFileSystem.GetInstance();
-            switch (define.FsType)
+            Trace.Assert(define != null, "DataCollectionDefine is null");
+            return define.FsType switch
             {
-                case Constants.FileSystemType.LOCAL:
-                    fileSystem = LocalFileSystem.GetInstance();
-                    break;
-                case Constants.FileSystemType.FTP:
-                    fileSystem = new FtpFileSystem(define);
-                    break;
-                case Constants.FileSystemType.HDFS:
-                    fileSystem = new HDFSFileSystem(define);
-                    break;
-                case Constants.FileSystemType.SFTP:
-                    fileSystem = new SftpFileSystem(define);
-                    break;
-                case Constants.FileSystemType.MINIO:
-                    fileSystem = new MinioFileSystem(define);
-                    break;
-                case Constants.FileSystemType.S3:
-                    fileSystem = new AmazonS3FileSystem(define);
-                    break;
-            }
-            return fileSystem;
-
+                Constants.FileSystemType.LOCAL => LocalFileSystem.GetInstance(),
+                Constants.FileSystemType.FTP => new FtpFileSystem(define),
+                Constants.FileSystemType.SFTP => new SftpFileSystem(define),
+                Constants.FileSystemType.HDFS => new HDFSFileSystem(define),
+                Constants.FileSystemType.MINIO => new MinioFileSystem(define),
+                Constants.FileSystemType.S3 => new AmazonS3FileSystem(define),
+                Constants.FileSystemType.ALIYUN => new OssFileSystem(define),
+                Constants.FileSystemType.TENCENTCOS => new CosFileSystem(define),
+                _ => throw new NotImplementedException(),
+            };
         }
     }
 }

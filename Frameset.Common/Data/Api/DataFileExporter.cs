@@ -1,7 +1,6 @@
 ﻿using Frameset.Common.Data.Writer;
 using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
-using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
@@ -16,81 +15,47 @@ namespace Frameset.Common.Data.Api
         {
             Trace.Assert(!processPath.IsNullOrEmpty());
             FileMeta meta = FileUtil.Parse(processPath);
-            AbstractDataWriter<T> writer = null;
-            if (meta != null)
+            Trace.Assert(meta != null);
+            return Constants.FileFormatTypeOf(meta.FileFormat) switch
             {
-                switch (Constants.FileFormatTypeOf(meta.FileFormat))
-                {
-                    case Constants.FileFormatType.CSV:
-                        writer = new CsvDataWriter<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.XML:
-                        writer = new XmlDataWriter<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.JSON:
-                        writer = new JsonDataWriter<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.AVRO:
-                        writer = new AvroDataWriter<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.PARQUET:
-                        writer = new ParquetDateWriter<T>(fileSystem, processPath);
-                        break;
-                    case Constants.FileFormatType.ORC:
-                        writer = new OrcDataWriter<T>(fileSystem, processPath);
-                        break;
-                }
-            }
-            else
-            {
-                throw new OperationFailedException("GetWriter failed with Path" + processPath);
-            }
-            return writer;
+                Constants.FileFormatType.CSV => new CsvDataWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.XML => new XmlDataWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.JSON => new JsonDataWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.AVRO => new AvroDataWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.ORC => new OrcDataWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.XLSX => throw new NotImplementedException(),
+                Constants.FileFormatType.ARFF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                _ => throw new NotImplementedException()
+            };
+
         }
-        public static AbstractDataWriter<T> GetDataWriter<T>(this DataCollectionDefine collectionDefine, string processPath = null)
+        public static AbstractDataWriter<T> GetDataWriter<T>(this DataCollectionDefine collectionDefine, string? processPath = null)
         {
             string processFile = processPath ?? collectionDefine.Path;
             FileMeta meta = FileUtil.Parse(processFile);
+            Trace.Assert(meta != null);
             collectionDefine.Path = processFile;
             IFileSystem fileSystem = FileSystemFactory.GetFileSystem(collectionDefine);
-            AbstractDataWriter<T> writer = null;
-            if (meta != null)
-            {
-                writer = GetWriterByFormat<T>(collectionDefine, meta, fileSystem);
-            }
-            else
-            {
-                throw new OperationFailedException("GetWriter failed with Path" + processFile);
-            }
-            return writer;
+            return GetWriterByFormat<T>(collectionDefine, meta, fileSystem);
         }
 
         private static AbstractDataWriter<T> GetWriterByFormat<T>(DataCollectionDefine collectionDefine, FileMeta meta, IFileSystem fileSystem)
         {
-            AbstractDataWriter<T> writer = null;
-            switch (Constants.FileFormatTypeOf(meta.FileFormat))
+            return Constants.FileFormatTypeOf(meta.FileFormat) switch
             {
-                case Constants.FileFormatType.CSV:
-                    writer = new CsvDataWriter<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.XML:
-                    writer = new XmlDataWriter<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.JSON:
-                    writer = new JsonDataWriter<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.AVRO:
-                    writer = new AvroDataWriter<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.PARQUET:
-                    writer = new ParquetDateWriter<T>(collectionDefine, fileSystem);
-                    break;
-                case Constants.FileFormatType.ORC:
-                    writer = new OrcDataWriter<T>(collectionDefine, fileSystem);
-                    break;
-            }
-
-            return writer;
+                Constants.FileFormatType.CSV => new CsvDataWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.XML => new XmlDataWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.JSON => new JsonDataWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.AVRO => new AvroDataWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.ORC => new OrcDataWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.XLSX => throw new NotImplementedException(),
+                Constants.FileFormatType.ARFF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                _ => throw new NotImplementedException()
+            };
         }
     }
 }

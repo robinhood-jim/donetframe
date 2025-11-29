@@ -9,9 +9,9 @@ namespace Frameset.Common.Data.Reader
 {
     public class XmlIterator<T> : AbstractDataIterator<T>
     {
-        private XmlReader xmlReader;
-        private string rootEleNodeName;
-        private string childEleNodeName;
+        private XmlReader xmlReader=null!;
+        private string rootEleNodeName=null!;
+        private string childEleNodeName=null!;
         private Dictionary<string, DataSetColumnMeta> metaMap = new Dictionary<string, DataSetColumnMeta>();
 
         public XmlIterator(DataCollectionDefine define) : base(define)
@@ -32,7 +32,7 @@ namespace Frameset.Common.Data.Reader
             Initalize(processPath);
         }
 
-        public override void Initalize(string filePath = null)
+        public override sealed void Initalize(string? filePath = null)
         {
             base.Initalize(filePath);
             xmlReader = XmlReader.Create(inputStream);
@@ -57,7 +57,7 @@ namespace Frameset.Common.Data.Reader
             }
         }
 
-        public override IAsyncEnumerable<T> ReadAsync(string path = null, string filterSql = null)
+        public override IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)
         {
             base.Initalize(path);
             return aysncQuery();
@@ -74,7 +74,7 @@ namespace Frameset.Common.Data.Reader
                         while (xmlReader.MoveToNextAttribute())
                         {
                             string name = xmlReader.Name;
-                            DataSetColumnMeta meta;
+                            DataSetColumnMeta? meta;
                             metaMap.TryGetValue(name, out meta);
                             if (meta == null)
                             {
@@ -88,7 +88,7 @@ namespace Frameset.Common.Data.Reader
                     {
                         string propName = xmlReader.LocalName;
                         xmlReader.Read();
-                        DataSetColumnMeta meta;
+                        DataSetColumnMeta? meta;
                         metaMap.TryGetValue(propName, out meta);
                         if (meta == null)
                         {
@@ -113,7 +113,7 @@ namespace Frameset.Common.Data.Reader
         public override bool MoveNext()
         {
             base.MoveNext();
-            cachedValue.Clear();
+            CachedValue.Clear();
             bool hasNext = false;
             while (xmlReader.Read())
             {
@@ -124,7 +124,7 @@ namespace Frameset.Common.Data.Reader
                         while (xmlReader.MoveToNextAttribute())
                         {
                             string name = xmlReader.Name;
-                            DataSetColumnMeta meta;
+                            DataSetColumnMeta? meta;
                             metaMap.TryGetValue(name, out meta);
                             if (meta == null)
                             {
@@ -138,7 +138,7 @@ namespace Frameset.Common.Data.Reader
                     {
                         string propName = xmlReader.LocalName;
                         xmlReader.Read();
-                        DataSetColumnMeta meta;
+                        DataSetColumnMeta? meta;
                         metaMap.TryGetValue(propName, out meta);
                         if (meta == null)
                         {
@@ -168,11 +168,11 @@ namespace Frameset.Common.Data.Reader
         {
             if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
             {
-                cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, dateFormatter));
+                CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, dateFormatter));
             }
             else
             {
-                cachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, timestampFormatter));
+                CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, timestampFormatter));
             }
         }
 

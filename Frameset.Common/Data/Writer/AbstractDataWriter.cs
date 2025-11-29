@@ -32,15 +32,15 @@ namespace Frameset.Common.Data.Writer
         {
             get; set;
         } = [];
-        internal Stream outputStream;
-        internal StreamWriter writer;
+        internal Stream outputStream =null!;
+        internal StreamWriter writer=null!;
         internal bool useWriter = false;
         internal bool useRawOutputStream = false;
         internal bool useDictOutput = true;
-        internal Dictionary<string, MethodParam> methodMap;
+        internal Dictionary<string, MethodParam> methodMap = [];
 
-        internal DateTimeFormatter dateFormatter;
-        internal DateTimeFormatter timestampFormatter;
+        internal DateTimeFormatter dateFormatter=null!;
+        internal DateTimeFormatter timestampFormatter=null!;
         public void Dispose()
         {
             Dispose(true);
@@ -95,6 +95,7 @@ namespace Frameset.Common.Data.Writer
         protected AbstractDataWriter(IFileSystem fileSystem, string processPath)
         {
             useDictOutput = false;
+            this.FileSystem = fileSystem;
             Trace.Assert(fileSystem != null && !typeof(T).Equals(typeof(Dictionary<string, object>)));
             DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
             builder.ParseType(typeof(T)).Path(processPath);
@@ -105,12 +106,14 @@ namespace Frameset.Common.Data.Writer
 
         private void ConstructDateFormatter()
         {
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out string dateFormatStr);
+            string? dateFormatStr = null;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out dateFormatStr);
             if (dateFormatStr.IsNullOrEmpty())
             {
                 dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
             }
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out string timestampFormatStr);
+            string? timestampFormatStr = null;
+            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out timestampFormatStr);
             if (timestampFormatStr.IsNullOrEmpty())
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
@@ -137,26 +140,23 @@ namespace Frameset.Common.Data.Writer
                 }
                 else
                 {
-                    Tuple<Stream, StreamWriter> tuple = FileSystem.GetWriter(MetaDefine.Path);
-                    outputStream = tuple.Item1;
-                    writer = tuple.Item2;
+                    Tuple<Stream, StreamWriter>? tuple = FileSystem.GetWriter(MetaDefine.Path);
+                    outputStream = tuple?.Item1;
+                    writer = tuple?.Item2;
                 }
             }
         }
-        internal object GetValue(T input, DataSetColumnMeta column)
+        internal object? GetValue(T input, DataSetColumnMeta column)
         {
-            object retValue = null;
+            object? retValue = null;
             if (useDictOutput)
             {
                 (input as Dictionary<string, object>).TryGetValue(column.ColumnCode, out retValue);
             }
             else
             {
-                methodMap.TryGetValue(column.ColumnCode, out MethodParam param);
-                if (param != null)
-                {
-                    retValue = param.GetMethod.Invoke(input, null);
-                }
+                methodMap.TryGetValue(column.ColumnCode, out MethodParam? param);
+                retValue = param?.GetMethod.Invoke(input, null);
             }
             if (retValue != null)
             {
@@ -176,7 +176,7 @@ namespace Frameset.Common.Data.Writer
 
             return retValue;
         }
-        internal string GetOutputString(DataSetColumnMeta meta, object value)
+        internal string GetOutputString(DataSetColumnMeta meta, object? value)
         {
             if (value != null)
             {
@@ -195,12 +195,12 @@ namespace Frameset.Common.Data.Writer
                     }
                     else
                     {
-                        return value.ToString();
+                        return value?.ToString();
                     }
                 }
                 else
                 {
-                    return value.ToString();
+                    return value?.ToString();
                 }
             }
             else
@@ -232,7 +232,7 @@ namespace Frameset.Common.Data.Writer
             useDictOutput = typeof(T).Equals(typeof(Dictionary<string, object>));
             return useDictOutput;
         }
-        internal object GetOutput(DataSetColumnMeta column, object input)
+        internal object? GetOutput(DataSetColumnMeta column, object input)
         {
             if (input != null)
             {
@@ -255,10 +255,9 @@ namespace Frameset.Common.Data.Writer
             }
             else
             {
-                return input;
+                return null;
             }
-            return input;
-
+            return null;
         }
     }
 

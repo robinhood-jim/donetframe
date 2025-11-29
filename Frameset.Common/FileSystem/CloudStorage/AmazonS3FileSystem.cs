@@ -4,7 +4,6 @@ using Frameset.Common.FileSystem.CloudStorage.OutputStream;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Net;
 
@@ -16,7 +15,6 @@ namespace Frameset.Common.FileSystem.CloudStorage
         public AmazonS3FileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.S3;
-            Debug.Assert(!accessKey.IsNullOrEmpty() && !secretKey.IsNullOrEmpty() && !endpoint.IsNullOrEmpty());
             AmazonS3Config config = new AmazonS3Config()
             {
                 ServiceURL = endpoint
@@ -36,7 +34,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             GetObjectMetadataResponse response = client.GetObjectMetadataAsync(new GetObjectMetadataRequest()
             {
-                BucketName = getBucketName(),
+                BucketName = GetBucketName(),
                 Key = resourcePath
 
             }).Result;
@@ -54,13 +52,13 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             if (Exist(resourcePath))
             {
-                GetObjectMetadataResponse response = client.GetObjectMetadataAsync(getBucketName(), resourcePath).Result;
+                GetObjectMetadataResponse response = client.GetObjectMetadataAsync(GetBucketName(), resourcePath).Result;
                 return response.HttpStatusCode == HttpStatusCode.OK ? response.ContentLength : -1;
             }
             throw new OperationFailedException("key " + resourcePath + " not found in bucket");
         }
 
-        internal override bool bucketExists(string bucketName)
+        internal override bool BucketExists(string bucketName)
         {
             Debug.Assert(client != null);
             GetBucketLocationResponse response = client.GetBucketLocationAsync(new GetBucketLocationRequest()

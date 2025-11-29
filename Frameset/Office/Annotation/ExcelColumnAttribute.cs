@@ -5,11 +5,11 @@ namespace Frameset.Office.Annotation
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field)]
     public class ExcelColumnAttribute : Attribute
     {
-        public string? ColumnName
+        public string ColumnName
         {
             get; set;
         }
-        public string? Format
+        public string Format
         {
             get; set;
         }
