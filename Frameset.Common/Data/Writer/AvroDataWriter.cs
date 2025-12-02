@@ -12,9 +12,9 @@ namespace Frameset.Common.Data.Writer
 {
     public class AvroDataWriter<T> : AbstractDataWriter<T>
     {
-        private RecordSchema schema=null!;
-        private DatumWriter<GenericRecord> datumWriter=null!;
-        private DataFileWriter<GenericRecord> fileWriter=null!;
+        private RecordSchema schema = null!;
+        private DatumWriter<GenericRecord> datumWriter = null!;
+        private DataFileWriter<GenericRecord> fileWriter = null!;
         public AvroDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.AVRO;

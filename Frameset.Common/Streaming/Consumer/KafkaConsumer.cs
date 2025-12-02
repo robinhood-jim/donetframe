@@ -10,7 +10,7 @@ namespace Frameset.Common.Streaming.Consumer
     public class KafkaConsumer<T> : AbstractQueueConsumer<T>
     {
         private IConsumer<string, byte[]> consumer;
-        private readonly string groupId=null!;
+        private readonly string groupId = null!;
         private readonly string? brokerUrl;
         private int maxReturnSize = 1000;
         private bool subscribeTag = false;
@@ -25,7 +25,7 @@ namespace Frameset.Common.Streaming.Consumer
                 GroupId = groupId,
                 BootstrapServers = brokerUrl,
                 AutoOffsetReset = AutoOffsetReset.Earliest,
-                EnableAutoCommit=false
+                EnableAutoCommit = false
             };
             consumer = new ConsumerBuilder<string, byte[]>(consumerConfig).Build();
         }
@@ -73,7 +73,7 @@ namespace Frameset.Common.Streaming.Consumer
         {
             base.Dispose(disposable);
             consumer?.Dispose();
-            
+
         }
     }
 }

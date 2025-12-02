@@ -97,7 +97,8 @@ namespace Frameset.Core.Dao.Meta
                     pos = rawSql.Length;
                 }
                 string sqlpart = rawSql.Substring(pos + 6, pos1);
-                string orderStr = query.Order.IsNullOrEmpty() ? query.OrderField + " " + query.OrderDirection : query.Order;
+                string orderFileStr = query.OrderField + " " + (query.OrderAsc ? " ASC" : "DESC");
+                string orderStr = query.Order.IsNullOrEmpty() ? orderFileStr : query.Order;
                 StringBuilder pagingSelect = new StringBuilder();
                 pagingSelect.Append("select top " + query.PageSize + " * from (select row_number() over ( order by ").Append(orderStr + ") as rownum ").Append(sqlpart);
                 pagingSelect.Append(" ) _row");

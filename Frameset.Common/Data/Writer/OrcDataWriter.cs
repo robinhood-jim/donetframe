@@ -11,8 +11,8 @@ namespace Frameset.Common.Data.Writer
 {
     public class OrcDataWriter<T> : AbstractDataWriter<T>
     {
-        private OrcWriter orcWriter=null!;
-        private Type dynamicType=null!;
+        private OrcWriter orcWriter = null!;
+        private Type dynamicType = null!;
         private Dictionary<string, PropertyInfo> propMap = [];
 
 
@@ -95,7 +95,7 @@ namespace Frameset.Common.Data.Writer
                             {
                                 ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal?.ToString())).LocalDateTime;
                             }
-                            
+
                             info?.SetMethod?.Invoke(targetObject, new object[] { ts });
                         }
                         else

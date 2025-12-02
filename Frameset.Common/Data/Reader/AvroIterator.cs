@@ -9,8 +9,8 @@ namespace Frameset.Common.Data.Reader
 {
     public class AvroIterator<T> : AbstractDataIterator<T>
     {
-        private RecordSchema schema=null!;
-        private IFileReader<GenericRecord> fileReader=null!;
+        private RecordSchema schema = null!;
+        private IFileReader<GenericRecord> fileReader = null!;
 
 
         public AvroIterator(DataCollectionDefine define) : base(define)

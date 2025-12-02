@@ -11,7 +11,7 @@ namespace Frameset.Common.Data.Reader
     public class JsonIterator<T> : AbstractDataIterator<T>
     {
 
-        private JsonTextReader jsonReader=null!;
+        private JsonTextReader jsonReader = null!;
         private Dictionary<string, DataSetColumnMeta> metaMap = [];
 
         public JsonIterator(DataCollectionDefine define) : base(define)
@@ -97,7 +97,7 @@ namespace Frameset.Common.Data.Reader
                         object? value = jsonReader.Value;
                         DataSetColumnMeta? meta;
                         metaMap.TryGetValue(propName, out meta);
-                        if (meta != null && value!=null)
+                        if (meta != null && value != null)
                         {
                             if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
                             {

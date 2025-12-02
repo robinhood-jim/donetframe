@@ -9,12 +9,12 @@ namespace Frameset.Common.FileSystem
     public class FtpFileSystem : AbstractFileSystem
     {
 
-        internal string ftpUri=null!;
+        internal string ftpUri = null!;
         internal string? userName;
         internal string host = ResourceConstants.DEFAULTHOST;
         internal string? password;
         int port = ResourceConstants.FTPDEFAULTPORT;
-        FtpClient client=null!;
+        FtpClient client = null!;
         public FtpFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.FTP;
@@ -27,7 +27,7 @@ namespace Frameset.Common.FileSystem
 
             if (define.ResourceConfig.Count > 0)
             {
-                
+
                 if (define.ResourceConfig.TryGetValue(ResourceConstants.FTPHOST, out string? hostStr))
                 {
                     host = hostStr ?? ResourceConstants.DEFAULTHOST;
@@ -210,7 +210,7 @@ namespace Frameset.Common.FileSystem
         }
 
 
-        public override void Dispose(bool disposable)
+        protected override void Dispose(bool disposable)
         {
             if (client != null)
             {

@@ -124,8 +124,11 @@ namespace Frameset.Common.FileSystem.utils
             HttpResponseMessage message = await client.GetAsync(requestUrl);
             message.EnsureSuccessStatusCode();
             Dictionary<string, object>? valueMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await message.Content.ReadAsStreamAsync());
-            return valueMap["FileStatus"] as Dictionary<string, object>;
-
+            if (valueMap != null && valueMap.TryGetValue("FileStatus", out object? filestatusObj))
+            {
+                return filestatusObj as Dictionary<string, object>;
+            }
+            return new();
         }
         public async Task<Dictionary<string, object>> ContentSummary(string path)
         {
@@ -134,7 +137,7 @@ namespace Frameset.Common.FileSystem.utils
             string requestUrl = WrapRequest(path, paramMap);
             HttpResponseMessage message = await client.GetAsync(requestUrl);
             message.EnsureSuccessStatusCode();
-            Dictionary<string, object>? valueMap =await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await message.Content.ReadAsStreamAsync());
+            Dictionary<string, object>? valueMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await message.Content.ReadAsStreamAsync());
             return valueMap["ContentSummary"] as Dictionary<string, object>;
         }
         public async Task<bool> IsDirectory(string path)
@@ -219,7 +222,7 @@ namespace Frameset.Common.FileSystem.utils
             Operators(paramMap, "LISTSTATUS");
             HttpResponseMessage obj = await client.GetAsync(WrapRequest(path, paramMap));
             obj.EnsureSuccessStatusCode();
-            Dictionary<string, object>? dictMap =await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
+            Dictionary<string, object>? dictMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
             object? list;
             (dictMap["FileStatuses"] as Dictionary<string, object>).TryGetValue("FileStatus", out list);
             if (list != null)
@@ -257,7 +260,7 @@ namespace Frameset.Common.FileSystem.utils
             SetParameter(paramMap, "destination", target);
             HttpResponseMessage obj = await client.PutAsync(WrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
             obj.EnsureSuccessStatusCode();
-            Dictionary<string, object>? dictMap =await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
+            Dictionary<string, object>? dictMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
             return (Boolean)dictMap?["boolean"];
         }
 

@@ -17,7 +17,7 @@ namespace Frameset.Core.Common
     }
     public class DictionaryUtils
     {
-        public void RemoveIf<K, V>(Dictionary<K, V> dict, V value)
+        public static void RemoveIf<K, V>(Dictionary<K, V> dict, V value)
         {
             if (!dict.IsNullOrEmpty())
             {

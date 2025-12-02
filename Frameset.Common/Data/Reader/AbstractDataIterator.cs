@@ -45,8 +45,8 @@ namespace Frameset.Common.Data.Reader
         {
             get; set;
         } = [];
-        internal Stream inputStream=null!;
-        internal StreamReader reader=null!;
+        internal Stream inputStream = null!;
+        internal StreamReader reader = null!;
         internal bool useReader = false;
         internal bool useRawStream = false;
         readonly Dictionary<string, MethodParam> MethodMap = [];

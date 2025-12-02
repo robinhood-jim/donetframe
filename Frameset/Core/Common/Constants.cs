@@ -41,6 +41,7 @@ namespace Frameset.Core.Common
             GE,
             LE,
             BT,
+            IN,
             LIKE,
             LLIKE,
             RLIKE
@@ -134,6 +135,20 @@ namespace Frameset.Core.Common
                 }
             }
             return resType;
+        }
+        public static SqlOperator Parse(string cmpOper)
+        {
+            return cmpOper.ToLower() switch
+            {
+                ">" => SqlOperator.GT,
+                "<" => SqlOperator.LT,
+                ">=" => SqlOperator.GE,
+                "<=" => SqlOperator.LE,
+                "in" => SqlOperator.IN,
+                "[]" => SqlOperator.BT,
+                "<>" => SqlOperator.NE,
+                _ => SqlOperator.EQ
+            };
         }
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";

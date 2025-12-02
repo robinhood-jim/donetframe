@@ -7,8 +7,8 @@ namespace Frameset.Common.Data.Writer
 {
     public class ProtoBufWriter<T> : AbstractDataWriter<T>
     {
-        private MessageDescriptor descriptor=null!;
-        MessageParser parser=null!;
+        private MessageDescriptor descriptor = null!;
+        MessageParser parser = null!;
 
         public ProtoBufWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {

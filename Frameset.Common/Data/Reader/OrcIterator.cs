@@ -10,10 +10,10 @@ namespace Frameset.Common.Data.Reader
 {
     public class OrcIterator<T> : AbstractDataIterator<T>
     {
-        private OrcReader orcreader=null!;
-        private Type dynamicType=null!;
+        private OrcReader orcreader = null!;
+        private Type dynamicType = null!;
         private readonly Dictionary<string, PropertyInfo> propMap = [];
-        private IEnumerator<object> values=null!;
+        private IEnumerator<object> values = null!;
         public OrcIterator(DataCollectionDefine define) : base(define)
         {
             Identifier = Constants.FileFormatType.AVRO;

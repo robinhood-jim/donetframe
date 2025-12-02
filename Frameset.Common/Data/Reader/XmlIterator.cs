@@ -9,9 +9,9 @@ namespace Frameset.Common.Data.Reader
 {
     public class XmlIterator<T> : AbstractDataIterator<T>
     {
-        private XmlReader xmlReader=null!;
-        private string rootEleNodeName=null!;
-        private string childEleNodeName=null!;
+        private XmlReader xmlReader = null!;
+        private string rootEleNodeName = null!;
+        private string childEleNodeName = null!;
         private Dictionary<string, DataSetColumnMeta> metaMap = new Dictionary<string, DataSetColumnMeta>();
 
         public XmlIterator(DataCollectionDefine define) : base(define)

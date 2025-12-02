@@ -13,6 +13,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 
 
@@ -22,10 +23,10 @@ namespace Frameset.Core.Dao
     public class JdbcDao : IJdbcDao
     {
         private readonly string connectionStr;
-        private string dbTypeStr = "Mysql";
-        private AbstractSqlDialect dataMeta;
-        private Constants.DbType dbType;
-        private string schema;
+        private readonly string dbTypeStr = "Mysql";
+        private readonly AbstractSqlDialect dataMeta;
+        private readonly Constants.DbType dbType;
+        private readonly string schema;
 
 
         internal JdbcDao(string connectionStr)
@@ -48,10 +49,14 @@ namespace Frameset.Core.Dao
             this.dataMeta = DbDialectFactory.GetInstance(dbType);
             this.schema = schema;
         }
-        public int QueryByInt(DbCommand command)
+        public int QueryByInt(DbCommand command, List<DbParameter> parameters = null)
         {
             try
             {
+                if (parameters != null)
+                {
+                    command.Parameters.AddRange(parameters.ToArray());
+                }
                 return (int)command.ExecuteScalar();
             }
             catch (Exception ex)
@@ -60,10 +65,14 @@ namespace Frameset.Core.Dao
             }
         }
 
-        public long QueryByLong(DbCommand command)
+        public long QueryByLong(DbCommand command, List<DbParameter> parameters = null)
         {
             try
             {
+                if (parameters != null)
+                {
+                    command.Parameters.AddRange(parameters.ToArray());
+                }
                 return (long)command.ExecuteScalar();
             }
             catch (Exception ex)
@@ -74,16 +83,55 @@ namespace Frameset.Core.Dao
 
 
 
-        public IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters)
+        public IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters = null)
         {
-            command.Parameters.AddRange(parameters.ToArray());
+            Trace.Assert(modelType.GetType().IsSubclassOf(typeof(BaseEntity)));
+            if (!parameters.IsNullOrEmpty())
+            {
+                command.Parameters.AddRange(parameters.ToArray());
+            }
             IList<V> retList = new List<V>();
             Dictionary<string, FieldContent> map = EntityReflectUtils.GetFieldsMap(modelType);
             using (DbDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
                 {
-                    V entity = System.Activator.CreateInstance<V>();
+                    dynamic entity = System.Activator.CreateInstance(modelType);
+                    for (int col = 0; col < reader.FieldCount; col++)
+                    {
+                        string propName = reader.GetName(col);
+                        object value = reader[col];
+                        FieldContent content = map[propName];
+                        if (Convert.IsDBNull(value))
+                        {
+                            map.TryGetValue(propName.ToLower(), out content);
+                        }
+                        if (Convert.IsDBNull(value))
+                        {
+                            map.TryGetValue(propName.ToUpper(), out content);
+                        }
+                        if (!Convert.IsDBNull(value) && content != null)
+                        {
+                            content.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethold.ReturnType, value) });
+                        }
+                    }
+                    retList.Add(entity);
+                }
+            }
+            return retList;
+
+        }
+        public IList<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, IList<DbParameter> parameters)
+        {
+            Trace.Assert(modelType.GetType().IsSubclassOf(typeof(BaseEntity)));
+            command.Parameters.AddRange(parameters.ToArray());
+            IList<BaseEntity> retList = new List<BaseEntity>();
+            Dictionary<string, FieldContent> map = EntityReflectUtils.GetFieldsMap(modelType);
+            using (DbDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    dynamic entity = Activator.CreateInstance(modelType);
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
                         string propName = reader.GetName(col);
@@ -140,7 +188,7 @@ namespace Frameset.Core.Dao
                 }
                 return paramters;
             }
-            return null;
+            return [];
         }
         void parseParameter(DbCommand command, Dictionary<string, object> paramMap)
         {
@@ -211,12 +259,9 @@ namespace Frameset.Core.Dao
                         }
                         string mappingColumn = null;
 
-                        if (mappingMap == null || !mappingMap.MappingColumns.TryGetValue(name, out mappingColumn))
+                        if ((mappingMap == null || !mappingMap.MappingColumns.TryGetValue(name, out mappingColumn)) && !query.MappingColumns.TryGetValue(name, out mappingColumn))
                         {
-                            if (!query.MappingColumns.TryGetValue(name, out mappingColumn))
-                            {
-                                mappingColumn = Core.Utils.StringUtils.CamelCaseLowConvert(name);
-                            }
+                            mappingColumn = Core.Utils.StringUtils.CamelCaseLowConvert(name);
                         }
 
                         if (methodMap.TryGetValue(mappingColumn, out param))
@@ -240,7 +285,7 @@ namespace Frameset.Core.Dao
         }
 
 
-        public bool SaveEntity(DbCommand command, BaseEntity entity, InsertSegment segment)
+        public bool SaveEntity(DbCommand command, BaseEntity model, InsertSegment segment)
         {
             command.Parameters.AddRange(segment.Parameters.ToArray());
             if (segment.Increment || segment.Sequence)
@@ -248,7 +293,7 @@ namespace Frameset.Core.Dao
                 object genId = command.ExecuteScalar();
                 if (genId != null)
                 {
-                    segment.GenKeyMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(segment.GenKeyMethod.GetParameters()[0].ParameterType, genId) });
+                    segment.GenKeyMethod.Invoke(model, new object[] { ConvertUtil.ParseByType(segment.GenKeyMethod.GetParameters()[0].ParameterType, genId) });
                 }
             }
             else

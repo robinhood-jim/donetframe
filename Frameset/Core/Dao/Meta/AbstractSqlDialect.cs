@@ -188,7 +188,7 @@ namespace Frameset.Core.Dao.Meta
         {
 
             StringBuilder builder = new StringBuilder(sql);
-            if (!pageQuery.Order.IsNullOrEmpty() || (!pageQuery.OrderField.IsNullOrEmpty() && !pageQuery.OrderDirection.IsNullOrEmpty()))
+            if (!pageQuery.Order.IsNullOrEmpty() || (!pageQuery.OrderField.IsNullOrEmpty()))
             {
                 if (!pageQuery.Order.IsNullOrEmpty())
                 {
@@ -196,7 +196,7 @@ namespace Frameset.Core.Dao.Meta
                 }
                 else
                 {
-                    builder.Append(" order by ").Append(pageQuery.OrderField).Append(pageQuery.OrderDirection);
+                    builder.Append(" order by ").Append(pageQuery.OrderField).Append(pageQuery.OrderAsc ? " ASC" : " DESC");
                 }
             }
 
@@ -222,7 +222,7 @@ namespace Frameset.Core.Dao.Meta
             }
             else if (!pageQuery.OrderField.IsNullOrEmpty())
             {
-                pagingSelect.Append(ORDERSTR).Append(pageQuery.OrderField).Append(" ").Append(pageQuery.OrderDirection).Append(") as rownum");
+                pagingSelect.Append(ORDERSTR).Append(pageQuery.OrderField).Append(" ").Append(pageQuery.OrderAsc ? " ASC" : " DESC").Append(") as rownum");
             }
             else
             {

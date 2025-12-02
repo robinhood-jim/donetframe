@@ -20,12 +20,12 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 
         protected DataCollectionDefine define;
         protected string bucketName;
-        protected string region=null!;
-        protected string UploadId=null!;
+        protected string region = null!;
+        protected string UploadId = null!;
         protected string key;
         protected Dictionary<int, string> etagMap = [];
         protected Dictionary<int, int> errorPartMap = [];
-        protected Dictionary<int, MemoryStream> partMemMap =[];
+        protected Dictionary<int, MemoryStream> partMemMap = [];
         protected int partNum = 0;
         protected int partSize = 20 * 1024 * 1024;
         protected bool finish = false;

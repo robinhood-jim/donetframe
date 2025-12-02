@@ -20,9 +20,6 @@ namespace Frameset.Core.Mapper.Handler
             throw new NotImplementedException();
         }
 
-        public AbstractSegment Parse(XmlElement element, string namespaceStr)
-        {
-            return null;
-        }
+
     }
 }

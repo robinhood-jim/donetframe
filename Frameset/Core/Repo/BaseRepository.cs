@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Common;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
@@ -21,44 +22,49 @@ using System.Text;
 
 namespace Frameset.Core.Repo
 {
-    public class BaseRepository<V, P> where V : BaseEntity
+    public class BaseRepository<V, P> : IBaseRepository<V, P> where V : BaseEntity
     {
         //多数据源标识
         internal string dsName = "core";
         internal EntityContent content;
         internal FieldContent pkColumn;
 
-        internal Func<V, bool> saveFunc;
-        internal Func<V, bool> updateFunc;
-        internal Func<IList<P>, int> deleteFunc;
-        internal Action<V> insertBeforeAction;
-        internal Action<V> updateBeforeAction;
-        internal Action<V> deleteBeforeAction;
-        internal Func<DbCommand, V, bool> insertAfterAction;
-        internal Func<DbCommand, V, bool> updateAfterAction;
-        internal Action<DbCommand, V> deleteAfterAction;
-        internal Func<DbConnection, DbTransaction> transcationFunc;
+        internal Func<V, bool> saveFunc = null!;
+        internal Func<V, bool> updateFunc = null!;
+        internal Func<IList<P>, int> deleteFunc = null!;
+        internal Action<V> insertBeforeAction = null!;
+        internal Action<V> updateBeforeAction = null!;
+        internal Action<V> deleteBeforeAction = null!;
+        internal Func<DbCommand, V, bool> insertAfterAction = null!;
+        internal Func<DbCommand, V, bool> updateAfterAction = null!;
+        internal Action<DbCommand, V> deleteAfterAction = null!;
+        internal Func<DbConnection, DbTransaction> transcationFunc = null!;
         internal IJdbcDao dao;
-        private Type entityType;
-        private Type pkType;
+        private readonly Type entityType;
+        private readonly Type pkType;
         private IList<FieldContent> fieldContents;
 
-        internal BaseRepository()
+        public BaseRepository()
         {
-            Type[] genericType = GetType().GetGenericArguments();
+            Type[] genericType = GetType().GetInterfaces()[0].GetGenericArguments();
+            RepositoryAttribute attribute = (RepositoryAttribute)GetType().GetCustomAttribute(typeof(RepositoryAttribute));
+            if (attribute != null && !attribute.DsName.IsNullOrEmpty())
+            {
+                dsName = attribute.DsName;
+            }
             AssertUtils.IsTrue(genericType[0].IsSubclassOf(typeof(BaseEntity)));
             content = EntityReflectUtils.GetEntityInfo(genericType[0]);
             fieldContents = EntityReflectUtils.GetFieldsContent(genericType[0]);
             pkColumn = fieldContents.Where(x => x.IfPrimary).ToList()[0];
             entityType = genericType[0];
             pkType = genericType[1];
-            if (content.DsName != null)
+            if (content.DsName != null && dsName.IsNullOrEmpty())
             {
                 dsName = content.DsName;
             }
-            dao = DAOFactory.getInstance().getJdbcDao(dsName);
+            dao = DAOFactory.getInstance().GetJdbcDao(dsName);
         }
-        public bool SavenEntity(V entity)
+        public bool SaveEntity(V entity)
         {
             InsertSegment segment = SqlUtils.GetInsertSegment(dao, entity);
             if (saveFunc != null)
@@ -67,18 +73,15 @@ namespace Frameset.Core.Repo
             }
             return ExecuteInTransaction<bool>(segment.InsertSql, entity, (command, v) =>
             {
-                bool executeRs = false;
-                if (insertBeforeAction != null)
-                {
-                    insertBeforeAction.Invoke(v);
-                }
-                executeRs = dao.SaveEntity(command, v, segment);
+                bool? executeRs = false;
 
+                insertBeforeAction?.Invoke(v);
+                executeRs = dao.SaveEntity(command, v, segment);
                 if (insertAfterAction != null)
                 {
-                    executeRs = insertAfterAction.Invoke(command, v);
+                    executeRs = insertAfterAction?.Invoke(command, v);
                 }
-                return executeRs;
+                return executeRs.HasValue;
             });
 
         }
@@ -93,18 +96,14 @@ namespace Frameset.Core.Repo
             {
                 return ExecuteInTransaction<bool>(segment.UpdateSql, entity, (command, v) =>
                 {
-                    bool executeRs = false;
-                    if (updateBeforeAction != null)
-                    {
-                        updateBeforeAction.Invoke(v);
-                    }
+                    bool? executeRs = false;
+                    updateBeforeAction?.Invoke(v);
                     executeRs = dao.UpdateEntity(command, v, segment);
-
-                    if (insertAfterAction != null)
+                    if (updateAfterAction != null)
                     {
-                        executeRs = insertAfterAction.Invoke(command, v);
+                        executeRs = updateAfterAction?.Invoke(command, v);
                     }
-                    return executeRs;
+                    return executeRs.HasValue;
                 });
             }
         }
@@ -198,7 +197,7 @@ namespace Frameset.Core.Repo
         }
         public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
-            IJdbcDao queryDao = DAOFactory.getInstance().getJdbcDao(dsName);
+            IJdbcDao queryDao = DAOFactory.getInstance().GetJdbcDao(dsName);
             using (DbConnection connection = queryDao.GetDialect().GetDbConnection(queryDao.GetConnectString()))
             {
                 connection.Open();
@@ -215,7 +214,7 @@ namespace Frameset.Core.Repo
             if (fieldMap.TryGetValue(propName, out FieldContent fieldContent))
             {
                 StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
-                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, oper, values);
+                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, out int endPos, oper, values);
                 if (!orderByStr.IsNullOrEmpty())
                 {
                     builder.Append(" order by ").Append(orderByStr);
@@ -253,7 +252,7 @@ namespace Frameset.Core.Repo
                 }
                 StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
 
-                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, oper, values);
+                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
                 if (!orderByStr.IsNullOrEmpty())
                 {
                     builder.Append(" order by ").Append(orderByStr);
@@ -264,6 +263,94 @@ namespace Frameset.Core.Repo
                     using (DbCommand command = dao.GetDialect().GetDbCommand(connection, builder.ToString()))
                     {
                         return dao.QueryModelsBySql<V>(entityType, command, parameters);
+                    }
+                }
+            }
+            return null;
+        }
+        public PageDTO<V> QueryModelsPage(PageQuery query)
+        {
+            Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
+            List<DbParameter> dbParameters = [];
+            StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
+            if (query != null && !query.Parameters.IsNullOrEmpty())
+            {
+                int currentParamCount = 0;
+                foreach (var item in query.Parameters)
+                {
+                    if (fieldMap.TryGetValue(item.Key, out FieldContent? fieldContent) && fieldContent != null && item.Value != null)
+                    {
+                        Constants.SqlOperator oper = Constants.SqlOperator.EQ;
+
+                        List<object> values = [];
+                        if (item.Value.ToString().Contains("%"))
+                        {
+                            if (item.Value.ToString().StartsWith("%"))
+                            {
+                                oper = Constants.SqlOperator.LLIKE;
+                            }
+                            else if (item.Value.ToString().EndsWith("%"))
+                            {
+                                oper = Constants.SqlOperator.RLIKE;
+                            }
+                            else
+                            {
+                                oper = Constants.SqlOperator.LIKE;
+                            }
+                            values.Add(item.Value.ToString().Replace("%", ""));
+                        }
+                        else if (item.Value.ToString().Contains("|"))
+                        {
+                            string[] sep = item.Value.ToString().Split('|');
+                            oper = Constants.Parse(sep[0]);
+                            values.Add(sep[1]);
+                        }
+                        else
+                        {
+                            values.Add(item.Value.ToString());
+                        }
+                        IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, currentParamCount, out int addCount, oper, values.ToArray());
+                        if (!parameters.IsNullOrEmpty())
+                        {
+                            dbParameters.AddRange(parameters);
+                            builder.Append(" AND ");
+                        }
+                        currentParamCount += addCount;
+                    }
+                }
+                if (builder.ToString().EndsWith(" AND "))
+                {
+                    builder.Remove(builder.Length - 5, 5);
+                }
+                if (!query.Order.IsNullOrEmpty())
+                {
+                    builder.Append(" ORDER BY ").Append(query.Order);
+                }
+                else if (!query.OrderField.IsNullOrEmpty())
+                {
+                    fieldMap.TryGetValue(query.OrderField, out FieldContent? content);
+                    if (content == null)
+                    {
+                        throw new OperationFailedException("orderField " + query.OrderField + " not in table!");
+                    }
+                    builder.Append(" ORDER BY ").Append(content.FieldName).Append(query.OrderAsc ? " ASC" : " DESC");
+                }
+                string querySql = dao.GetDialect().GeneratePageSql(builder.ToString(), query);
+                string countSql = dao.GetDialect().GenerateCountSql(builder.ToString());
+
+                using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
+                {
+                    connection.Open();
+                    using (DbCommand command = dao.GetDialect().GetDbCommand(connection, countSql))
+                    {
+
+                        long totalCount = dao.QueryByLong(command, dbParameters);
+                        command.CommandText = querySql;
+                        IList<V> list = dao.QueryModelsBySql<V>(entityType, command);
+
+                        PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize);
+                        ret.Results = list;
+                        return ret;
                     }
                 }
             }
@@ -398,6 +485,7 @@ namespace Frameset.Core.Repo
                 throw new ConfigMissingException("id " + exeId + " does not found in namespace " + nameSpace);
             }
         }
+
         public PageDTO<O> QueryPage<O>(PageQuery query)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
@@ -435,10 +523,11 @@ namespace Frameset.Core.Repo
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
                 connection.Open();
-                DbTransaction transaction = OpenTransaction(connection);
+                DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
                     DbCommand command = dao.GetDialect().GetDbCommand(connection, sql);
+                    command.Transaction = transaction;
                     T ret = func.Invoke(command, entity);
                     transaction.Commit();
                     return ret;

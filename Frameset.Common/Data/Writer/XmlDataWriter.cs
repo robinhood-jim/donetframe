@@ -8,8 +8,8 @@ namespace Frameset.Common.Data.Writer
 {
     public class XmlDataWriter<T> : AbstractDataWriter<T>
     {
-        private readonly string collectionNodeName;
-        private readonly string entityName=null!;
+        private readonly string? collectionNodeName;
+        private readonly string? entityName;
         private readonly XmlWriter xmlwriter;
         public XmlDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {

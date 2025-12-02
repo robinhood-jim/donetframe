@@ -32,15 +32,15 @@ namespace Frameset.Common.Data.Writer
         {
             get; set;
         } = [];
-        internal Stream outputStream =null!;
-        internal StreamWriter writer=null!;
+        internal Stream outputStream = null!;
+        internal StreamWriter writer = null!;
         internal bool useWriter = false;
         internal bool useRawOutputStream = false;
         internal bool useDictOutput = true;
         internal Dictionary<string, MethodParam> methodMap = [];
 
-        internal DateTimeFormatter dateFormatter=null!;
-        internal DateTimeFormatter timestampFormatter=null!;
+        internal DateTimeFormatter dateFormatter = null!;
+        internal DateTimeFormatter timestampFormatter = null!;
         public void Dispose()
         {
             Dispose(true);
@@ -151,7 +151,7 @@ namespace Frameset.Common.Data.Writer
             object? retValue = null;
             if (useDictOutput)
             {
-                (input as Dictionary<string, object>).TryGetValue(column.ColumnCode, out retValue);
+                (input as Dictionary<string, object>)?.TryGetValue(column.ColumnCode, out retValue);
             }
             else
             {

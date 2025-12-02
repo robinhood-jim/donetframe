@@ -10,12 +10,16 @@ namespace Frameset.Core.Query
         public string NameSpace { get; set; }
         public long PageCount { get; set; } = 0;
         public string OrderField { get; set; }
-        public string OrderDirection { get; set; }
+        public bool OrderAsc { get; set; } = false;
         public string Order { get; set; }
         public long Total { get; set; }
         public string QuerySql { get; set; }
         public Dictionary<string, object> Parameters { get; set; } = new Dictionary<string, object>();
         public Dictionary<string, string> MappingColumns { get; set; } = new Dictionary<string, string>();
+        public PageQuery()
+        {
+
+        }
         public PageQuery(long pageSize)
         {
             this.PageSize = pageSize;

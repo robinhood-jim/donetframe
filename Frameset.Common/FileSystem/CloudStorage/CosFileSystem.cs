@@ -14,7 +14,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         private CosXmlServer server;
         private readonly string? region;
         private readonly TransferManager transferManager;
-        private string tmpFile=null!;
+        private string tmpFile = null!;
         public CosFileSystem(DataCollectionDefine define) : base(define)
         {
             if (!define.ResourceConfig.TryGetValue(StorageConstants.CLOUDREGION, out region))
@@ -26,6 +26,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             server = new CosXmlServer(config, provider);
             TransferConfig transferConfig = new();
             transferManager = new(server, transferConfig);
+            Init(define);
         }
 
         public override bool Exist(string resourcePath)
@@ -75,7 +76,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             COSXMLUploadTask.UploadTaskResult result = transferManager.UploadAsync(task).Result;
             return result.httpCode == 200;
         }
-        public override void Dispose(bool disposable)
+        protected override void Dispose(bool disposable)
         {
             if (tmpFile != null)
             {

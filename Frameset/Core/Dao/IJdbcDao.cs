@@ -24,11 +24,12 @@ namespace Frameset.Core.Dao
 
         AbstractSqlDialect GetDialect();
 
-        int QueryByInt(DbCommand command);
-        long QueryByLong(DbCommand command);
+        int QueryByInt(DbCommand command, List<DbParameter> parameters = null);
+        long QueryByLong(DbCommand command, List<DbParameter> parameters = null);
         IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
         PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query);
-        IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters);
+        IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters = null);
+
         object QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject);
 
         string GetCurrentSchema();

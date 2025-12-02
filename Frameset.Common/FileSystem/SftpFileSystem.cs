@@ -9,8 +9,8 @@ namespace Frameset.Common.FileSystem
 {
     public class SftpFileSystem : AbstractFileSystem
     {
-        private SftpClient client=null!;
-        internal string ftpUri=null!;
+        private SftpClient client = null!;
+        internal string ftpUri = null!;
         internal string? userName;
         internal string host = ResourceConstants.DEFAULTHOST;
         internal string? password;
@@ -25,7 +25,7 @@ namespace Frameset.Common.FileSystem
             base.Init(define);
             if (define.ResourceConfig.Count > 0)
             {
-               
+
                 if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPHOST, out string? hostStr))
                 {
                     host = hostStr ?? ResourceConstants.DEFAULTHOST;
@@ -48,7 +48,7 @@ namespace Frameset.Common.FileSystem
             }
         }
 
-        public override void Dispose(bool disposeable)
+        protected override void Dispose(bool disposeable)
         {
             if (client != null)
             {

@@ -17,7 +17,7 @@ namespace Frametest.Dao
         public string name
         {
             get; set;
-        }
+        } = string.Empty;
         [MappingField(Field = "create_tm")]
         public DateTimeOffset createTime
         {
@@ -34,12 +34,12 @@ namespace Frametest.Dao
         public string lob1
         {
             get; set;
-        }
+        } = null!;
         [MappingField(DataType = Constants.MetaType.BLOB)]
         public byte[] lob2
         {
             get; set;
-        }
+        } = null!;
 
     }
 }

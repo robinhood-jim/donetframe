@@ -59,7 +59,7 @@ namespace Frameset.Office.Excel.Meta
         {
             get; internal set;
         }
-        internal Dictionary<string, FieldContent> fieldInfoMap = new ();
+        internal Dictionary<string, FieldContent> fieldInfoMap = new();
         public Type EntityType
         {
             get; internal set;

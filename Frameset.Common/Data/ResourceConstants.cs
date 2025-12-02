@@ -46,6 +46,16 @@
         public static readonly string CONSUMERGROUPID = "kafka.consumerGroupId";
         public static readonly string KAFKASERIALIZER = "kafka.serializer";
         public static readonly string KAFKACONSUMERGROUPID = "kafka.groupId";
+        //rabbitmq
+        public static readonly string RABBITMQHOST = "rabbitmq.host";
+        public static readonly string RABBITMQPORT = "rabbitmq.port";
+        public static readonly string RABBITMQUSER = "rabbitmq.user";
+        public static readonly string RABBITMQPASSWD = "rabbitmq.passwd";
+        public static readonly string RABBITMQEXCHANGE = "rabbitmq.exchange";
+        public static readonly string RABBITMQROUTINGKEY = "rabbitmq.routingKey";
+        public static readonly string RABBITMQDEFAULTHOST = "localhost";
+        public static readonly int RABBITMQDEFAULTPORT = 5672;
+
         public enum SerializeType
         {
             JSON,

@@ -1,11 +1,11 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Reflection;
-using Frameset.Core.Exceptions;
 
 namespace Frameset.Core.Dao
 {

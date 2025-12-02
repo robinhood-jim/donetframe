@@ -106,7 +106,6 @@ namespace Frameset.Core.Dao.Utils
             builder.Append("update ");
             StringBuilder columnsBuilder = new StringBuilder();
             IList<DbParameter> parameters = new List<DbParameter>();
-            DbParameter whereParamter = null;
             string whereSegment = " where 1=0";
             UpdateSegment segment = new UpdateSegment();
             if (!entityContent.Schema.IsNullOrEmpty())
@@ -124,13 +123,13 @@ namespace Frameset.Core.Dao.Utils
                     if (!content.IfPrimary)
                     {
                         string paramName = "@val" + pos++;
-                        columnsBuilder.Append(content.FieldName).Append("=@").Append(paramName).Append(",");
+                        columnsBuilder.Append(content.FieldName).Append("=").Append(paramName).Append(",");
                         parameters.Add(dao.GetDialect().WrapParameter(paramName, realVal));
                     }
                     else
                     {
-                        whereSegment = " where " + content.FieldName + "=@#id";
-                        whereParamter = dao.GetDialect().WrapParameter("@#id", realVal);
+                        whereSegment = " where " + content.FieldName + "=@id";
+                        parameters.Add(dao.GetDialect().WrapParameter("@id", realVal));
                     }
                 }
                 else if (vo.GetDirties().Contains(content.FieldName))
@@ -168,6 +167,7 @@ namespace Frameset.Core.Dao.Utils
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder fieldsBuilder = new StringBuilder();
             StringBuilder tabBuilder = new StringBuilder();
+            List<DbParameter> parameters = [];
             if (!entityContent.Schema.IsNullOrEmpty())
             {
                 tabBuilder.Append(entityContent.Schema).Append(".");
@@ -178,7 +178,9 @@ namespace Frameset.Core.Dao.Utils
                 fieldsBuilder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
             }
             return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).ToString();
+
         }
+
         public static string GetSelectSqlAndPk(Type modelType)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);

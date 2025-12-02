@@ -9,7 +9,7 @@
     <Description>.Net Framework Core Package including ORM and Sql Query tools,streaming xlsx and word file Read and Write support.</Description>
     <PackageReadmeFile>README.en.md</PackageReadmeFile>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>1.0.4</Version>
+    <Version>1.0.5</Version>
     <PackageId></PackageId>
     <Authors>robinhoodjim</Authors>
     <RepositoryUrl>https://github.com/robinhood-jim/donetframe</RepositoryUrl>
@@ -29,20 +29,23 @@
   </ItemGroup>
   <ItemGroup>
     <PackageReference Include="ExtendedNumerics.BigDecimal" Version="3001.1.0.233" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" PrivateAssets="All"  />
+    <PackageReference Include="Microsoft.ClearScript.V8" Version="7.5.0" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Data.SqlClient" Version="6.1.1" PrivateAssets="All" />
-    <PackageReference Include="Microsoft.Extensions.Configuration" Version="9.0.9" PrivateAssets="All" />
     <PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.9" PrivateAssets="All" />
     <PackageReference Include="MySqlConnector" Version="2.4.0" PrivateAssets="All" />
-    <PackageReference Include="Net.IBM.Data.Db2" Version="9.0.0.300" PrivateAssets="All" />
+    <PackageReference Include="Net.IBM.Data.Db2-lnx" Version="9.0.0.400" PrivateAssets="All" ExcludeAssets="buildtransitive" />
     <PackageReference Include="Npgsql" Version="7.0.10" PrivateAssets="All" />
-    <PackageReference Include="Oracle.ManagedDataAccess" Version="23.9.1" PrivateAssets="All" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.0" />
     <PackageReference Include="Serilog" Version="4.3.0" PrivateAssets="All" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" PrivateAssets="All" />
-    <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" PrivateAssets="All" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" PrivateAssets="All" />
     <PackageReference Include="Spring.Core" Version="3.0.3" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
  
   </ItemGroup>
+  <ItemGroup>
+    <None Remove="C:\Users\Administrator\.nuget\packages\net.ibm.data.db2-lnx\9.0.0.400\buildTransitive\**" />
+  </ItemGroup>
+  
+  
 </Project>

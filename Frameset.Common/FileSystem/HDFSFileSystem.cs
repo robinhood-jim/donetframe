@@ -17,11 +17,10 @@ namespace Frameset.Common.FileSystem
             identifier = Constants.FileSystemType.HDFS;
             define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out string? apiUrl);
             client = new HdfsClient(define);
-
+            Init(define);
         }
 
-
-        public override void Dispose(bool disposable)
+        protected override void Dispose(bool disposable)
         {
             if (client != null)
             {

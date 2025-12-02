@@ -12,9 +12,9 @@ namespace Frameset.Common.Data.Writer
 {
     public class ParquetDateWriter<T> : AbstractDataWriter<T>
     {
-        private ParquetWriter pwriter=null!;
-        private ParquetRowGroupWriter groupWriter=null!;
-        private ParquetSchema schema=null!;
+        private ParquetWriter pwriter = null!;
+        private ParquetRowGroupWriter groupWriter = null!;
+        private ParquetSchema schema = null!;
         private List<DataField> fields = new();
         private Dictionary<int, ArrayList> chunckMap = new();
         private int chunckCapcity = 20000;

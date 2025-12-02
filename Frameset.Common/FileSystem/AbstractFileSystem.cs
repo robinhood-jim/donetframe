@@ -26,15 +26,15 @@ namespace Frameset.Common.FileSystem
 
         }
 
-        internal Stream GetInputStreamWithCompress(string path, Stream inputStream)
+        protected Stream GetInputStreamWithCompress(string path, Stream inputStream)
         {
             return StreamDecoder.GetInputByCompressType(path, inputStream, GetStreamSize(path));
         }
-        internal Stream GetOutputStremWithCompress(string path, Stream inputStrem)
+        protected Stream GetOutputStremWithCompress(string path, Stream inputStrem)
         {
             return StreamEncoder.GetOutputByCompressType(path, inputStrem);
         }
-        internal StreamReader GetReader(string path, Stream inputStream)
+        protected StreamReader GetReader(string path, Stream inputStream)
         {
             return new StreamReader(GetInputStreamWithCompress(path, inputStream), encoding);
         }
@@ -44,7 +44,7 @@ namespace Frameset.Common.FileSystem
             Dispose(true);
             GC.SuppressFinalize(this);
         }
-        public virtual void Dispose(bool disposable)
+        protected virtual void Dispose(bool disposable)
         {
             if (!disposable)
             {

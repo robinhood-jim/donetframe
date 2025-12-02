@@ -26,7 +26,7 @@ namespace Frameset.Common.Compress
             {
                 CompressType.GZ => new GZipInputStream(rawstream),
                 CompressType.LZ4 => LZ4Stream.Decode(rawstream),
-                CompressType.ZIP => new ZipInputStream(rawstream),
+                CompressType.ZIP => GetZipStream(rawstream),
                 CompressType.BZ2 => new BZip2InputStream(rawstream),
                 CompressType.ZSTD => new ZstdSharp.DecompressionStream(rawstream),
                 CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Decompress),
@@ -50,6 +50,12 @@ namespace Frameset.Common.Compress
             var properties = lzmaEncodingStream.Properties;
             lzmaEncodingStream.Close();
             return new LzmaStream(properties, rawstream, compressLength);
+        }
+        private static Stream GetZipStream(Stream rawstream)
+        {
+            ZipInputStream zipStream = new(rawstream);
+            zipStream.GetNextEntry();
+            return zipStream;
         }
     }
 }

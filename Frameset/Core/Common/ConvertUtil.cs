@@ -178,7 +178,7 @@ namespace Frameset.Core.Common
             }
             catch (Exception ex)
             {
-                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + valueObj + "failed! type mismatch,Please check! ex:"+ex.Message);
+                throw new OperationFailedException("columnName =" + columnName + ",type=" + columnType + " with value=" + valueObj + "failed! type mismatch,Please check! ex:" + ex.Message);
             }
             return retObj;
         }

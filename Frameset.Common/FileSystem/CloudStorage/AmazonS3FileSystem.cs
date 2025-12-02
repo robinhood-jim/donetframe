@@ -20,9 +20,10 @@ namespace Frameset.Common.FileSystem.CloudStorage
                 ServiceURL = endpoint
             };
             client = new AmazonS3Client(accessKey, secretKey, config);
+            Init(define);
         }
 
-        public override void Dispose(bool disposable)
+        protected override void Dispose(bool disposable)
         {
             if (client != null)
             {

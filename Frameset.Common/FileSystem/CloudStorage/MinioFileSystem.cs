@@ -24,7 +24,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
 
         }
 
-        public override void Dispose(bool disposable)
+        protected override void Dispose(bool disposable)
         {
             if (client != null)
             {
@@ -85,7 +85,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             {
                 return response.ResponseStream;
             }
-            throw new OperationFailedException("get "+objectName+" failed!");
+            throw new OperationFailedException("get " + objectName + " failed!");
         }
 
         internal override bool PutObject(string bucketName, DataCollectionDefine define, Stream stream, long size)

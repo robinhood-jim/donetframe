@@ -2,8 +2,6 @@
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
-using Microsoft.IdentityModel.Tokens;
-using System.Diagnostics;
 
 
 namespace Frameset.Common.Data.Writer
@@ -11,17 +9,14 @@ namespace Frameset.Common.Data.Writer
     public class CsvDataWriter<T> : AbstractDataWriter<T>
     {
         private List<string> contents;
-        private char sepearotr = ResourceConstants.CSVDEFAULTSPILTTER[0];
+        private string sepearotr = ResourceConstants.CSVDEFAULTSPILTTER;
         public CsvDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useWriter = true;
             contents = new List<string>(define.ColumnList.Count);
             define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string? separatorStr);
-            if (!separatorStr.IsNullOrEmpty())
-            {
-                sepearotr = separatorStr[0];
-            }
+            sepearotr = separatorStr ?? sepearotr;
             Initalize();
         }
 
@@ -31,10 +26,7 @@ namespace Frameset.Common.Data.Writer
             useWriter = true;
             contents = new List<string>(methodMap.Count);
             MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string? separatorStr);
-            if (!separatorStr.IsNullOrEmpty())
-            {
-                sepearotr = separatorStr[0];
-            }
+            sepearotr = separatorStr ?? sepearotr;
             Initalize();
         }
 
@@ -69,7 +61,7 @@ namespace Frameset.Common.Data.Writer
                     }
                 }
             }
-            writer.WriteLine(string.Join(sepearotr, contents));
+            writer.WriteLine(string.Join(sepearotr[0], contents));
         }
 
     }

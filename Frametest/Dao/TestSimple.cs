@@ -10,16 +10,16 @@ namespace Frametest.Dao
         {
             get;
             set;
-        }
+        } = -1;
         public string name
         {
             get; set;
-        }
+        } = string.Empty;
         [MappingField(Field = "t_value")]
         public int tValue
         {
             get; set;
-        }
+        } = 0;
         public DateTime dTime
         {
             get; set;

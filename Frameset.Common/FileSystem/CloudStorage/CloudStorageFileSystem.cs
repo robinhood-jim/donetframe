@@ -9,7 +9,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
     public abstract class CloudStorageFileSystem : AbstractFileSystem
     {
         protected string bucketName;
-        protected string tmpFilePath=null!;
+        protected string tmpFilePath = null!;
         protected string? accessKey;
         protected string? secretKey;
         protected string? endpoint;
@@ -59,8 +59,20 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             throw new MethodNotSupportedException("cloudstorage can not use this function");
         }
+        /// <summary>
+        /// Support UploadPart Put Large object
+        /// </summary>
+        /// <param name="resourcePath"></param>
+        /// <returns></returns>
         internal abstract UploadPartSupportStream PutObject(string resourcePath);
-
+        /// <summary>
+        /// Write Exist Stream to Cloud fs
+        /// </summary>
+        /// <param name="bucketName"></param>
+        /// <param name="define"></param>
+        /// <param name="stream"></param>
+        /// <param name="size"></param>
+        /// <returns></returns>
         internal abstract bool PutObject(string bucketName, DataCollectionDefine define, Stream stream, long size);
         internal abstract Stream GetObject(string bucketName, string objectName);
         internal abstract bool BucketExists(string bucketName);

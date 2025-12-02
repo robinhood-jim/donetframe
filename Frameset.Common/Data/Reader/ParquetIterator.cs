@@ -6,19 +6,18 @@ using Microsoft.IdentityModel.Tokens;
 using Parquet;
 using Parquet.Data;
 using Parquet.Schema;
-using System.Reflection;
 
 namespace Frameset.Common.Data.Reader
 {
     public class ParquetIterator<T> : AbstractDataIterator<T>
     {
-        private ParquetReader preader=null!;
-        private ParquetSchema schema=null!;
+        private ParquetReader preader = null!;
+        private ParquetSchema schema = null!;
         private List<DataField> fields = [];
         private readonly Dictionary<DataField, DataColumn> groupMap = new Dictionary<DataField, DataColumn>();
         int groupCount;
-        IReadOnlyList<IParquetRowGroupReader> groupReaders=null!;
-        IParquetRowGroupReader currentReader=null!;
+        IReadOnlyList<IParquetRowGroupReader> groupReaders = null!;
+        IParquetRowGroupReader currentReader = null!;
         int currentGroup = 0;
         long rowCount = 0;
         long readLines = 0;
@@ -43,7 +42,7 @@ namespace Frameset.Common.Data.Reader
             Initalize(processPath);
         }
 
-        public override sealed void Initalize(string? filePath=null)
+        public override sealed void Initalize(string? filePath = null)
         {
             base.Initalize(filePath);
             preader = ParquetReader.CreateAsync(inputStream).Result;
@@ -120,7 +119,7 @@ namespace Frameset.Common.Data.Reader
                 {
                     DataColumn? dataColumn;
                     groupMap.TryGetValue(field, out dataColumn);
-                    
+
                     object? value = dataColumn?.Data.GetValue(readLines);
                     if (value != null)
                     {

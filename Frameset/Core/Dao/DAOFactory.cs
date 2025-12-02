@@ -14,7 +14,7 @@ namespace Frameset.Core.Dao
 {
     public class DAOFactory
     {
-        private Dictionary<string, IJdbcDao> containner = [];
+        private readonly Dictionary<string, IJdbcDao> containner = [];
         private Dictionary<string, object> keyValues = [];
         private static DAOFactory fact = null;
         static DAOFactory()
@@ -42,14 +42,14 @@ namespace Frameset.Core.Dao
                     foreach (string key in keyDict.Keys)
                     {
                         Dictionary<object, object> dict1 = keyDict[key] as Dictionary<object, object>;
-                        IJdbcDao dao = constructWithDict(dict1);
+                        IJdbcDao dao = ConstructWithDict(dict1);
                         fact.containner.Add(key, dao);
                     }
 
                 }
                 catch (Exception ex)
                 {
-                    System.Console.WriteLine(ex.Message);
+                    Log.Error(ex.Message);
                 }
             }
             return fact;
@@ -62,7 +62,7 @@ namespace Frameset.Core.Dao
         {
             return keyValues;
         }
-        static IJdbcDao constructWithDict(Dictionary<object, object> dict)
+        private static IJdbcDao ConstructWithDict(Dictionary<object, object> dict)
         {
             string dbType = dict["dbType"] == null ? "Mysql" : dict["dbType"].ToString();
             string host = dict["host"] == null ? "localhost" : dict["host"].ToString();
@@ -104,7 +104,7 @@ namespace Frameset.Core.Dao
             return dao;
 
         }
-        public IJdbcDao getJdbcDao(string key)
+        public IJdbcDao GetJdbcDao(string key)
         {
             if (containner.ContainsKey(key))
             {
@@ -116,15 +116,15 @@ namespace Frameset.Core.Dao
         {
             if (fact.containner.ContainsKey(dsName))
             {
-                Log.Error("register " + dsName + " exists!");
+                Log.Error("register {DsName} exists!", dsName);
                 throw new ConfigMissingException("dsName already exist!");
             }
             else
             {
-                IJdbcDao dao = constructWithDict(configMap);
+                IJdbcDao dao = ConstructWithDict(configMap);
                 if (dao == null)
                 {
-                    Log.Error("register " + dsName + " config error!");
+                    Log.Error("register  {Dsname} config error!", dsName);
                     throw new NotSupportedException("failed");
                 }
                 else
@@ -134,7 +134,7 @@ namespace Frameset.Core.Dao
             }
         }
 
-        static void Main(string[] args)
+        public static void Main(string[] args)
         {
             DAOFactory f = DAOFactory.DoInit("f:/1.yaml");
             Dictionary<string, object> kv = f.getKeyValues();

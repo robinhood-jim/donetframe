@@ -34,11 +34,11 @@ namespace Frameset.Common.Streaming.Consumer
                 methodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
         }
-        protected string hostUrl=null!;
+        protected string hostUrl = null!;
         protected ResourceConstants.SerializeType serializeType = ResourceConstants.SerializeType.JSON;
         protected Encoding encoding = Encoding.UTF8;
-        protected RecordSchema schema=null!;
-        protected GenericRecord record=null!;
+        protected RecordSchema schema = null!;
+        protected GenericRecord record = null!;
         protected Dictionary<string, MethodParam> methodMap = [];
         public abstract List<T> PoolMessage(string queueName, Action<T> action);
         protected GenericDatumReader<GenericRecord> dreader = null!;

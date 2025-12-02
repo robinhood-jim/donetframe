@@ -1,8 +1,8 @@
 ﻿using COSXML;
 using COSXML.Model.Object;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Serilog;
-using Frameset.Core.Exceptions;
 
 namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 {

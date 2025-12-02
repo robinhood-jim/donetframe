@@ -14,7 +14,7 @@ namespace Frametest.Dao
         public string Name
         {
             get; set;
-        } = null;
+        } = string.Empty;
         public int CsId
         {
             get; set;
@@ -26,7 +26,7 @@ namespace Frametest.Dao
         public string Description
         {
             get; set;
-        } = null;
+        } = string.Empty;
 
     }
 }

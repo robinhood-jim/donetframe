@@ -14,7 +14,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             identifier = Constants.FileSystemType.S3;
             ossClient = new OssClient(endpoint, accessKey, secretKey);
-
+            Init(define);
         }
 
         public override bool Exist(string resourcePath)

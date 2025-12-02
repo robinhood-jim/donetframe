@@ -63,7 +63,10 @@ namespace Frameset.Core.Utils
                 {
                     if (Char.IsUpper(column[i]))
                     {
-                        buider.Append(undlineStr);
+                        if (i != 0)
+                        {
+                            buider.Append(undlineStr);
+                        }
                         buider.Append(column[i].ToString().ToLower());
                     }
                     else

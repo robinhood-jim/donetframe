@@ -502,6 +502,15 @@ namespace Frameset.Office.Excel
         }
         public void Dispose()
         {
+            Dispose(true);
+            GC.SuppressFinalize(this);
+        }
+        protected virtual void Dispose(bool disposable)
+        {
+            if (!disposable)
+            {
+                return;
+            }
             Finish();
             if (opcPackage != null)
             {
@@ -561,7 +570,7 @@ namespace Frameset.Office.Excel
 
             return sheet;
         }
-        public WorkSheet? GetSheet(int id)
+        public WorkSheet GetSheet(int id)
         {
             return id < 0 || id > sheets.Count ? null : sheets[id];
         }

@@ -33,14 +33,14 @@ namespace Frameset.Common.Streaming.Producer
                 methodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
         }
-        protected string hostUrl=null!;
+        protected string hostUrl = null!;
         protected ResourceConstants.SerializeType serializeType = ResourceConstants.SerializeType.JSON;
         protected Encoding encoding = Encoding.UTF8;
-        protected RecordSchema schema=null!;
-        protected GenericRecord record=null!;
+        protected RecordSchema schema = null!;
+        protected GenericRecord record = null!;
         protected Dictionary<string, MethodParam> methodMap = [];
         public abstract bool SendMessage(string queueName, string key, T message);
-        protected GenericDatumWriter<GenericRecord> dwriter=null!;
+        protected GenericDatumWriter<GenericRecord> dwriter = null!;
         public void Dispose()
         {
             Dispose(true);
