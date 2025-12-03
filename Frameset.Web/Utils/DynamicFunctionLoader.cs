@@ -1,6 +1,5 @@
 ﻿using Frameset.Common.Annotation;
 using Frameset.Core.Common;
-using Frameset.Web.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
@@ -9,7 +8,7 @@ using System.Runtime.Loader;
 using System.Text;
 using System.Text.Json;
 
-namespace Frameset.Web.Util
+namespace Frameset.Web.Utils
 {
     public static class DynamicFunctionLoader
     {
@@ -59,7 +58,6 @@ namespace Frameset.Web.Util
                 {
                     return OutputErrMsg("call method " + request.Method.ToUpper() + " not allowed!");
                 }
-                Assembly currentAssembly = Assembly.GetExecutingAssembly();
                 Dictionary<string, string> queryMap = request.WrapRequest();
                 Dictionary<string, object>? reqObj = [];
                 List<object> reqParams = new();
@@ -68,15 +66,22 @@ namespace Frameset.Web.Util
                 {
                     if (string.Equals(request.Method, "post", StringComparison.OrdinalIgnoreCase) || string.Equals(request.Method, "put", StringComparison.OrdinalIgnoreCase))
                     {
-                        string content = request.GetRequestContent();
+                        string content = request.GetRequestContent().Result;
                         Trace.Assert(!content.IsNullOrEmpty() && content.StartsWith('{') && content.EndsWith('}'), "not a valid json");
                         reqObj = JsonSerializer.Deserialize<Dictionary<string, object>>(content);
                     }
                     foreach (ServerlessParameter parameter in function.Parameters)
                     {
-                        if (queryMap.TryGetValue(parameter.ParameterName, out string? reqValue) && parameter.TargetType.IsPrimitive)
+                        if (parameter.TargetType.IsPrimitive)
                         {
-                            reqParams.Add(ConvertUtil.ParseByType(parameter.TargetType, reqValue));
+                            if (queryMap.TryGetValue(parameter.ParameterName, out string? reqValue))
+                            {
+                                reqParams.Add(ConvertUtil.ParseByType(parameter.TargetType, reqValue));
+                            }
+                            else if (reqObj != null && reqObj.TryGetValue(parameter.ParameterName, out object? reqValue1))
+                            {
+                                reqParams.Add(ConvertUtil.ParseByType(parameter.TargetType, reqValue1));
+                            }
                         }
                         else if (parameter.TargetType == typeof(HttpRequest))
                         {
@@ -86,39 +91,37 @@ namespace Frameset.Web.Util
                         {
                             reqParams.Add(response);
                         }
-                        else if (parameter.TargetType == typeof(Dictionary<string, object>))
+                        else if (reqObj!=null && parameter.TargetType == typeof(Dictionary<string, object>))
                         {
                             reqParams.Add(reqObj);
                         }
                         else
                         {
-                            Type currentType = currentAssembly.GetType(parameter.TargetType.FullName);
-                            object targetObj = ApplicationContext.GetBean(currentType);
+                            object? targetObj = ApplicationContext.GetBean(parameter.TargetType);
                             if (targetObj != null)
                             {
                                 reqParams.Add(targetObj);
                             }
                             else
                             {
-                                return OutputErrMsg("parameter " + parameter.ParameterName + " with type" + currentType.FullName + " not found!");
+                                return OutputErrMsg("parameter " + parameter.ParameterName + " with type" + parameter.TargetType + " not found!");
                             }
                         }
                     }
                 }
                 if (function.IsStatic)
                 {
-                    retObj = function.TargetMethod.Invoke(null, [.. reqParams]);
+                    retObj = function.TargetMethod.Invoke(null, reqParams.ToArray());//[.. reqParams]
                 }
                 else
                 {
                     if (!noStaticObjectMap.TryGetValue(funcName, out object? tmpObj))
                     {
-                        Type? currenType = currentAssembly.GetType(function.TaregetType.FullName);
-                        ConstructorInfo? constructor = currenType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { });
+                        ConstructorInfo? constructor = function.TaregetType.GetConstructor(BindingFlags.Public | BindingFlags.Instance, new Type[] { });
                         tmpObj = constructor?.Invoke(null);
-                        if (!function.InitFunc.IsNullOrEmpty())
+                        if (!function.InitFunc.IsNullOrEmpty() && tmpObj != null)
                         {
-                            MethodInfo? methodInfo = currenType.GetMethod(function.InitFunc, new Type[] { typeof(string) });
+                            MethodInfo? methodInfo = function.TaregetType.GetMethod(function.InitFunc, new Type[] { typeof(string) });
                             if (methodInfo != null)
                             {
                                 methodInfo.Invoke(tmpObj, new object[] { function.InitParam });
@@ -159,13 +162,13 @@ namespace Frameset.Web.Util
             }
             return querMap;
         }
-        private static string GetRequestContent(this HttpRequest request)
+        private async static Task<string> GetRequestContent(this HttpRequest request)
         {
             StringBuilder builder = new StringBuilder();
             using (StreamReader reader = new StreamReader(request.Body))
             {
                 string? line;
-                while ((line = reader.ReadLine()) != null)
+                while ((line = await reader.ReadLineAsync()) != null)
                 {
                     builder.Append(line);
                 }
@@ -213,22 +216,14 @@ namespace Frameset.Web.Util
                         string? initFunc = null;
                         string? initParam = null;
                         string allowMethods = null!;
-                        object[] attributes = method.GetCustomAttributes(false);
-
-                        if (attributes.Length > 0)
+                        Attribute? selAttribute = method.GetCustomAttribute(typeof(ServerlessFuncAttribute));
+                        if (selAttribute != null)
                         {
-                            for (int i = 0; i < attributes.Length; i++)
-                            {
-                                if (attributes[i].GetType().Equals(typeof(ServerlessFuncAttribute)))
-                                {
-                                    attribute = attributes[i] as ServerlessFuncAttribute;
-                                    funcName = attribute.Value ?? method.Name;
-                                    allowMethods = attribute.AllowMethods ?? DEFAULTALLOWMETHODS;
-                                    initFunc = attribute.InitFunc;
-                                    initParam = attribute.InitParameter;
-                                    break;
-                                }
-                            }
+                            attribute = selAttribute as ServerlessFuncAttribute;
+                            funcName = attribute.Value ?? method.Name;
+                            allowMethods = attribute.AllowMethods ?? DEFAULTALLOWMETHODS;
+                            initFunc = attribute.InitFunc;
+                            initParam = attribute.InitParameter;
                         }
                         if (!funcName.IsNullOrEmpty())
                         {
@@ -253,7 +248,7 @@ namespace Frameset.Web.Util
                                     ServerlessParameter serverlessParameter = new ServerlessParameter
                                     {
                                         ParameterName = parameter.Name,
-                                        TargetType = parameter.GetType()
+                                        TargetType = parameter.ParameterType
                                     };
                                     serverlessParameters.Add(serverlessParameter);
                                 }

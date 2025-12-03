@@ -155,7 +155,7 @@ namespace Frameset.Core.Dao.Utils
             {
                 if (content.IfPrimary)
                 {
-                    removeBuilder.Append(content.FieldName).Append(" in ");
+                    removeBuilder.Append(content.FieldName).Append(" in (");
                     break;
                 }
             }

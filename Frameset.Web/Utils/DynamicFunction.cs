@@ -1,7 +1,7 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 
-namespace Frameset.Web.Util
+namespace Frameset.Web.Utils
 {
     public class DynamicFunction
     {

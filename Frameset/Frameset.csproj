@@ -9,7 +9,7 @@
     <Description>.Net Framework Core Package including ORM and Sql Query tools,streaming xlsx and word file Read and Write support.</Description>
     <PackageReadmeFile>README.en.md</PackageReadmeFile>
 	<PackageLicenseFile>LICENSE</PackageLicenseFile>
-    <Version>1.0.5</Version>
+    <Version>1.0.6</Version>
     <PackageId></PackageId>
     <Authors>robinhoodjim</Authors>
     <RepositoryUrl>https://github.com/robinhood-jim/donetframe</RepositoryUrl>
@@ -41,7 +41,6 @@
     <PackageReference Include="SharpZipLib" Version="1.4.2" PrivateAssets="All" />
     <PackageReference Include="Spring.Core" Version="3.0.3" />
     <PackageReference Include="YamlDotNet" Version="16.3.0" />
- 
   </ItemGroup>
   <ItemGroup>
     <None Remove="C:\Users\Administrator\.nuget\packages\net.ibm.data.db2-lnx\9.0.0.400\buildTransitive\**" />

@@ -5,7 +5,6 @@ using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Frameset.Core.Repo;
 using Microsoft.AspNetCore.Mvc;
-using Spring.Globalization.Formatters;
 using System.Diagnostics;
 
 namespace Frameset.Web.Controller
@@ -13,7 +12,6 @@ namespace Frameset.Web.Controller
     public class AbstractController<R, V, P> : AbstractControllerBase where R : IBaseRepository<V, P> where V : BaseEntity
     {
         protected readonly R repository;
-        private DateTimeFormatter timeFormat = new DateTimeFormatter("yyyy-MM-dd HH:mm:ss");
         public AbstractController(R baseRepository)
         {
             repository = baseRepository;
@@ -54,9 +52,19 @@ namespace Frameset.Web.Controller
         public JsonResult GetEntity(P id)
         {
             V vo = repository.GetById(id);
-            return new JsonResult(vo);
+            if (vo != null)
+            {
+                return OutputMsg(vo);
+            }
+            else
+            {
+                return OutputErrMsg("id not found!");
+            }
         }
-
+        public JsonResult RemoveEntity(P id)
+        {
+            return OutputMsg(repository.RemoveEntity([id]));
+        }
 
         internal V GetValueFrom(object input)
         {

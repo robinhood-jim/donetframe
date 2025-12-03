@@ -85,7 +85,7 @@ namespace Frameset.Core.Dao
 
         public IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters = null)
         {
-            Trace.Assert(modelType.GetType().IsSubclassOf(typeof(BaseEntity)));
+            Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
             if (!parameters.IsNullOrEmpty())
             {
                 command.Parameters.AddRange(parameters.ToArray());
@@ -123,7 +123,7 @@ namespace Frameset.Core.Dao
         }
         public IList<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, IList<DbParameter> parameters)
         {
-            Trace.Assert(modelType.GetType().IsSubclassOf(typeof(BaseEntity)));
+            Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
             command.Parameters.AddRange(parameters.ToArray());
             IList<BaseEntity> retList = new List<BaseEntity>();
             Dictionary<string, FieldContent> map = EntityReflectUtils.GetFieldsMap(modelType);

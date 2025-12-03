@@ -6,7 +6,7 @@ namespace Frameset.Web.Utils
 {
     public class ApplicationContext
     {
-        private static IServiceProvider provider;
+        private static IServiceProvider provider=null!;
         private static readonly Dictionary<Type, object> registerMap = [];
         private ApplicationContext()
         {
@@ -18,7 +18,7 @@ namespace Frameset.Web.Utils
         }
         public static object? GetBean(Type type, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         {
-            object? cachedObj = provider.GetService(type);
+            object? cachedObj = provider.GetRequiredService(type);
             if (cachedObj == null)
             {
                 registerMap.TryGetValue(type, out cachedObj);

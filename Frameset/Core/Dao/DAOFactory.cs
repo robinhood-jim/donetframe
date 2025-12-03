@@ -12,19 +12,15 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Frameset.Core.Dao
 {
-    public class DAOFactory
+    public static class DAOFactory
     {
-        private readonly Dictionary<string, IJdbcDao> containner = [];
-        private Dictionary<string, object> keyValues = [];
-        private static DAOFactory fact = null;
-        static DAOFactory()
-        {
-            fact = new DAOFactory();
-        }
-        public static DAOFactory DoInit(string yamlPath)
+        private readonly static Dictionary<string, IJdbcDao> containner = [];
+        private static Dictionary<string, object> keyValues = [];
+
+        public static void DoInit(string yamlPath)
         {
 
-            if (fact.getKeyValues().IsNullOrEmpty())
+            if (keyValues.IsNullOrEmpty())
             {
                 IDeserializer deserializer = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
                 try
@@ -36,14 +32,14 @@ namespace Frameset.Core.Dao
                         processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath.Substring(4, yamlPath.Length);
                     }
                     StreamReader reader = File.OpenText(processPath);
-                    fact.keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
-                    Dictionary<object, object> keyDict = (Dictionary<object, object>)fact.getKeyValues()["dataSource"];
+                    keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
+                    Dictionary<object, object> keyDict = (Dictionary<object, object>)GetKeyValues()["dataSource"];
                     int daoSize = keyDict.Keys.Count;
                     foreach (string key in keyDict.Keys)
                     {
                         Dictionary<object, object> dict1 = keyDict[key] as Dictionary<object, object>;
                         IJdbcDao dao = ConstructWithDict(dict1);
-                        fact.containner.Add(key, dao);
+                        containner.Add(key, dao);
                     }
 
                 }
@@ -52,13 +48,9 @@ namespace Frameset.Core.Dao
                     Log.Error(ex.Message);
                 }
             }
-            return fact;
         }
-        public static DAOFactory getInstance()
-        {
-            return fact;
-        }
-        public Dictionary<string, object> getKeyValues()
+
+        public static Dictionary<string, object> GetKeyValues()
         {
             return keyValues;
         }
@@ -104,17 +96,15 @@ namespace Frameset.Core.Dao
             return dao;
 
         }
-        public IJdbcDao GetJdbcDao(string key)
+        public static IJdbcDao GetJdbcDao(string key)
         {
-            if (containner.ContainsKey(key))
-            {
-                return containner[key];
-            }
-            return null;
+            containner.TryGetValue(key, out IJdbcDao dao);
+
+            return dao;
         }
         public static void Register(string dsName, Dictionary<object, object> configMap)
         {
-            if (fact.containner.ContainsKey(dsName))
+            if (containner.ContainsKey(dsName))
             {
                 Log.Error("register {DsName} exists!", dsName);
                 throw new ConfigMissingException("dsName already exist!");
@@ -129,19 +119,9 @@ namespace Frameset.Core.Dao
                 }
                 else
                 {
-                    fact.containner.Add(dsName, dao);
+                    containner.Add(dsName, dao);
                 }
             }
-        }
-
-        public static void Main(string[] args)
-        {
-            DAOFactory f = DAOFactory.DoInit("f:/1.yaml");
-            Dictionary<string, object> kv = f.getKeyValues();
-            System.Console.WriteLine(kv);
-
-
-
         }
     }
 }

@@ -2,7 +2,7 @@
 
 namespace Frameset.Core.Mapper
 {
-    public class ConfigResourceScanner
+    public static class ConfigResourceScanner
     {
         public static FileInfo[] DoScan(string configPath)
         {

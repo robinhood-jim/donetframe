@@ -3,18 +3,14 @@ using Microsoft.Extensions.Configuration.Json;
 
 namespace Frameset.Core.Common
 {
-    public class AppConfigurtaionServices
+    public static class AppConfigurtaionServices
     {
-        public static IConfiguration Configuration { get; set; }
-        static AppConfigurtaionServices()
-        {
-            //ReloadOnChange = true 当appsettings.json被修改时重新加载            
-            Configuration = new ConfigurationBuilder()
+        public static IConfiguration Configuration { get; set; } = new ConfigurationBuilder()
             .Add(new JsonConfigurationSource { Path = "appsettings.json", ReloadOnChange = true })
             //根据环境变量读取配置
             //.Add(new JsonConfigurationSource { Path = $"appsettings.{System.Environment.GetEnvironmentVariable("ASPNETCORE_ENVIRONMENT")}.json", ReloadOnChange = true })
             .Build();
-        }
+
         /// <summary> 
         /// 通过强类型绑定读取配置 
         /// </summary> 
@@ -37,5 +33,6 @@ namespace Frameset.Core.Common
             }
             return entity;
         }
+
     }
 }

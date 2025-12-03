@@ -6,19 +6,23 @@
         public string Value
         {
             get; set;
-        }
-        public string InitFunc
+        } = null!;
+        public string? InitFunc
         {
             get; set;
-        }
-        public string InitParameter
+        } 
+        public string? InitParameter
         {
             get; set;
         }
         public string AllowMethods
         {
             get; set;
-        } = "POST";
+        } = null!;
+        public ServerlessFuncAttribute()
+        {
+
+        }
         public ServerlessFuncAttribute(string value)
         {
             this.Value = value;
