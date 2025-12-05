@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -66,6 +67,10 @@ namespace Frameset.Core.FileSystem
         public Constants.FileFormatType FileFormat
         {
             get; internal set;
+        }
+        public FileMeta MetaData
+        {
+            get; set;
         }
         internal DataCollectionDefine()
         {

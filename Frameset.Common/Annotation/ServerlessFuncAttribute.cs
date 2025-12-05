@@ -10,7 +10,7 @@
         public string? InitFunc
         {
             get; set;
-        } 
+        }
         public string? InitParameter
         {
             get; set;

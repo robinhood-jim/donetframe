@@ -91,7 +91,7 @@ namespace Frameset.Web.Utils
                         {
                             reqParams.Add(response);
                         }
-                        else if (reqObj!=null && parameter.TargetType == typeof(Dictionary<string, object>))
+                        else if (reqObj != null && parameter.TargetType == typeof(Dictionary<string, object>))
                         {
                             reqParams.Add(reqObj);
                         }
@@ -244,7 +244,6 @@ namespace Frameset.Web.Utils
                                 List<ServerlessParameter> serverlessParameters = new();
                                 foreach (ParameterInfo parameter in parameters)
                                 {
-                                    string? parameterName = parameter.Name;
                                     ServerlessParameter serverlessParameter = new ServerlessParameter
                                     {
                                         ParameterName = parameter.Name,

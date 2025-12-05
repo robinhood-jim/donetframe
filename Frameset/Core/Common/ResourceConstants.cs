@@ -1,4 +1,6 @@
-﻿namespace Frameset.Common.Data
+﻿using System;
+
+namespace Frameset.Core.Common
 {
     public static class ResourceConstants
     {
@@ -55,6 +57,10 @@
         public static readonly string RABBITMQROUTINGKEY = "rabbitmq.routingKey";
         public static readonly string RABBITMQDEFAULTHOST = "localhost";
         public static readonly int RABBITMQDEFAULTPORT = 5672;
+        //elasticsearch
+        public static readonly string ELASTICENDPOINTS = "elastic.endpoints";
+        public static readonly string ELASTICUSERNAME = "elastic.userName";
+        public static readonly string ELASTICPASSWD= "elastic.passwd";
 
         public enum SerializeType
         {

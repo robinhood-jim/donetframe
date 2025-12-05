@@ -23,32 +23,24 @@ namespace Frameset.Core.Dao.Utils
             EntityContent content = null;
             if (!entityContentMap.TryGetValue(entityType, out content))
             {
-                object[] attributes = entityType.GetCustomAttributes(false);
-                if (attributes.Length > 0)
+                MappingEntity entity = (MappingEntity)entityType.GetCustomAttribute(typeof(MappingEntity));
+                if (entity != null)
                 {
-                    for (int i = 0; i < attributes.Length; i++)
-                    {
-                        if (attributes[i].GetType().Equals(typeof(MappingEntity)))
-                        {
-                            MappingEntity entity = attributes[i] as MappingEntity;
-
-                            string tableName = entity.TableName;
-                            string schema = entity.Schema != null ? entity.Schema : null;
-                            string dsName = entity.DsName;
-                            content = new EntityContent(entityType, tableName, schema, dsName);
-                            content.IfExplicit = entity.IfExplicit;
-                            break;
-                        }
-                        else if (attributes[i].GetType().Equals(typeof(TableAttribute)))
-                        {
-                            //EF Core Table 
-                            TableAttribute a = attributes[i] as TableAttribute;
-                            content = new EntityContent(entityType, a.Name, a.Schema, null);
-
-                        }
-                    }
-
+                    string tableName = entity.TableName;
+                    string schema = entity.Schema != null ? entity.Schema : null;
+                    string dsName = entity.DsName;
+                    content = new EntityContent(entityType, tableName, schema, dsName);
+                    content.IfExplicit = entity.IfExplicit;
                 }
+                else
+                {
+                    TableAttribute attribute = (TableAttribute)entityType.GetCustomAttribute(typeof(TableAttribute));
+                    if (attribute != null)
+                    {
+                        content = new EntityContent(entityType, attribute.Name, attribute.Schema, null);
+                    }
+                }
+
                 if (content != null)
                 {
                     entityContentMap.Add(entityType, content);

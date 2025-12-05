@@ -152,5 +152,7 @@ namespace Frameset.Core.Common
         }
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";
+        public static readonly string TRUEVALUE = "true";
+        public static readonly string FALSEVALUE = "false";
     }
 }

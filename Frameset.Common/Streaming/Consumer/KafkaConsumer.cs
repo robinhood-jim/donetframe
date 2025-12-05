@@ -1,5 +1,5 @@
 ﻿using Confluent.Kafka;
-using Frameset.Common.Data;
+using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;

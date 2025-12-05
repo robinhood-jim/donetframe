@@ -1,4 +1,4 @@
-﻿using Frameset.Common.Data;
+﻿using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using RabbitMQ.Client;

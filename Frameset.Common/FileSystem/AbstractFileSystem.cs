@@ -1,5 +1,5 @@
 ﻿using Frameset.Common.Compress;
-using Frameset.Common.Data;
+
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
@@ -105,6 +105,7 @@ namespace Frameset.Common.FileSystem
             {
                 encoding = Encoding.GetEncoding(define.Encode);
             }
+            GetContentType(define);
         }
 
         public abstract bool IsDirectory(string resourcePath);
@@ -132,8 +133,11 @@ namespace Frameset.Common.FileSystem
         }
         protected string GetContentType(DataCollectionDefine meta)
         {
-            FileMeta fileMeta = FileUtil.Parse(meta.Path);
-            return fileMeta.ContentType;
+            if (define.MetaData == null)
+            {
+                define.MetaData = FileUtil.Parse(meta.Path);
+            }
+            return define.MetaData.ContentType;
         }
     }
 }

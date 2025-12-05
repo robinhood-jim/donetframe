@@ -88,6 +88,7 @@ namespace Frameset.Core.Utils
                 }
             }
             meta.FileName = string.Join('.', namePart.Take(suffixPos));
+            meta.FullName = string.Join('.', namePart);
             return meta;
 
         }
@@ -97,6 +98,10 @@ namespace Frameset.Core.Utils
         internal FileMeta()
         {
 
+        }
+        public string FullName
+        {
+            get; internal set;
         }
         public string FileName
         {

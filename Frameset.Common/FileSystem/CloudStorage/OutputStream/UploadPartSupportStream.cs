@@ -15,7 +15,13 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 
         public override long Length => 0;
 
-        public override long Position { get => pos; set => this.pos = value; }
+        public override long Position { get => pos; set => pos = value; }
+
+        public long TotalSize
+        {
+            get => totalSize;
+        }
+        long totalSize;
         long pos;
 
         protected DataCollectionDefine define;
@@ -49,6 +55,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         {
             var currentStream = new MemoryStream(partSize);
             partMemMap.TryAdd(partNum, currentStream);
+            pos = 0;
         }
         public override void Flush()
         {
@@ -100,6 +107,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             {
                 uploadPart(partMemMap[partNum], partNum, pos);
                 partNum++;
+                totalSize += pos;
                 initNewPart(partNum);
             }
         }
@@ -111,10 +119,16 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             }
             if (!UploadId.IsNullOrEmpty())
             {
+                if (pos > 0)
+                {
+                    uploadPart(partMemMap[partNum], partNum, pos);
+                }
                 while (etagMap.Count + errorPartMap.Count != partNum)
                 {
                     Thread.Sleep(200);
                 }
+
+
                 if (errorPartMap.IsNullOrEmpty())
                 {
                     string etag = completeMultiUpload();

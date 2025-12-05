@@ -92,6 +92,12 @@ namespace Frameset.Core.Annotation
         {
             this.IfPrimary = ifPrimary;
         }
+        public MappingField(bool ifPrimary, bool ifIncrement)
+        {
+            this.IfPrimary = ifPrimary;
+            this.IfIncrement = IfIncrement;
+        }
+
 
         public MappingField(string field, bool ifPrimary)
         {

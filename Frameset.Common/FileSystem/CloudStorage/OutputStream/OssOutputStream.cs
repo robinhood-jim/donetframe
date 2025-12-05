@@ -13,11 +13,16 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         public OssOutputStream(OssClient client, DataCollectionDefine define, string bucketName, string key) : base(define, bucketName, key)
         {
             this.ossClient = client;
+            doInit();
         }
 
         protected override string completeMultiUpload()
         {
             CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest(bucketName, key, UploadId);
+            ObjectMetadata metadata = new ObjectMetadata();
+            metadata.ContentType = define.MetaData.ContentType;
+            metadata.ContentLength = TotalSize;
+            request.Metadata = metadata;
             CompleteMultipartUploadResult result = ossClient.CompleteMultipartUpload(request);
             return result.ETag;
         }

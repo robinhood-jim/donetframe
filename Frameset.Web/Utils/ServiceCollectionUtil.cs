@@ -16,7 +16,8 @@ namespace Frameset.Web.Utils
                 //获取该类所继承的所有接口
                 Type[] interfaces = impl.GetInterfaces();
                 //获取该类注入的生命周期
-                var lifetime = impl.GetCustomAttribute<ServiceAttribute>().LifeTime;
+                ServiceAttribute? attribute = impl.GetCustomAttribute<ServiceAttribute>();
+                ServiceLifetime lifetime = attribute.LifeTime;
                 interfaces.ToList().ForEach(i =>
                 {
                     switch (lifetime)

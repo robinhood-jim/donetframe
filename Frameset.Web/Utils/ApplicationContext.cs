@@ -6,7 +6,7 @@ namespace Frameset.Web.Utils
 {
     public class ApplicationContext
     {
-        private static IServiceProvider provider=null!;
+        private static IServiceProvider provider = null!;
         private static readonly Dictionary<Type, object> registerMap = [];
         private ApplicationContext()
         {
@@ -18,12 +18,16 @@ namespace Frameset.Web.Utils
         }
         public static object? GetBean(Type type, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         {
-            object? cachedObj = provider.GetRequiredService(type);
-            if (cachedObj == null)
+            //change singleton to scope
+            using (var scope = provider.CreateScope())
             {
-                registerMap.TryGetValue(type, out cachedObj);
+                object? cachedObj = scope.ServiceProvider.GetRequiredService(type);
+                if (cachedObj == null)
+                {
+                    registerMap.TryGetValue(type, out cachedObj);
+                }
+                return cachedObj;
             }
-            return cachedObj;
         }
         public static void Register(Type type, object obj)
         {

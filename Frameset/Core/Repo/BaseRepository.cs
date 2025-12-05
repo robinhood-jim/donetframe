@@ -42,10 +42,10 @@ namespace Frameset.Core.Repo
         internal Action<DbCommand, V> deleteAfterAction = null!;
         internal Func<DbConnection, DbTransaction> transcationFunc = null!;
         internal IJdbcDao dao;
-        private readonly Type entityType;
-        private readonly Type pkType;
-        private IList<FieldContent> fieldContents;
-        private ThreadLocal<string> temporaryDsName;
+        protected readonly Type entityType;
+        protected readonly Type pkType;
+        protected IList<FieldContent> fieldContents;
+        protected ThreadLocal<string> temporaryDsName;
         public BaseRepository()
         {
             Type[] genericType = GetType().GetInterfaces()[0].GetGenericArguments();

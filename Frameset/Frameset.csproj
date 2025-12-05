@@ -35,7 +35,7 @@
     <PackageReference Include="MySqlConnector" Version="2.4.0" PrivateAssets="All" />
     <PackageReference Include="Net.IBM.Data.Db2-lnx" Version="9.0.0.400" PrivateAssets="All" ExcludeAssets="buildtransitive" />
     <PackageReference Include="Npgsql" Version="7.0.10" PrivateAssets="All" />
-    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.0" />
+    <PackageReference Include="Oracle.ManagedDataAccess.Core" Version="23.26.0" PrivateAssets="All" />
     <PackageReference Include="Serilog" Version="4.3.0" PrivateAssets="All" />
     <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" PrivateAssets="All" />
     <PackageReference Include="SharpZipLib" Version="1.4.2" PrivateAssets="All" />

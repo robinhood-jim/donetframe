@@ -12,6 +12,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         public CosOutputStream(CosXmlServer server, DataCollectionDefine define, string bucketName, string key) : base(define, bucketName, key)
         {
             this.server = server;
+            doInit();
         }
 
         protected override string completeMultiUpload()

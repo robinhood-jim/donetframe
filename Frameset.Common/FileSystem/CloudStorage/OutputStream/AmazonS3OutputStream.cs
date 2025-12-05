@@ -22,6 +22,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest();
             request.BucketName = bucketName;
             request.Key = key;
+            request.MpuObjectSize = TotalSize;
             List<PartETag> etags = new List<PartETag>();
             for (int i = 0; i < partNum; i++)
             {
@@ -58,8 +59,11 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             PutObjectRequest request = new PutObjectRequest
             {
                 BucketName = bucketName,
-                Key = key
+                Key = key,
             };
+            request.ContentType = define.MetaData.ContentType;
+            request.Metadata.Add("content-length", Position.ToString());
+            request.Metadata.Add("content-type", define.MetaData.ContentType);
             request.InputStream = partMemMap[0];
 
             PutObjectResponse response = client.PutObjectAsync(request).Result;

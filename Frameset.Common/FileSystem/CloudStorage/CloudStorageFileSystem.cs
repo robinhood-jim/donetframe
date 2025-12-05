@@ -21,6 +21,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSACCESSKEY, out accessKey);
             define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSSECRETKEY, out secretKey);
             define.ResourceConfig.TryGetValue(StorageConstants.CLOUDFSENDPOINT, out endpoint);
+
             Trace.Assert(!bucketName.IsNullOrEmpty(), "missing parameter bucketName");
             Trace.Assert(!accessKey.IsNullOrEmpty(), "missing parameter accessKey");
             Trace.Assert(!secretKey.IsNullOrEmpty(), "missing parameter secretKey");
