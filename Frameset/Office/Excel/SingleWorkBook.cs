@@ -40,7 +40,7 @@ namespace Frameset.Office.Excel
             {
                 if (Log.IsEnabled(LogEventLevel.Debug))
                 {
-                    Log.Debug(" Flush and Close sheet " + currentSheet.Index);
+                    Log.Debug(" Flush and Close sheet {Index}", currentSheet.Index);
                 }
                 currentSheet.Finish();
                 BeginWrite();
@@ -60,7 +60,7 @@ namespace Frameset.Office.Excel
             {
                 if (Log.IsEnabled(LogEventLevel.Debug))
                 {
-                    Log.Debug(" Flush and Close sheet " + currentSheet.Index);
+                    Log.Debug(" Flush and Close sheet {Index}", currentSheet.Index);
                 }
                 currentSheet.Finish();
                 BeginWrite();

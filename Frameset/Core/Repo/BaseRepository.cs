@@ -491,7 +491,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public int InsertBatch(IList<V> models)
+        public long InsertBatch(IEnumerable<V> models, CancellationToken token)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
 
@@ -501,7 +501,7 @@ namespace Frameset.Core.Repo
 
                 try
                 {
-                    return GetDao().GetDialect().BatchInsert<V>(dao, connection, models);
+                    return GetDao().GetDialect().BatchInsert<V>(dao, connection, models,token);
 
                 }
                 catch (Exception ex)

@@ -1,11 +1,12 @@
-﻿using Frameset.Core.Dao.Utils;
+﻿using FastMember;
+using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
 using IBM.Data.Db2;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Text;
+using System.Threading;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -22,44 +23,25 @@ namespace Frameset.Core.Dao.Meta
         internal DB2Dialect()
         {
         }
-        public override int BatchInsert<V>(IJdbcDao dao, DbConnection connection, IList<V> models, int batchSize = 10000)
+        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
+            long count = 0;
             using (DB2BulkCopy copy = new DB2BulkCopy((DB2Connection)connection))
             {
                 copy.DestinationTableName = entityContent.TableName;
-                DataTable table = new DataTable();
+                List<string> columnNames = new();
                 foreach (FieldContent content in fields)
                 {
                     if (!content.IfIncrement)
                     {
-                        table.Columns.Add(content.FieldName, content.GetMethold.ReturnType);
-                    }
-                    else
-                    {
-                        DataColumn column = table.Columns.Add(content.FieldName, content.GetMethold.ReflectedType);
-                        column.AutoIncrement = true;
-                        column.AllowDBNull = true;
+                        columnNames.Add(content.PropertyName);
                     }
                 }
-                foreach (V model in models)
-                {
-                    DataRow row = table.NewRow();
-                    foreach (FieldContent content in fields)
-                    {
-                        if (!content.IfIncrement)
-                        {
-                            row[content.FieldName] = content.GetMethold.Invoke(model, null);
-                        }
-                        else
-                        {
-                            row[content.FieldName] = DBNull.Value;
-                        }
-                    }
-                }
-                copy.WriteToServer(table);
-                return models.Count;
+                var reader = ObjectReader.Create(models, columnNames.ToArray());
+                copy.WriteToServer(reader);
+                return count;
             }
         }
         public override DbConnection GetDbConnection(string connectStr)

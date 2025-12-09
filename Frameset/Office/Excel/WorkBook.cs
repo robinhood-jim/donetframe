@@ -412,7 +412,7 @@ namespace Frameset.Office.Excel
                 opcPackage.OutputStream.CloseEntry();
             }
         }
-        ZipEntry beginPart(String partName)
+        void beginPart(String partName)
         {
             ZipEntry entry = new ZipEntry(partName);
             if (opcPackage.OutputStream != null)
@@ -420,7 +420,6 @@ namespace Frameset.Office.Excel
                 opcPackage.OutputStream.PutNextEntry(entry);
                 opcPackage.OutputStream.Flush();
             }
-            return entry;
         }
         int getIndex(WorkSheet ws)
         {

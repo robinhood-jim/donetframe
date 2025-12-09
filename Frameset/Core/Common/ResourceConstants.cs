@@ -60,7 +60,7 @@ namespace Frameset.Core.Common
         //elasticsearch
         public static readonly string ELASTICENDPOINTS = "elastic.endpoints";
         public static readonly string ELASTICUSERNAME = "elastic.userName";
-        public static readonly string ELASTICPASSWD= "elastic.passwd";
+        public static readonly string ELASTICPASSWD = "elastic.passwd";
 
         public enum SerializeType
         {

@@ -12,40 +12,36 @@ using System.Text.RegularExpressions;
 
 namespace Frameset.Office.Util
 {
-    public class OpcPackage : IDisposable
+    public sealed class OpcPackage : IDisposable
     {
         internal ZipFile InputFile
         {
             get; set;
         }
-        public static string WORKBOOK_MAIN_CONTENT_TYPE =
-            "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
-        public static string WORKBOOK_EXCEL_MACRO_ENABLED_MAIN_CONTENT_TYPE =
-                "application/vnd.ms-excel.sheet.macroEnabled.main+xml";
-        public static string SHARED_STRINGS_CONTENT_TYPE =
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedstrings+xml";
-        public static string STYLE_CONTENT_TYPE =
-                "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml";
-        public static string WORD_DOCUMENT_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
-        public static string WORD_NUMBERING_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml";
-        public static string WORD_STYLE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml";
-        public static string WORD_WEBSETTING_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml";
-        public static string WORD_FOOTERNOTE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml";
-        public static string WORD_ENDNOTE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml";
-        public static string WORD_HEADER_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml";
-        public static string WORD_FOOTER_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml";
-        public static string WORD_FONTTABLE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml";
-        public static string WORD_THEME_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.theme+xml";
+        public static readonly string WORKBOOK_MAIN_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
+        public static readonly string WORKBOOK_EXCEL_MACRO_ENABLED_MAIN_CONTENT_TYPE = "application/vnd.ms-excel.sheet.macroEnabled.main+xml";
+        public static readonly string SHARED_STRINGS_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedstrings+xml";
+        public static readonly string STYLE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.styles+xml";
+        public static readonly string WORD_DOCUMENT_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.document.main+xml";
+        public static readonly string WORD_NUMBERING_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.numbering+xml";
+        public static readonly string WORD_STYLE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.styles+xml";
+        public static readonly string WORD_WEBSETTING_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.webSettings+xml";
+        public static readonly string WORD_FOOTERNOTE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.footnotes+xml";
+        public static readonly string WORD_ENDNOTE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.endnotes+xml";
+        public static readonly string WORD_HEADER_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.header+xml";
+        public static readonly string WORD_FOOTER_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.footer+xml";
+        public static readonly string WORD_FONTTABLE_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.wordprocessingml.fontTable+xml";
+        public static readonly string WORD_THEME_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.theme+xml";
 
 
-        public static string CORE_PROPERTIY_CONTENTTYPE = "application/vnd.openxmlformats-package.core-properties+xml";
-        public static string EXTEND_PROPERTY_CONTENTTYPE = "application/vnd.openxmlformats-officedocument.extended-properties+xml";
-        public static string PATTERN = "^(.*/)([^/]+)$";
+        public static readonly string CORE_PROPERTIY_CONTENTTYPE = "application/vnd.openxmlformats-package.core-properties+xml";
+        public static readonly string EXTEND_PROPERTY_CONTENTTYPE = "application/vnd.openxmlformats-officedocument.extended-properties+xml";
+        public static readonly string PATTERN = "^(.*/)([^/]+)$";
         public ZipOutputStream OutputStream
         {
             get; internal set;
         }
-        public static Dictionary<string, string> IMPLICIT_NUM_FMTS = new Dictionary<string, string>() { { "1", "0" },
+        public static readonly Dictionary<string, string> IMPLICIT_NUM_FMTS = new Dictionary<string, string>() { { "1", "0" },
             {"2", "0.00" },
             {"3", "#,##0"},
             {"4", "#,##0.00"},

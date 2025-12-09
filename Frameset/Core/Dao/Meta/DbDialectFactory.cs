@@ -15,6 +15,7 @@ namespace Frameset.Core.Dao.Meta
             metaMap.Add(Constants.DbType.Oracle, new OracleDialect());
             metaMap.Add(Constants.DbType.DB2, new DB2Dialect());
             metaMap.Add(Constants.DbType.Postgres, new PostgresDialect());
+            metaMap.Add(Constants.DbType.ClickHouse, new ClickHouseDialect());
 
         }
         public static AbstractSqlDialect GetInstance(Constants.DbType dbType)

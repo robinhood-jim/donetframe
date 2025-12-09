@@ -11,13 +11,9 @@ using System.IO;
 
 namespace Frameset.Office.Excel.Util
 {
-    public class MapSpiltter : IEnumerable<Dictionary<string, object>>
+    public class MapSpiltter(WorkBook workBook, Stream stream, ExcelSheetProp sheetProp, bool reuseCurrent) : IEnumerable<Dictionary<string, object>>
     {
-        private MapEnumerator enumerator;
-        public MapSpiltter(WorkBook workBook, Stream stream, ExcelSheetProp sheetProp, bool reuseCurrent)
-        {
-            enumerator = new MapEnumerator(workBook, stream, sheetProp, reuseCurrent);
-        }
+        private MapEnumerator enumerator = new MapEnumerator(workBook, stream, sheetProp, reuseCurrent);
 
         public IEnumerator<Dictionary<string, object>> GetEnumerator()
         {

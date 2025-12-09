@@ -15,8 +15,8 @@ namespace Frameset.Common.Streaming.Consumer
         private string? userName;
         private string? passwd;
         private bool bindable = false;
-        private string? exchange;
-        private string? routingKey;
+        private readonly string exchange = null!;
+        private readonly string routingKey = null!;
         public RabbitMqConsumer(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQHOST, out host);

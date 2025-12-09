@@ -1,13 +1,12 @@
 ﻿using Avro;
 using Avro.Generic;
 using Avro.IO;
-
 using Frameset.Common.Data.Utils;
+using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using System.Text;
 using System.Text.Json;
-using Frameset.Core.Common;
 
 namespace Frameset.Common.Streaming.Producer
 {

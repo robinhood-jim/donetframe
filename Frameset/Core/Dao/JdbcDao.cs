@@ -158,7 +158,7 @@ namespace Frameset.Core.Dao
         }
         public IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects)
         {
-            DbParameter[] parameters = parseParameter(command, objects);
+            DbParameter[] parameters = parseParameter(objects);
             command.Parameters.AddRange(parameters);
             IList<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
             using (DbDataReader reader = command.ExecuteReader())
@@ -177,7 +177,7 @@ namespace Frameset.Core.Dao
             }
             return list;
         }
-        DbParameter[] parseParameter(DbCommand command, object[] obj)
+        private DbParameter[] parseParameter(object[] obj)
         {
             if (obj != null && obj.Length > 0)
             {
@@ -397,7 +397,7 @@ namespace Frameset.Core.Dao
                 connection.Open();
                 using (DbCommand command = dataMeta.GetDbCommand(connection, sql))
                 {
-                    DbParameter[] parameters = parseParameter(command, obj);
+                    DbParameter[] parameters = parseParameter(obj);
                     if (parameters != null && parameters.Length > 0)
                     {
                         command.Parameters.AddRange(parameters);

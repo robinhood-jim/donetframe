@@ -22,7 +22,7 @@ namespace Frameset.Web.Utils
 
         public static void RegisterFunction(this Stream input, string assemblyName)
         {
-            AssemblyLoadContext assemblyContent = new AssemblyLoadContext(assemblyName);
+            AssemblyLoadContext assemblyContent = new AssemblyLoadContext(assemblyName, true);
             Assembly assembly = assemblyContent.LoadFromStream(input);
             loadContentMap.TryAdd(assemblyName, assemblyContent);
             assemblyMap.TryAdd(assemblyName, assembly);
@@ -146,7 +146,7 @@ namespace Frameset.Web.Utils
             }
             else
             {
-                return OutputErrMsg("function " + function.FuncName + " not found!");
+                return OutputErrMsg("function " + funcName + " not found!");
             }
         }
         private static Dictionary<string, string> WrapRequest(this HttpRequest request)

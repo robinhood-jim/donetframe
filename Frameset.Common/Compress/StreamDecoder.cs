@@ -12,12 +12,9 @@ using System.IO.Compression;
 
 namespace Frameset.Common.Compress
 {
-    public class StreamDecoder
+    public static class StreamDecoder
     {
-        private StreamDecoder()
-        {
-
-        }
+        
         public static Stream GetInputByCompressType(string resourcePath, Stream rawstream, long streamSize, char dirSep = '/')
         {
             Trace.Assert(rawstream != null);

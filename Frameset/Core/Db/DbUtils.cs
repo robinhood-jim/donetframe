@@ -11,8 +11,10 @@ using System.Data.Common;
 
 namespace Frameset.Core.Db
 {
+    [Obsolete]
     internal class DbUtils
     {
+        [Obsolete]
         public static DbConnection GetConnection(string connectStr, String dbType)
         {
             DbConnection connection = null;
@@ -39,6 +41,7 @@ namespace Frameset.Core.Db
             return connection;
 
         }
+        [Obsolete]
         public static DbCommand GetDbCommand(DbConnection connection, String dbType, String sql)
         {
             DbCommand command = null;
@@ -69,6 +72,7 @@ namespace Frameset.Core.Db
             }
             return command;
         }
+        [Obsolete]
         public static DbParameter WrapParameter(string dbType, int pos, object value)
         {
             DbParameter parameter = null;
@@ -94,6 +98,7 @@ namespace Frameset.Core.Db
             return parameter;
 
         }
+        [Obsolete]
         public static IDataAdapter WrapAdapater(string dbType)
         {
             IDataAdapter dataAdapter = null;
@@ -115,6 +120,7 @@ namespace Frameset.Core.Db
             }
             return dataAdapter;
         }
+        [Obsolete]
         public static DbParameter WrapParameter(string dbType, string column, object value)
         {
             DbParameter parameter = null;

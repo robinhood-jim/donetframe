@@ -9,7 +9,7 @@ namespace Frameset.Web.Middleware
     public class ServerlessMiddleware
     {
         private readonly RequestDelegate _next;
-        private string monitorPathPrefix = "/serverless";
+        private readonly string monitorPathPrefix = "/serverless";
         public ServerlessMiddleware(RequestDelegate next)
         {
             _next = next;
@@ -25,7 +25,7 @@ namespace Frameset.Web.Middleware
             string path = GetRequestPath(context.Request);
             if (path.StartsWith(monitorPathPrefix))
             {
-                string callFunc = path.Substring(monitorPathPrefix.Length + 1, path.Length - monitorPathPrefix.Length-1);
+                string callFunc = path.Substring(monitorPathPrefix.Length + 1, path.Length - monitorPathPrefix.Length - 1);
                 object response = DynamicFunctionLoader.InvokeFunctionDynamic(context.Request, context.Response, callFunc);
                 await context.Response.WriteAsJsonAsync(response);
             }
@@ -36,7 +36,6 @@ namespace Frameset.Web.Middleware
         }
         private string GetRequestPath(HttpRequest request)
         {
-            string basePath = request.PathBase;
             string path = request.Path;
             string relativePath = path;
             int pos = path.IndexOf('?');

@@ -10,7 +10,9 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Text;
+using System.Threading;
 
 
 namespace Frameset.Core.Dao.Meta
@@ -29,7 +31,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "AUTO INCREMENT";
         }
-        public override int BatchInsert<V>(IJdbcDao dao, DbConnection connection, IList<V> models, int batchSize = 10000)
+        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
@@ -42,12 +44,13 @@ namespace Frameset.Core.Dao.Meta
 
                 MySqlBulkCopy copy = new MySqlBulkCopy((MySqlConnection)connection, transaction);
                 copy.DestinationTableName = entityContent.TableName;
+                int columns = 0;
                 foreach (FieldContent content in fields)
                 {
                     if (!content.IfIncrement)
                     {
                         table.Columns.Add(content.FieldName, content.GetMethold.ReturnType);
-
+                        columns++;
                     }
                     else
                     {
@@ -55,10 +58,9 @@ namespace Frameset.Core.Dao.Meta
                         column.AutoIncrement = true;
                         column.AllowDBNull = true;
                         column.AutoIncrementSeed = QueryIdentityByTable(dao, connection, transaction, entityContent);
-
                     }
                 }
-                foreach (V model in models)
+                var enumRows = models.Select(model =>
                 {
                     DataRow row = table.NewRow();
                     foreach (FieldContent content in fields)
@@ -72,9 +74,9 @@ namespace Frameset.Core.Dao.Meta
                             row[content.FieldName] = DBNull.Value;
                         }
                     }
-                    table.Rows.Add(row);
-                }
-                MySqlBulkCopyResult rs = copy.WriteToServer(table);
+                    return row;
+                });
+                MySqlBulkCopyResult rs = copy.WriteToServerAsync(enumRows, columns, token).Result;
                 transaction.Commit();
                 return rs.RowsInserted;
 

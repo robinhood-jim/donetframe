@@ -11,12 +11,8 @@ using System.IO.Compression;
 
 namespace Frameset.Common.Compress
 {
-    public class StreamEncoder
+    public static class StreamEncoder
     {
-        private StreamEncoder()
-        {
-
-        }
         public static Stream GetOutputByCompressType(string resourcePath, Stream rawstream)
         {
             Trace.Assert(rawstream != null);

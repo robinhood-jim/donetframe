@@ -19,7 +19,7 @@ namespace Frameset.Office.Excel
 {
     public class WorkSheet
     {
-        public static int MAX_ROWS = 1_048_576;
+        public static readonly int MAX_ROWS = 1_048_576;
         public string Id
         {
             get; internal set;
@@ -332,7 +332,7 @@ namespace Frameset.Office.Excel
                     break;
             }
         }
-        internal string GetColumnDefine()
+        internal static string GetColumnDefine()
         {
             return "<cols><col min=\"1\" max=\"1\" customWidth=\"true\"></col></cols>";
         }

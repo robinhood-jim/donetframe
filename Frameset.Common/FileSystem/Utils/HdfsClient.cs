@@ -261,7 +261,7 @@ namespace Frameset.Common.FileSystem.utils
             HttpResponseMessage obj = await client.PutAsync(WrapRequest(path, paramMap), new ByteArrayContent(new byte[0]));
             obj.EnsureSuccessStatusCode();
             Dictionary<string, object>? dictMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
-            return (Boolean)dictMap?["boolean"];
+            return (bool)dictMap?["boolean"];
         }
 
         public void Dispose()
