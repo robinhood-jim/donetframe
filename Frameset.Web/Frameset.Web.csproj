@@ -7,7 +7,9 @@
   </PropertyGroup>
 
   <ItemGroup>
+	  <PackageReference Include="BCrypt.Net-Next" Version="4.0.3" />
 	  <PackageReference Include="Microsoft.AspNetCore.Authentication.JwtBearer" Version="8.0.0" PrivateAssets="All" />
+	  <PackageReference Include="Newtonsoft.Json" Version="13.0.4" />
 	  <PackageReference Include="Serilog" Version="4.3.0" PrivateAssets="All" />
 	  <PackageReference Include="Serilog.Settings.Configuration" Version="9.0.0" PrivateAssets="All" />
 	  <PackageReference Include="Serilog.Sinks.Console" Version="6.0.0" PrivateAssets="All" />
