@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
+using Serilog;
 using Spring.Util;
 using System;
 using System.Collections.Generic;
@@ -87,7 +88,7 @@ namespace Frameset.Core.Dao
             }
             catch (Exception ex)
             {
-
+                Log.Error("{Message}", ex.Message);
             }
             return list;
         }

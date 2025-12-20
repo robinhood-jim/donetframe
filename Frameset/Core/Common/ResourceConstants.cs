@@ -61,6 +61,20 @@ namespace Frameset.Core.Common
         public static readonly string ELASTICENDPOINTS = "elastic.endpoints";
         public static readonly string ELASTICUSERNAME = "elastic.userName";
         public static readonly string ELASTICPASSWD = "elastic.passwd";
+        //mongodb
+        public static readonly string MONGODBURL = "mongodb.url";
+        public static readonly string MONGODBDEFAULTURL = "mongodb://127.0.0.1:27017";
+        //cassandra
+        public static readonly string CASSANDRAURL = "cassandra.url";
+        public static readonly string CASSANDRAKEYSAPCE = "cassandra.keySpace";
+        public static readonly string CASSANDRAUSERNAME = "cassandra.userName";
+        public static readonly string CASSANDRAPASSWD = "cassandra.passwd";
+        public static readonly string CASSANDRASSLPATH = "cassandra.sslPath";
+        //hbase
+        public static readonly string HBASEQUORUMURL = "hbase.quorumUrl";
+        public static readonly string HBASEPROTOBUFURL = "hbase.protoBufUrl";
+        public static readonly string HBASEUSERNAME = "hbase.userName";
+        public static readonly string HBASEPASSWD = "hbase.passwd";
 
         public enum SerializeType
         {

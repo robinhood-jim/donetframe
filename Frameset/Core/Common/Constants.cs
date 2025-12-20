@@ -5,7 +5,7 @@ namespace Frameset.Core.Common
 {
     public class Constants
     {
-        public enum DbType : int
+        public enum DbType
         {
             Unknow = -1,
             Mysql = 1,
@@ -42,9 +42,14 @@ namespace Frameset.Core.Common
             LE,
             BT,
             IN,
+            NOTIN,
             LIKE,
             LLIKE,
-            RLIKE
+            RLIKE,
+            EXISTS,
+            NOTEXISTS,
+            NOTNULL,
+            ISNULL
         }
         public enum FileSystemType
         {
@@ -145,14 +150,66 @@ namespace Frameset.Core.Common
                 ">=" => SqlOperator.GE,
                 "<=" => SqlOperator.LE,
                 "in" => SqlOperator.IN,
-                "[]" => SqlOperator.BT,
+                "between" => SqlOperator.BT,
                 "<>" => SqlOperator.NE,
+                "notin" => SqlOperator.NOTIN,
+                "exists" => SqlOperator.EXISTS,
+                "notexists" => SqlOperator.NOTEXISTS,
                 _ => SqlOperator.EQ
+            };
+        }
+        public static string OperatorValue(SqlOperator sqlOperator)
+        {
+            return sqlOperator switch
+            {
+                SqlOperator.EQ => "=",
+                SqlOperator.LT => "<",
+                SqlOperator.LE => "<=",
+                SqlOperator.GT => ">",
+                SqlOperator.GE => ">=",
+                SqlOperator.BT => "BETWEEN",
+                SqlOperator.NE => "<>",
+                SqlOperator.IN => " IN ",
+                SqlOperator.NOTIN => " NOT IN ",
+                SqlOperator.LIKE => " LIKE ",
+                SqlOperator.LLIKE => " LIKE ",
+                SqlOperator.RLIKE => " LIKE ",
+                SqlOperator.EXISTS => " EXISTS ",
+                SqlOperator.NOTEXISTS => " NOT EXISTS",
+                SqlOperator.NOTNULL => " NOT NULL",
+                SqlOperator.ISNULL => " IS NULL ",
+                _ => "="
             };
         }
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";
         public static readonly string TRUEVALUE = "true";
         public static readonly string FALSEVALUE = "false";
+        public static readonly string LINK_AND = "AND";
+        public static readonly string LINK_OR = "OR";
+        public static readonly string SQL_AND = " AND ";
+        public static readonly string SQL_OR = " OR ";
+        public static readonly string SQL_AS = " AS ";
+        public static readonly string SQL_SELECT = "SELECT ";
+        public static readonly string SQL_HAVING = " HAVING ";
+        public static readonly string SQL_GROUPBY = " GROPU BY ";
+        public static readonly string SQL_WHERE = " WHERE ";
+        public static readonly string SQL_ORDERBY = " ORDER BY ";
+        public static readonly string WHERECAUSE = "WHERE";
+        public static readonly string HAVING = "HAVING";
+        public static readonly string GROUPBY = "GROUP BY";
+        public static readonly string ORDERBY = "ORDER BY";
+        public static readonly string SELECT = "SELECT";
+        public static readonly string SELECTCOLUMS = "SELECTCOLUMNS";
+        public static readonly string NEWCOLUMN = "NEWCOLUMN";
+        public static readonly string SUM = "SUM";
+        public static readonly string AVG = "AVG";
+        public static readonly string MAX = "MAX";
+        public static readonly string MIN = "MIN";
+        public static readonly string CONCAT = "CONCAT";
+        public static readonly string CASE = "CASE";
+
+        public static readonly List<string> IGNOREPARAMS = [WHERECAUSE, HAVING, GROUPBY, ORDERBY, SELECTCOLUMS, NEWCOLUMN];
+        public static readonly List<string> SQLFUNCTIONS = [SUM, AVG, MAX, MIN, CASE, CONCAT];
     }
 }

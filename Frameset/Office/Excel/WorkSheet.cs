@@ -99,7 +99,6 @@ namespace Frameset.Office.Excel
         Fill defaultFill;
         Border defaultBorder;
         Alignment defaultAlignment;
-        bool ifHidden;
         internal XmlBufferWriter w;
         internal WorkSheet(WorkBook workBook, ExcelSheetProp prop, int index, string id, string sheetId, string name, SheetVisibility visibility) : this(workBook, index, id, sheetId, name, visibility)
         {
@@ -266,7 +265,7 @@ namespace Frameset.Office.Excel
                     FieldContent content = null;
                     if (fieldMap.TryGetValue(columnProp.ColumnCode, out content))
                     {
-                        rValue = content.GetMethold.Invoke(obj, null);
+                        rValue = content.GetMethod.Invoke(obj, null);
 
                         Cell cell = GetCell(i, Prop);
                         SetValue(cell, columnProp, rValue);

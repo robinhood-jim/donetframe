@@ -9,12 +9,15 @@ using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Text;
+using System.Text.Json;
 
 
 
@@ -27,7 +30,6 @@ namespace Frameset.Core.Dao
         private readonly AbstractSqlDialect dataMeta;
         private readonly Constants.DbType dbType;
         private readonly string schema;
-
 
         internal JdbcDao(string connectionStr)
         {
@@ -112,7 +114,7 @@ namespace Frameset.Core.Dao
                         }
                         if (!Convert.IsDBNull(value) && content != null)
                         {
-                            content.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethold.ReturnType, value) });
+                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethod.ReturnType, value) });
                         }
                     }
                     retList.Add(entity);
@@ -147,7 +149,7 @@ namespace Frameset.Core.Dao
                         }
                         if (!Convert.IsDBNull(value) && content != null)
                         {
-                            content.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethold.ReturnType, value) });
+                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethod.ReturnType, value) });
                         }
                     }
                     retList.Add(entity);
@@ -313,6 +315,305 @@ namespace Frameset.Core.Dao
             command.Parameters.AddRange(parameters);
             return command.ExecuteNonQuery();
         }
+        public List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition)
+        {
+            Dictionary<string, object> queryParamter = [];
+            StringBuilder builder = new StringBuilder();
+            if (!condition.SelectParts.IsNullOrEmpty())
+            {
+                builder.Append(condition.SelectParts);
+            }
+            else
+            {
+                builder.Append(SqlUtils.GetSelectSql(typeof(V)));
+            }
+            builder.Append(condition.GeneratePreparedSql(queryParamter, []));
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
+                Log.Debug("using Query {Query}", builder.ToString());
+            }
+            string querySql = builder.ToString();
+            parseParameter(command, queryParamter);
+            command.CommandText = querySql;
+            bool ifRetMap = false;
+            Dictionary<string, MethodParam> methodMap = null;
+
+            Type retType = typeof(V);
+            var retList = new List<V>();
+            if (retType.Equals(typeof(Dictionary<string, object>)))
+            {
+                ifRetMap = true;
+            }
+            else
+            {
+                methodMap = AnnotationUtils.ReflectObject(retType);
+            }
+            using (DbDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    V entity = Activator.CreateInstance<V>();
+                    MethodParam param = null;
+                    for (int col = 0; col < reader.FieldCount; col++)
+                    {
+                        string name = reader.GetName(col);
+                        if (ifRetMap)
+                        {
+                            (entity as Dictionary<string, object>)[reader.GetName(col)] = reader[col];
+                        }
+                        else
+                        {
+                            if (methodMap.TryGetValue(reader.GetName(col), out param))
+                            {
+                                param.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
+                            }
+                        }
+                    }
+                    retList.Add(entity);
+                }
+            }
+            return retList;
+        }
+        public List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams)
+        {
+            StringBuilder builder = new();
+            string selectPart = null;
+            StringBuilder newColumnsBuilder = new();
+            StringBuilder havingBuiler = new();
+            StringBuilder groupByBuilder = new();
+            string orderByStr = "";
+            Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
+            Dictionary<string, string> propFieldMap = [];
+
+            Dictionary<string, int> duplicatedMap = [];
+            StringBuilder whereBuilder = new StringBuilder();
+            Dictionary<string, object> preparedMap = [];
+            if (!queryParams.SelectColumns.IsNullOrEmpty())
+            {
+                StringBuilder originBuilder = new StringBuilder(Constants.SQL_SELECT);
+                foreach (var columnName in queryParams.SelectColumns.Split(','))
+                {
+                    fieldMap.TryGetValue(columnName, out FieldContent oContent);
+                    Trace.Assert(oContent != null, "");
+                    originBuilder.Append(oContent.FieldName).Append(Constants.SQL_AS).Append(oContent.PropertyName).Append(",");
+                }
+                originBuilder.Remove(originBuilder.Length - 1, 1);
+                selectPart = originBuilder.ToString();
+            }
+            if (!queryParams.NewColumns.IsNullOrEmpty())
+            {
+                foreach (var newEntry in queryParams.NewColumns)
+                {
+                    string asColumnName = newEntry.Key;
+                    List<string> columns = JsonSerializer.Deserialize<List<string>>(newEntry.Value.ToString());
+                    StringBuilder arithBuilder = new StringBuilder();
+                    bool containFunc = false;
+                    foreach (var selPart in columns)
+                    {
+                        if (Constants.SQLFUNCTIONS.Contains(selPart.ToUpper()))
+                        {
+                            containFunc = true;
+                            arithBuilder.Append(selPart).Append("(");
+                        }
+                        else
+                        {
+                            fieldMap.TryGetValue(selPart, out FieldContent fieldContent);
+                            if (fieldContent != null)
+                            {
+                                arithBuilder.Append(fieldContent.FieldName);
+                            }
+                            else
+                            {
+                                arithBuilder.Append(selPart);
+                            }
+                        }
+                    }
+                    if (containFunc)
+                    {
+                        arithBuilder.Append(")");
+                    }
+                    newColumnsBuilder.Append(arithBuilder).Append(Constants.SQL_AS).Append(asColumnName);
+                    propFieldMap.TryAdd(asColumnName, arithBuilder.ToString());
+                }
+            }
+            if (!queryParams.GroupBy.IsNullOrEmpty())
+            {
+                foreach (var columnName in queryParams.GroupBy.Split(','))
+                {
+                    fieldMap.TryGetValue(columnName, out FieldContent oContent);
+                    Trace.Assert(oContent != null, "");
+                    groupByBuilder.Append(oContent.FieldName).Append(",");
+                }
+            }
+            if (!queryParams.Having.IsNullOrEmpty())
+            {
+                foreach (var havingEntry in queryParams.Having)
+                {
+                    string columnName = havingEntry.Key;
+                    propFieldMap.TryGetValue(columnName, out string funcStr);
+                    Trace.Assert(!funcStr.IsNullOrEmpty(), "having column alias not defined!");
+                    if (havingEntry.Value is JsonElement)
+                    {
+                        Dictionary<string, object> dict1 = JsonSerializer.Deserialize<Dictionary<string, object>>(havingEntry.Value.ToString());
+                        Constants.SqlOperator compareOper = Constants.Parse(dict1["operator"].ToString());
+                        double cmpValue = Convert.ToDouble(dict1["values"].ToString());
+
+                        havingBuiler.Append(funcStr).Append(Constants.OperatorValue(compareOper)).Append("@").Append(columnName).Append(Constants.SQL_AND);
+                        preparedMap.TryAdd(columnName, cmpValue);
+                    }
+                    else
+                    {
+                        havingBuiler.Append(funcStr).Append("=").Append("@").Append(columnName).Append(Constants.SQL_AND);
+                        preparedMap.TryAdd(columnName, Convert.ToDouble(havingEntry.Value.ToString()));
+                    }
+                }
+            }
+            orderByStr = queryParams.OrderBy;
+
+            foreach (var entry in queryParams.Parameters)
+            {
+                AppendCondtion(entry.Key, entry.Value, fieldMap, whereBuilder, duplicatedMap, preparedMap);
+                if (whereBuilder.Length > 0)
+                {
+                    whereBuilder.Append(Constants.SQL_AND);
+                }
+            }
+            if (selectPart.IsNullOrEmpty())
+            {
+                builder.Append(SqlUtils.GetSelectSql(entityType)).Append(Constants.SQL_WHERE);
+            }
+            else
+            {
+                EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
+                builder.Append(selectPart);
+                if (newColumnsBuilder.Length > 0)
+                {
+                    builder.Append(",").Append(newColumnsBuilder);
+                }
+                builder.Append(" FROM ").Append(entityContent.GetTableName()).Append(Constants.SQL_WHERE);
+            }
+            whereBuilder.Remove(whereBuilder.Length - Constants.SQL_AND.Length, Constants.SQL_AND.Length);
+            builder.Append(whereBuilder);
+            if (groupByBuilder.Length > 0)
+            {
+                groupByBuilder.Remove(groupByBuilder.Length - 1, 1);
+                builder.Append(Constants.SQL_GROUPBY).Append(groupByBuilder);
+            }
+            if (havingBuiler.Length > 0)
+            {
+                havingBuiler.Remove(havingBuiler.Length - Constants.SQL_AND.Length, Constants.SQL_AND.Length);
+                builder.Append(Constants.SQL_HAVING).Append(havingBuiler);
+            }
+            if (!orderByStr.IsNullOrEmpty())
+            {
+                builder.Append(Constants.SQL_ORDERBY).Append(orderByStr);
+            }
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
+                Log.Debug("query Sql={Builder}", builder.ToString());
+            }
+            bool ifRetMap = false;
+            var retList = new List<O>();
+            Type retType = typeof(O);
+            Dictionary<string, MethodParam> methodMap = null;
+            if (retType.Equals(typeof(Dictionary<string, object>)))
+            {
+                ifRetMap = true;
+            }
+            else
+            {
+                methodMap = AnnotationUtils.ReflectObject(retType);
+            }
+            parseParameter(command, preparedMap);
+            using (DbDataReader reader = command.ExecuteReader())
+            {
+                while (reader.Read())
+                {
+                    O entity = Activator.CreateInstance<O>();
+                    MethodParam param = null;
+                    for (int col = 0; col < reader.FieldCount; col++)
+                    {
+                        string name = reader.GetName(col);
+                        if (ifRetMap)
+                        {
+                            (entity as Dictionary<string, object>)[reader.GetName(col)] = reader[col];
+                        }
+                        else
+                        {
+                            if (methodMap.TryGetValue(reader.GetName(col), out param))
+                            {
+                                param.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
+                            }
+                        }
+                    }
+                    retList.Add(entity);
+                }
+            }
+            return retList;
+
+        }
+        private void AppendCondtion(string queryColumn, object queryParam, Dictionary<string, FieldContent> fieldMap, StringBuilder builder, Dictionary<string, int> duplicateMap, Dictionary<string, object> preparedMap)
+        {
+            if (Constants.IGNOREPARAMS.Contains(queryColumn.ToUpper()))
+            {
+                return;
+            }
+            else if (string.Equals(Constants.LINK_OR, queryColumn.Substring(0, 2), StringComparison.OrdinalIgnoreCase) || string.Equals(Constants.LINK_AND, queryColumn.Substring(0, 3), StringComparison.OrdinalIgnoreCase))
+            {
+                string cmpOper = Constants.LINK_AND;
+                if (string.Equals(Constants.LINK_OR, queryColumn.Substring(0, 2), StringComparison.OrdinalIgnoreCase))
+                {
+                    cmpOper = Constants.LINK_OR;
+                }
+                Dictionary<string, object> dict = JsonSerializer.Deserialize<Dictionary<string, object>>(queryParam.ToString());
+                AppendSub(builder, cmpOper, dict, fieldMap, duplicateMap, preparedMap);
+            }
+            else
+            {
+
+                fieldMap.TryGetValue(queryColumn, out FieldContent content);
+                if (content == null)
+                {
+                    throw new BaseSqlException("property " + queryColumn + " not found in Model");
+                }
+                Constants.SqlOperator sqloperator = Constants.SqlOperator.EQ;
+                FilterCondition condition = new FilterCondition()
+                {
+                    ColumnName = content.FieldName,
+                    ColumnType = content.GetMethod.ReturnType
+                };
+                JsonElement element = (JsonElement)queryParam;
+                if (element.ValueKind == JsonValueKind.Object)
+                {
+                    Dictionary<string, object> paramMap = JsonSerializer.Deserialize<Dictionary<string, object>>(queryParam.ToString());
+                    paramMap.TryGetValue("operator", out object operStr);
+                    if (operStr != null)
+                    {
+                        sqloperator = Constants.Parse(operStr.ToString());
+                    }
+                    paramMap.TryGetValue("values", out object values);
+                    condition.Values = SqlUtils.WrapParameter(content.FieldName, content.GetMethod.ReturnType, sqloperator, values);
+                }
+                else
+                {
+                    condition.Values = [ConvertUtil.ParseByType(content.GetMethod.ReturnType, queryParam.ToString())];
+                }
+                condition.Operator = sqloperator;
+
+                SqlUtils.AppendPreparedSql(condition, preparedMap, builder, duplicateMap);
+            }
+        }
+        private void AppendSub(StringBuilder builder, string linkOper, Dictionary<string, object> dict, Dictionary<string, FieldContent> fieldMap, Dictionary<string, int> duplicateMap, Dictionary<string, object> preparedMap)
+        {
+            builder.Append(" (");
+            foreach (var entry in dict)
+            {
+                AppendCondtion(entry.Key, entry.Value, fieldMap, builder, duplicateMap, preparedMap);
+                builder.Append(" ").Append(linkOper).Append(" ");
+            }
+            builder.Remove(builder.Length - linkOper.Length - 2, linkOper.Length + 2);
+            builder.Append(")");
+        }
         public object QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject)
         {
             string rsMap = sqlsegment.ResultMap;
@@ -323,6 +624,7 @@ namespace Frameset.Core.Dao
             if (retType == null && string.Equals(rsMap, "Map", StringComparison.OrdinalIgnoreCase))
             {
                 retMap = true;
+                retType = typeof(Dictionary<string, object>);
             }
             else
             {
@@ -365,7 +667,7 @@ namespace Frameset.Core.Dao
                         {
                             dict[reader.GetName(col)] = reader[col];
                         }
-                        if (methodMap.TryGetValue(map.MappingColumns[name], out param))
+                        else if (methodMap.TryGetValue(map.MappingColumns[name], out param))
                         {
                             param.SetMethod.Invoke(ret, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
                         }

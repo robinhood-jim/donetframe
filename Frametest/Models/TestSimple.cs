@@ -1,6 +1,6 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Model;
-namespace Frametest.Dao
+namespace Frametest.Models
 {
     [MappingEntity(TableName = "t_simple", Schema = "test")]
     public class TestSimple : BaseEntity

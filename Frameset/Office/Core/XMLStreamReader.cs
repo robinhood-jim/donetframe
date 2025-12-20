@@ -45,13 +45,28 @@ namespace Frameset.Office.Core
         {
             return !reader.EOF;
         }
+        public void Next()
+        {
+            if (HasNext())
+            {
+                reader.Read();
+            }
+        }
         public string GetAttribute(string name)
         {
             return reader.GetAttribute(name);
         }
+        public string GetAttributeAt(int pos)
+        {
+            return reader.GetAttribute(pos);
+        }
         public string GetAttribute(string nameSpace, string name)
         {
             return reader.GetAttribute(name, nameSpace);
+        }
+        public int GetAttributeCount()
+        {
+            return reader.AttributeCount;
         }
         public string GetValue(string eleName)
         {
@@ -73,7 +88,7 @@ namespace Frameset.Office.Core
             }
             catch (Exception ex)
             {
-                throw new XmlException("read xml error!");
+                throw new XmlException("read xml error! message " + ex.Message);
             }
         }
         public string GetText()
@@ -91,15 +106,17 @@ namespace Frameset.Office.Core
                 action.Invoke(this);
             }
         }
-        public void DoUntilEnd(string eleName, Action<XMLStreamReader> action)
+        public void DoUntilEnd(string eleName, Action<XmlReader> action)
         {
+            bool breakable = false;
             while (reader.Read())
             {
-                if (reader.NodeType == XmlNodeType.EndElement)
+                while (reader.NodeType == XmlNodeType.EndElement)
                 {
-                    if (reader.LocalName.Equals(eleName))
+                    if (string.Equals(reader.LocalName, eleName, StringComparison.OrdinalIgnoreCase))
                     {
                         reader.Read();
+                        breakable = true;
                         break;
                     }
                     else
@@ -107,9 +124,14 @@ namespace Frameset.Office.Core
                         reader.Read();
                     }
                 }
+                if (breakable)
+                {
+                    break;
+                }
+
                 if (reader.IsStartElement())
                 {
-                    action.Invoke(this);
+                    action.Invoke(reader);
                 }
             }
         }
@@ -139,7 +161,7 @@ namespace Frameset.Office.Core
                         childElement++;
                     }
                 }
-                else if (nodeType == XmlNodeType.EndElement)
+                else if (reader.NodeType == XmlNodeType.EndElement)
                 {
                     childElement--;
                     if (eleName.Equals(reader.LocalName) && childElement == 0)
@@ -149,6 +171,10 @@ namespace Frameset.Office.Core
                 }
             }
             return builder.ToString();
+        }
+        public void DoInAttributes(Action<XmlReader> consumer)
+        {
+            consumer.Invoke(reader);
         }
 
         public void Dispose()

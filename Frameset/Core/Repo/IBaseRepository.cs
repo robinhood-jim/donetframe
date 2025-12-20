@@ -1,9 +1,9 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Dao.Utils;
 using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using System.Collections.Generic;
-using System.Reflection;
 using System.Threading;
 
 namespace Frameset.Core.Repo
@@ -16,7 +16,6 @@ namespace Frameset.Core.Repo
         int RemoveLogic(IList<P> pks, string logicColumn, int status);
         V GetById(P pk);
         IList<Dictionary<string, object>> QueryBySql(string sql, object[] values);
-        IList<V> QueryModelsByField(PropertyInfo info, Constants.SqlOperator oper, object[] values, string orderByStr = null);
         IList<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null);
         object QueryMapper(string nameSpace, string queryId, object queryObject);
         int ExecuteMapper(string nameSpace, string exeId, object input);
@@ -26,5 +25,7 @@ namespace Frameset.Core.Repo
         void ChangeDs(string dsName);
         void RestoreDs();
         string GetDsName();
+        List<O> QueryByCondtion<O>(FilterCondition condition);
+        List<O> QueryByFields<O>(QueryParameter queryParams);
     }
 }

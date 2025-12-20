@@ -34,7 +34,7 @@ namespace Frameset.Core.Dao.Meta
                     {
                         if (!content.IfIncrement && !content.IfSequence)
                         {
-                            command.Parameters.Add(new NpgsqlParameter("?" + content.FieldName, content.GetMethold.Invoke(model, null)));
+                            command.Parameters.Add(new NpgsqlParameter("?" + content.FieldName, content.GetMethod.Invoke(model, null)));
                         }
                     }
                     batch.BatchCommands.Add(command);

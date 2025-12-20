@@ -14,7 +14,6 @@ namespace Frameset.Common.Compress
 {
     public static class StreamDecoder
     {
-        
         public static Stream GetInputByCompressType(string resourcePath, Stream rawstream, long streamSize, char dirSep = '/')
         {
             Trace.Assert(rawstream != null);

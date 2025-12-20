@@ -9,8 +9,6 @@ namespace Frameset.Core.Dao.Utils
         private string _fieldName;
         private string _propertyName;
 
-
-
         public string FieldName
         {
             get => _fieldName;
@@ -44,17 +42,21 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = false;
-        public FieldInfo FieldInfo
+        public FieldInfo FieldInfomation
         {
             get; set;
         }
-        public MethodInfo GetMethold
+        public PropertyInfo PropertyInfomation
         {
-            get; set;
+            get;internal set;
         }
-        public MethodInfo SetMethold
+        public MethodInfo GetMethod
         {
-            get; set;
+            get;internal set;
+        }
+        public MethodInfo SetMethod
+        {
+            get;internal set;
         }
         public int Precise
         {
@@ -66,23 +68,23 @@ namespace Frameset.Core.Dao.Utils
         }
         public bool IfPrimary
         {
-            get; set;
+            get;internal set;
         } = false;
         public bool IfIncrement
         {
-            get; set;
+            get;internal set;
         } = false;
         public bool IfSequence
         {
-            get; set;
+            get;internal set;
         } = false;
         public string SequenceName
         {
-            get; set;
+            get;internal set;
         }
         public bool Exist
         {
-            get; set;
+            get;internal set;
         } = true;
         public int Length
         {
@@ -99,6 +101,11 @@ namespace Frameset.Core.Dao.Utils
         public FieldBuilder PropertyName(string propName)
         {
             content.PropertyName = propName;
+            return this;
+        }
+        public FieldBuilder Property(PropertyInfo info)
+        {
+            content.PropertyInfomation = info;
             return this;
         }
         public FieldBuilder FieldName(string fieldName)
@@ -118,17 +125,17 @@ namespace Frameset.Core.Dao.Utils
         }
         public FieldBuilder FieldInfo(FieldInfo fieldInfo)
         {
-            content.FieldInfo = fieldInfo;
+            content.FieldInfomation = fieldInfo;
             return this;
         }
         public FieldBuilder GetMethod(MethodInfo getMethod)
         {
-            content.GetMethold = getMethod;
+            content.GetMethod = getMethod;
             return this;
         }
         public FieldBuilder SetMethod(MethodInfo setMethod)
         {
-            content.SetMethold = setMethod;
+            content.SetMethod = setMethod;
             return this;
         }
         public FieldBuilder Precise(int precise)
@@ -170,7 +177,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public bool Acceptable()
         {
-            return content.Exist && !string.IsNullOrEmpty(content.FieldName) && !string.IsNullOrEmpty(content.PropertyName) && content.GetMethold != null;
+            return content.Exist && !string.IsNullOrEmpty(content.FieldName) && !string.IsNullOrEmpty(content.PropertyName) && content.GetMethod != null;
         }
 
     }

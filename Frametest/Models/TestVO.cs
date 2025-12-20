@@ -1,7 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Model;
 
-namespace Frametest.Dao
+namespace Frametest.Models
 {
     [MappingEntity(TableName = "t_test", Schema = "test")]
     public class TestVO : BaseEntity

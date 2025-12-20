@@ -124,7 +124,7 @@ namespace Frameset.Office.Excel.Meta
                             parseAttribute(propAttr, cellProp, columnName, totalNum);
                         }
                         FieldBuilder builder = new();
-                        builder.PropertyName(propName).FieldName(columnName).DataType(metaType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                        builder.Property(prop).PropertyName(propName).FieldName(columnName).DataType(metaType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                         propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                         cellMap.TryAdd(cellProp.Index, cellProp);
                         totalNum++;
@@ -150,7 +150,7 @@ namespace Frameset.Office.Excel.Meta
                             }
 
                             FieldBuilder builder = new();
-                            builder.PropertyName(propName).FieldName(columnName).DataType(cellProp.ColumnType).FieldInfo(field);
+                            builder.PropertyName(propName).FieldName(columnName).FieldInfo(field).DataType(cellProp.ColumnType);
                             propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                             cellMap.TryAdd(cellProp.Index, cellProp);
                             totalNum++;

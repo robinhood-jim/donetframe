@@ -4,7 +4,7 @@ using Frameset.Core.Common;
 using Frameset.Core.Model;
 
 
-namespace Frametest.Dao
+namespace Frametest.Models
 {
     [MappingEntity(TableName = "testtablob", Schema = "test")]
     public class TestModel : BaseEntity

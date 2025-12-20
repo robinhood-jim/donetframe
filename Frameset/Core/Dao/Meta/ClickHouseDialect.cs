@@ -55,7 +55,7 @@ namespace Frameset.Core.Dao.Meta
                     {
                         if (!content.IfIncrement)
                         {
-                            columns.Add(content.GetMethold.Invoke(x, null));
+                            columns.Add(content.GetMethod.Invoke(x, null));
                         }
                         else
                         {

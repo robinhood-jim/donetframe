@@ -189,7 +189,7 @@ namespace Frameset.Core.Repo
                     }
                     if (!Convert.IsDBNull(value))
                     {
-                        fieldContent.SetMethold.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.GetMethold.ReturnType, value) });
+                        fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.GetMethod.ReturnType, value) });
                     }
                 }
 
@@ -209,34 +209,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public IList<V> QueryModelsByField(PropertyInfo info, Constants.SqlOperator oper, object[] values, string orderByStr = null)
-        {
-            string propName = info.Name;
-            Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
-            if (fieldMap.TryGetValue(propName, out FieldContent fieldContent))
-            {
-                StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
-                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(GetDao(), fieldContent, builder, 0, out int endPos, oper, values);
-                if (!orderByStr.IsNullOrEmpty())
-                {
-                    builder.Append(" order by ").Append(orderByStr);
-                }
-                using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
-                {
-                    connection.Open();
-                    using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, builder.ToString()))
-                    {
-                        return GetDao().QueryModelsBySql<V>(entityType, command, parameters);
-                    }
-                }
-            }
-            else
-            {
 
-                throw new BaseSqlException("");
-            }
-
-        }
         public IList<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
             IList<V> retList = new List<V>();
@@ -330,12 +303,12 @@ namespace Frameset.Core.Repo
                 }
                 else if (!query.OrderField.IsNullOrEmpty())
                 {
-                    fieldMap.TryGetValue(query.OrderField, out FieldContent content);
-                    if (content == null)
+                    fieldMap.TryGetValue(query.OrderField, out FieldContent fieldContent);
+                    if (fieldContent == null)
                     {
                         throw new OperationFailedException("orderField " + query.OrderField + " not in table!");
                     }
-                    builder.Append(" ORDER BY ").Append(content.FieldName).Append(query.OrderAsc ? " ASC" : " DESC");
+                    builder.Append(" ORDER BY ").Append(fieldContent.FieldName).Append(query.OrderAsc ? " ASC" : " DESC");
                 }
                 string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
                 string countSql = GetDao().GetDialect().GenerateCountSql(builder.ToString());
@@ -367,13 +340,14 @@ namespace Frameset.Core.Repo
                 SqlSelectSegment sqlsegment = (SqlSelectSegment)segment;
                 Dictionary<string, object> paramMap = new Dictionary<string, object>();
                 string rsMap = sqlsegment.ResultMap;
-                if (!sqlsegment.Parametertype.IsNullOrEmpty())
-                {
-                    ConvertUtil.ToDict(queryObject, paramMap);
-                }
-                else if (queryObject.GetType().Equals(typeof(Dictionary<string, object>)))
+
+                if (queryObject.GetType().Equals(typeof(Dictionary<string, object>)))
                 {
                     paramMap = (Dictionary<string, object>)queryObject;
+                }
+                else
+                {
+                    ConvertUtil.ToDict(queryObject, paramMap);
                 }
                 string executeSql = segment.ReturnSqlPart(paramMap);
                 using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
@@ -501,7 +475,7 @@ namespace Frameset.Core.Repo
 
                 try
                 {
-                    return GetDao().GetDialect().BatchInsert<V>(dao, connection, models,token);
+                    return GetDao().GetDialect().BatchInsert<V>(dao, connection, models, token);
 
                 }
                 catch (Exception ex)
@@ -509,6 +483,29 @@ namespace Frameset.Core.Repo
                     throw new BaseSqlException(ex.Message);
                 }
             }
+        }
+        public List<O> QueryByCondtion<O>(FilterCondition condition)
+        {
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
+                {
+                    return GetDao().QueryByConditon<O>(command, condition);
+                }
+            }
+        }
+        public List<O> QueryByFields<O>(QueryParameter queryParams)
+        {
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
+                {
+                    return GetDao().QueryByFields<O>(entityType, command, queryParams);
+                }
+            }
+
         }
         public string GetDsName()
         {

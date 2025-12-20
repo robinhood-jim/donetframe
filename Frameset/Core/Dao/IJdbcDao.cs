@@ -34,5 +34,7 @@ namespace Frameset.Core.Dao
 
         string GetCurrentSchema();
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
+        List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition);
+        List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams);
     }
 }

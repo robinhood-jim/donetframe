@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Frameset.Core.Repo
 {
-    public class ParameterHelper
+    public static class ParameterHelper
     {
         internal static IList<DbParameter> AddQueryParam(IJdbcDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
         {
@@ -51,7 +51,7 @@ namespace Frameset.Core.Repo
                 case Constants.SqlOperator.IN:
                     whereBuilder.Append(content.FieldName).Append(GetOperator(oper)).Append("(");
                     parameterSize = values.Length;
-                    List<object> inValues = values[0].ToString().Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.GetMethold.ReflectedType, input)).ToList();
+                    List<object> inValues = values[0].ToString().Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.GetMethod.ReflectedType, input)).ToList();
                     inValues.ForEach(o => parameters.Add(dao.GetDialect().WrapParameter(paramStartPos++, o)));
                     parameterSize = inValues.Count;
                     break;
@@ -92,6 +92,9 @@ namespace Frameset.Core.Repo
                     break;
                 case Constants.SqlOperator.IN:
                     retOper = " IN ";
+                    break;
+                case Constants.SqlOperator.NOTIN:
+                    retOper = " NOT IN ";
                     break;
 
             }

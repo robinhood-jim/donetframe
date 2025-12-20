@@ -1,8 +1,11 @@
-﻿using Frameset.Core.Model;
+﻿using Frameset.Core.Common;
+using Frameset.Core.Model;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics;
+using System.Linq;
 using System.Reflection;
 using System.Text;
 
@@ -29,7 +32,7 @@ namespace Frameset.Core.Dao.Utils
             FieldContent appdenField = null;
             foreach (FieldContent content in fields)
             {
-                object realVal = content.GetMethold.Invoke(vo, null);
+                object realVal = content.GetMethod.Invoke(vo, null);
                 if (realVal != null)
                 {
                     if (!content.IfIncrement && !content.IfSequence)
@@ -45,13 +48,13 @@ namespace Frameset.Core.Dao.Utils
                         columnsBuilder.Append(content.FieldName).Append(",");
                         valuesBuilder.Append(dao.GetDialect().GenerateSequenceScript(content.SequenceName)).Append(",");
                         segment.Sequence = true;
-                        segment.GenKeyMethod = content.SetMethold;
+                        segment.GenKeyMethod = content.SetMethod;
                         appdenField = content;
                     }
                     else
                     {
                         segment.Increment = true;
-                        segment.GenKeyMethod = content.SetMethold;
+                        segment.GenKeyMethod = content.SetMethod;
                     }
 
                 }
@@ -117,7 +120,7 @@ namespace Frameset.Core.Dao.Utils
             IList<DbParameter> dbParameters = new List<DbParameter>();
             foreach (FieldContent content in fields)
             {
-                object realVal = content.GetMethold.Invoke(vo, null);
+                object realVal = content.GetMethod.Invoke(vo, null);
                 if (realVal != null)
                 {
                     if (!content.IfPrimary)
@@ -181,7 +184,7 @@ namespace Frameset.Core.Dao.Utils
 
         }
 
-        public static string GetSelectSqlAndPk(Type modelType)
+        private static string GetSelectSqlAndPk(Type modelType)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
@@ -202,7 +205,7 @@ namespace Frameset.Core.Dao.Utils
         public static string GetSelectByIdSql(Type modelType, FieldContent content)
         {
 
-            StringBuilder selectBuilder = new StringBuilder(GetSelectSqlAndPk(modelType));
+            StringBuilder selectBuilder = new StringBuilder(GetSelectSql(modelType));
             selectBuilder.Append(" where ").Append(content.FieldName).Append("=@0");
 
             return selectBuilder.ToString();
@@ -216,6 +219,136 @@ namespace Frameset.Core.Dao.Utils
             }
             tabBuilder.Append(entityContent.TableName);
             return tabBuilder.ToString();
+        }
+        public static void AppendPreparedSql(FilterCondition condition, Dictionary<string, object> valueMap, StringBuilder builder, Dictionary<string, int> duplicatedMap)
+        {
+            Trace.Assert(!condition.Values.IsNullOrEmpty(), "");
+            builder.Append(condition.ColumnName);
+            builder.Append(Constants.OperatorValue(condition.Operator));
+            duplicatedMap.TryGetValue(condition.ColumnName, out int counts);
+            string fieldName = condition.ColumnName + Convert.ToString(counts);
+            Type ColumnType = condition.ColumnType;
+            List<object> Values = condition.Values;
+            Constants.SqlOperator Operator = condition.Operator;
+            if (counts == 0)
+            {
+                duplicatedMap.TryAdd(condition.ColumnName, ++counts);
+            }
+            else
+            {
+                duplicatedMap[condition.ColumnName] = ++counts;
+            }
+            switch (Operator)
+            {
+                case Constants.SqlOperator.EQ:
+                case Constants.SqlOperator.NE:
+                case Constants.SqlOperator.LT:
+                case Constants.SqlOperator.GE:
+                case Constants.SqlOperator.GT:
+                    if (!condition.AllArith)
+                    {
+                        builder.Append("@" + fieldName);
+                        valueMap.TryAdd(fieldName, ConvertUtil.ParseByType(condition.ColumnType, condition.Values[0]));
+                    }
+                    else
+                    {
+                        builder.Append(condition.RightArithmetic);
+                    }
+                    break;
+                case Constants.SqlOperator.BT:
+                    Trace.Assert(condition.Values.IsNullOrEmpty() && condition.Values.Count >= 2, "");
+                    builder.Append("@" + condition.ColumnName + "From AND @" + condition.ColumnName + "To");
+                    valueMap.TryAdd(fieldName + "From", ConvertUtil.ParseByType(ColumnType, Values[0]));
+                    valueMap.TryAdd(fieldName + "To", ConvertUtil.ParseByType(ColumnType, Values[1]));
+                    break;
+                case Constants.SqlOperator.LIKE:
+                case Constants.SqlOperator.LLIKE:
+                case Constants.SqlOperator.RLIKE:
+                    valueMap.TryAdd(fieldName, Values[0].ToString());
+                    if (Constants.SqlOperator.LLIKE == Operator)
+                    {
+                        builder.Append(" '%'+@" + fieldName);
+
+                    }
+                    else if (Constants.SqlOperator.RLIKE == Operator)
+                    {
+                        builder.Append("@" + fieldName + "+'%'");
+                    }
+                    else
+                    {
+                        builder.Append(" '%'+@" + fieldName + "+'%'");
+                    }
+                    break;
+                case Constants.SqlOperator.NOTNULL:
+                    builder.Append(" IS NOT NULL");
+                    break;
+                case Constants.SqlOperator.ISNULL:
+                    builder.Append(" IS NULL");
+                    break;
+                case Constants.SqlOperator.IN:
+                case Constants.SqlOperator.NOTIN:
+                    builder.Append("(");
+                    if (condition.Conditions.IsNullOrEmpty())
+                    {
+                        for (int i = 0; i < Values.Count; i++)
+                        {
+                            builder.Append("@" + fieldName + Convert.ToString(i));
+                            valueMap.TryAdd(fieldName + Convert.ToString(i), ConvertUtil.ParseByType(ColumnType, Values[i]));
+                            if (i != Values.Count - 1)
+                            {
+                                builder.Append(",");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        GenerateSubQuery(builder, condition.Conditions, valueMap, duplicatedMap);
+                    }
+                    builder.Append(")");
+                    break;
+                case Constants.SqlOperator.EXISTS:
+                case Constants.SqlOperator.NOTEXISTS:
+                    builder.Append("(");
+                    GenerateSubQuery(builder, condition.Conditions, valueMap, duplicatedMap);
+                    builder.Append(")");
+                    break;
+                default:
+                    builder.Append("@" + fieldName);
+                    valueMap.TryAdd(fieldName, ConvertUtil.ParseByType(ColumnType, Values[0]));
+                    break;
+
+            }
+        }
+        private static void GenerateSubQuery(StringBuilder builder, List<FilterCondition> Conditions, Dictionary<string, object> valueMap, Dictionary<string, int> duplicatedMap)
+        {
+            if (Conditions.Count == 1)
+            {
+                FilterCondition condition = Conditions[0];
+                builder.Append("SELECT").Append(condition.ColumnName).Append(" FROM ").Append(condition.TargetEntity.GetTableName());
+                builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap));
+            }
+        }
+        public static List<object> WrapParameter(string columnName, Type columnType, Constants.SqlOperator sqlOper, object value)
+        {
+            List<object> retList = [];
+            switch (sqlOper)
+            {
+                case Constants.SqlOperator.IN:
+                case Constants.SqlOperator.NOTIN:
+                    string[] arr = value.ToString().Split(',');
+                    retList.AddRange(arr.ToList().Select(x => ConvertUtil.ParseByType(columnType, x)).ToList());
+                    break;
+                case Constants.SqlOperator.BT:
+                    string[] arr1 = value.ToString().Split(',');
+                    Trace.Assert(arr1.Length >= 2, "");
+                    retList.Add(ConvertUtil.ParseByType(columnType, arr1[0]));
+                    retList.Add(ConvertUtil.ParseByType(columnType, arr1[1]));
+                    break;
+                default:
+                    retList.Add(ConvertUtil.ParseByType(columnType, value.ToString()));
+                    break;
+            }
+            return retList;
         }
     }
 

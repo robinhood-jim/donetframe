@@ -29,6 +29,19 @@ namespace Frameset.Web.Utils
                 return cachedObj;
             }
         }
+        public static T GetBean<T>()
+        {
+            Type type = typeof(T);
+            using (var scope = provider.CreateScope())
+            {
+                object? cachedObj = scope.ServiceProvider.GetRequiredService(type);
+                if (cachedObj == null)
+                {
+                    registerMap.TryGetValue(type, out cachedObj);
+                }
+                return (T)cachedObj;
+            }
+        }
         public static void Register(Type type, object obj)
         {
             Trace.Assert((obj.GetType().GetInterfaces().Length > 0 && obj.GetType().GetInterfaces()[0] == type) || obj.GetType() == type || obj.GetType().IsSubclassOf(type));

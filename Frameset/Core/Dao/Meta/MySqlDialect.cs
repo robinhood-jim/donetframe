@@ -49,12 +49,12 @@ namespace Frameset.Core.Dao.Meta
                 {
                     if (!content.IfIncrement)
                     {
-                        table.Columns.Add(content.FieldName, content.GetMethold.ReturnType);
+                        table.Columns.Add(content.FieldName, content.GetMethod.ReturnType);
                         columns++;
                     }
                     else
                     {
-                        DataColumn column = table.Columns.Add(content.FieldName, content.GetMethold.ReflectedType);
+                        DataColumn column = table.Columns.Add(content.FieldName, content.GetMethod.ReflectedType);
                         column.AutoIncrement = true;
                         column.AllowDBNull = true;
                         column.AutoIncrementSeed = QueryIdentityByTable(dao, connection, transaction, entityContent);
@@ -67,7 +67,7 @@ namespace Frameset.Core.Dao.Meta
                     {
                         if (!content.IfIncrement)
                         {
-                            row[content.FieldName] = content.GetMethold.Invoke(model, null);
+                            row[content.FieldName] = content.GetMethod.Invoke(model, null);
                         }
                         else
                         {
