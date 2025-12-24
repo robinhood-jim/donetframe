@@ -48,15 +48,15 @@ namespace Frameset.Core.Dao.Utils
         }
         public PropertyInfo PropertyInfomation
         {
-            get;internal set;
+            get; internal set;
         }
         public MethodInfo GetMethod
         {
-            get;internal set;
+            get; internal set;
         }
         public MethodInfo SetMethod
         {
-            get;internal set;
+            get; internal set;
         }
         public int Precise
         {
@@ -68,23 +68,23 @@ namespace Frameset.Core.Dao.Utils
         }
         public bool IfPrimary
         {
-            get;internal set;
+            get; internal set;
         } = false;
         public bool IfIncrement
         {
-            get;internal set;
+            get; internal set;
         } = false;
         public bool IfSequence
         {
-            get;internal set;
+            get; internal set;
         } = false;
         public string SequenceName
         {
-            get;internal set;
+            get; internal set;
         }
         public bool Exist
         {
-            get;internal set;
+            get; internal set;
         } = true;
         public int Length
         {

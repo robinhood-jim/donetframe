@@ -1,4 +1,5 @@
-﻿using Frameset.Web.Annotaion;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Context;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System.Reflection;
@@ -7,6 +8,9 @@ namespace Frameset.Web.Utils
 {
     public static class ServiceCollectionUtil
     {
+
+
+
         public static void AddBussiness(this IServiceCollection services)
         {
             //AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
@@ -23,7 +27,8 @@ namespace Frameset.Web.Utils
                     switch (lifetime)
                     {
                         case ServiceLifetime.Singleton:
-                            services.AddSingleton(i, impl);
+                            object targetObject = RegServiceContext.GetBean(impl);
+                            services.AddSingleton(i, targetObject);
                             break;
                         case ServiceLifetime.Scoped:
                             services.AddScoped(i, impl);

@@ -48,8 +48,8 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             var httpResult = manager.PostJson(url, data, token);
             if (httpResult.Code == 200)
             {
-                Dictionary<string, string> resultMap = JsonConvert.DeserializeObject<Dictionary<string, string>>(httpResult.Text);
-                return resultMap["hash"];
+                Dictionary<string, string>? resultMap = JsonConvert.DeserializeObject<Dictionary<string, string>>(httpResult.Text);
+                return resultMap?["hash"];
             }
             throw new OperationFailedException("failed to complete upload");
         }
@@ -93,7 +93,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             var httpResult = manager.PutDataWithHeaders(requsetUrl, stream.GetBuffer(), dictionary);
             if (httpResult.Code == 200)
             {
-                Dictionary<string, string> resultMap = JsonConvert.DeserializeObject<Dictionary<string, string>>(httpResult.Text);
+                Dictionary<string, string>? resultMap = JsonConvert.DeserializeObject<Dictionary<string, string>>(httpResult.Text);
                 Dictionary<string, object> etagDict = new Dictionary<string, object>();
                 etagDict.Add("etag", resultMap["etag"]);
                 etagDict.Add("partNumber", partNum + 1);

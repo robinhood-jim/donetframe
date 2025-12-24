@@ -17,7 +17,6 @@ namespace Frameset.Core.Scripts
         public static V8Script ReturnScript(V8ScriptEngine engine, string scriptContent)
         {
 
-
             return engine.Compile(scriptContent);
 
         }

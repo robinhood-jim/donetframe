@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.Model;
 using Spring.Util;
 using System;
@@ -12,10 +13,10 @@ using System.Reflection;
 namespace Frameset.Core.Dao.Utils
 {
 
-    public class EntityReflectUtils
+    public static class EntityReflectUtils
     {
-        private static Dictionary<Type, EntityContent> entityContentMap = new Dictionary<Type, EntityContent>();
-        private static Dictionary<Type, IList<FieldContent>> fieldsListMap = new Dictionary<Type, IList<FieldContent>>();
+        private static readonly Dictionary<Type, EntityContent> entityContentMap = new Dictionary<Type, EntityContent>();
+        private static readonly Dictionary<Type, IList<FieldContent>> fieldsListMap = new Dictionary<Type, IList<FieldContent>>();
 
         public static EntityContent GetEntityInfo(Type entityType)
         {
@@ -133,11 +134,15 @@ namespace Frameset.Core.Dao.Utils
                         {
                             fields.Add(builder.Build());
                         }
+                        else
+                        {
+                            throw new OperationFailedException("failed!");
+                        }
                     }
                     else if (!entityContent.IfExplicit)
                     {
                         FieldBuilder builder = new FieldBuilder();
-                        builder.PropertyName(propName).FieldName(Frameset.Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                        builder.PropertyName(propName).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                         fields.Add(builder.Build());
                     }
@@ -163,7 +168,7 @@ namespace Frameset.Core.Dao.Utils
             }
             else
             {
-                return null;
+                return [];
             }
 
         }

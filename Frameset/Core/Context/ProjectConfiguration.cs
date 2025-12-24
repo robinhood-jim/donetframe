@@ -8,10 +8,10 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Frameset.Core.Context
 {
-    public class ProjectConfiguration
+    public static class ProjectConfiguration
     {
         private static Dictionary<string, object> keyValues = [];
-        public ProjectConfiguration(string configFile)
+        public static void DoInit(string configFile)
         {
             try
             {

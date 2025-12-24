@@ -39,20 +39,27 @@ namespace Frameset.Core.Repo
                 case Constants.SqlOperator.LIKE:
                 case Constants.SqlOperator.RLIKE:
                 case Constants.SqlOperator.LLIKE:
-                    whereBuilder.Append(content.FieldName).Append(GetOperator(oper)).Append("@").Append(Convert.ToString(paramStartPos));
+                    whereBuilder.Append(content.FieldName).Append(GetOperator(oper));
                     string likeValue = "%" + values[0].ToString() + "%";
                     if (oper != Constants.SqlOperator.LIKE)
                     {
-                        likeValue = Constants.SqlOperator.LLIKE.Equals(oper) ? "%" + values[0].ToString() : values[0].ToString() + "%";
+                        likeValue = Constants.SqlOperator.LLIKE.Equals(oper) ? "%" + values[0].ToString() : paramStartPos + "%";
                     }
-                    parameters.Add(dao.GetDialect().WrapParameter(paramStartPos, likeValue));
+                    parameters.Add(dao.GetDialect().WrapParameter(paramStartPos, values[0].ToString()));
+                    whereBuilder.Append('@').Append(paramStartPos);
                     parameterSize = 1;
                     break;
                 case Constants.SqlOperator.IN:
                     whereBuilder.Append(content.FieldName).Append(GetOperator(oper)).Append("(");
                     parameterSize = values.Length;
                     List<object> inValues = values[0].ToString().Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.GetMethod.ReflectedType, input)).ToList();
-                    inValues.ForEach(o => parameters.Add(dao.GetDialect().WrapParameter(paramStartPos++, o)));
+                    inValues.ForEach(o => {
+                            paramStartPos++;
+                            parameters.Add(dao.GetDialect().WrapParameter(paramStartPos, o));
+                            whereBuilder.Append('@').Append(paramStartPos).Append(',');
+                        });
+                    whereBuilder.Remove(whereBuilder.Length - 1, 1);
+                    whereBuilder.Append(")");
                     parameterSize = inValues.Count;
                     break;
 

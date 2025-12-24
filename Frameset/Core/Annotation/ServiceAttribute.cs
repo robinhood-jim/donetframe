@@ -1,6 +1,7 @@
 ﻿using Microsoft.Extensions.DependencyInjection;
+using System;
 
-namespace Frameset.Web.Annotaion
+namespace Frameset.Core.Annotation
 {
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class ServiceAttribute : Attribute
@@ -9,7 +10,7 @@ namespace Frameset.Web.Annotaion
         {
             get; protected set;
         }
-        public ServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.Scoped)
+        public ServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.Singleton)
         {
             LifeTime = serviceLifetime;
         }

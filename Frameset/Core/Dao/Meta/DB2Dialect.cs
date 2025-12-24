@@ -2,6 +2,7 @@
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
 using IBM.Data.Db2;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
@@ -50,7 +51,13 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
-            return new DB2Command(sql, (DB2Connection)connection);
+            DB2Command command = new DB2Command();
+            command.Connection = (DB2Connection)connection;
+            if (!sql.IsNullOrEmpty())
+            {
+                command.CommandText = sql;
+            }
+            return command;
         }
         public override DbParameter WrapParameter(int pos, object value)
         {

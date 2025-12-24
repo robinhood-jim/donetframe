@@ -10,7 +10,7 @@ using System.Text;
 
 namespace Frameset.Core.Utils
 {
-    public class ModelSqlGenerator
+    public static class ModelSqlGenerator
     {
         public static void GenerateSql(Constants.DbType dbType, AbstractSqlDialect dialect, Stream stream, Dictionary<string, object> additionalCfgMap = null)
         {

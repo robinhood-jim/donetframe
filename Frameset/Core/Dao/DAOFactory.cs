@@ -1,5 +1,4 @@
-﻿using Frameset.Core.Common;
-using Frameset.Core.Dao.Meta;
+﻿using Frameset.Core.Dao.Meta;
 using Frameset.Core.Exceptions;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -16,7 +15,10 @@ namespace Frameset.Core.Dao
     {
         private readonly static Dictionary<string, IJdbcDao> containner = [];
         private static Dictionary<string, object> keyValues = [];
-
+        /// <summary>
+        /// Dao Accessor Factory init
+        /// </summary>
+        /// <param name="yamlPath">resource Path</param>
         public static void DoInit(string yamlPath)
         {
 
@@ -29,12 +31,11 @@ namespace Frameset.Core.Dao
                     string processPath = yamlPath;
                     if (yamlPath.StartsWith("res:"))
                     {
-                        processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath.Substring(4, yamlPath.Length);
+                        processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath.Substring(4, yamlPath.Length - 4);
                     }
                     StreamReader reader = File.OpenText(processPath);
                     keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
                     Dictionary<object, object> keyDict = (Dictionary<object, object>)GetKeyValues()["dataSource"];
-                    int daoSize = keyDict.Keys.Count;
                     foreach (string key in keyDict.Keys)
                     {
                         Dictionary<object, object> dict1 = keyDict[key] as Dictionary<object, object>;
@@ -45,7 +46,7 @@ namespace Frameset.Core.Dao
                 }
                 catch (Exception ex)
                 {
-                    Log.Error(ex.Message);
+                    Log.Error("{Message}", ex.Message);
                 }
             }
         }
@@ -56,45 +57,62 @@ namespace Frameset.Core.Dao
         }
         private static IJdbcDao ConstructWithDict(Dictionary<object, object> dict)
         {
-            string dbType = dict["dbType"] == null ? "Mysql" : dict["dbType"].ToString();
-            string host = dict["host"] == null ? "localhost" : dict["host"].ToString();
-            int port = CollectionUtil<object, object>.isNotEmpty(dict, "port") ? Int32.Parse(dict["port"].ToString()) : AbstractSqlDialect.GetDefaultPort(dbType);
-            string userName = dict["userName"].ToString();
-            string password = dict["password"] == null ? null : dict["password"].ToString();
-            int maxSize = CollectionUtil<object, object>.isNotEmpty(dict, "maxSize") ? Int32.Parse(dict["maxSize"].ToString()) : 0;
-            int minSize = CollectionUtil<object, object>.isNotEmpty(dict, "minSize") ? Int32.Parse(dict["minSize"].ToString()) : 0;
-            string schema = CollectionUtil<object, object>.isNotEmpty(dict, "schema") ? dict["schema"].ToString() : null;
-
+            dict.TryGetValue("dbType", out object dbTypeObj);
+            string dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
+            dict.TryGetValue("ConnectionString", out object connStr);
             StringBuilder builder = new StringBuilder();
-            builder.Append("Server=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
-            builder.Append("User ID=").Append(userName).Append(";");
-            if (password != null)
+            dict.TryGetValue("schema", out object schemaStr);
+            string schema = IsNull(schemaStr) ? null : schemaStr.ToString();
+            if (IsNull(connStr))
             {
-                builder.Append("Password=").Append(password).Append(";");
-            }
-            if (schema != null)
-            {
-                builder.Append("Initial Catalog=").Append(schema).Append(";");
-            }
-            if (maxSize > 0 || minSize > 0)
-            {
-                builder.Append("Pooling=true;");
-                if (maxSize > 0)
+                dict.TryGetValue("userName", out object userName);
+                dict.TryGetValue("password", out object password);
+                dict.TryGetValue("host", out object hostObj);
+                dict.TryGetValue("port", out object portObj);
+                dict.TryGetValue("maxSize", out object maxSizeStr);
+                dict.TryGetValue("minSize", out object minSizeStr);
+                string host = IsNull(hostObj) ? "localhost" : dict["host"].ToString();
+                int port = IsNull(portObj) ? AbstractSqlDialect.GetDefaultPort(dbType) : Int32.Parse(portObj.ToString());
+                int maxSize = IsNull(maxSizeStr) ? 0 : Int32.Parse(dict["maxSize"].ToString());
+                int minSize = IsNull(minSizeStr) ? 0 : Int32.Parse(dict["minSize"].ToString());
+                builder.Append("Server=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
+                builder.Append("User ID=").Append(userName).Append(";");
+                if (password != null)
                 {
-                    builder.Append("Max Pool Size=").Append(maxSize).Append(";");
+                    builder.Append("Password=").Append(password).Append(";");
                 }
-                if (minSize > 0)
+                if (schema != null)
                 {
-                    builder.Append("Min Pool Size=").Append(maxSize).Append(";");
+                    builder.Append("Initial Catalog=").Append(schema).Append(";");
+                }
+                if (maxSize > 0 || minSize > 0)
+                {
+                    builder.Append("Pooling=true;");
+                    if (maxSize > 0)
+                    {
+                        builder.Append("Max Pool Size=").Append(maxSize).Append(";");
+                    }
+                    if (minSize > 0)
+                    {
+                        builder.Append("Min Pool Size=").Append(maxSize).Append(";");
+                    }
+                }
+                if (string.Equals(dbType, "Mysql", StringComparison.OrdinalIgnoreCase))
+                {
+                    builder.Append("AllowLoadLocalInfile=true;");
                 }
             }
-            if (string.Equals(dbType, "Mysql", StringComparison.OrdinalIgnoreCase))
+            else
             {
-                builder.Append("AllowLoadLocalInfile=true;");
+                builder.Append(connStr).Append(";");
             }
             IJdbcDao dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
             return dao;
 
+        }
+        private static bool IsNull(object input)
+        {
+            return input == null || string.IsNullOrWhiteSpace(input.ToString());
         }
         public static IJdbcDao GetJdbcDao(string key)
         {

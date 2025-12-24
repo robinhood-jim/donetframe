@@ -210,6 +210,6 @@ namespace Frameset.Core.Common
         public static readonly string CASE = "CASE";
 
         public static readonly List<string> IGNOREPARAMS = [WHERECAUSE, HAVING, GROUPBY, ORDERBY, SELECTCOLUMS, NEWCOLUMN];
-        public static readonly List<string> SQLFUNCTIONS = [SUM, AVG, MAX, MIN, CASE, CONCAT];
+        public static readonly List<string> SQLFUNCTIONS = [SUM, AVG, MAX, MIN, CASE, CONCAT, "UPPER", "LOWER", "LEN", "ROUND", "SUBSTR", "NOW", "SYSDATE", "FORMAT", "EXP", "TRIM", "LTRIM", "RTIME", "DATE", "MONTH", "DAY", "TO_DATE", "COALESCE", "CAST"];
     }
 }

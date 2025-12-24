@@ -49,6 +49,13 @@ namespace Frameset.Web.Utils
                 }
             }
         }
+        /// <summary>
+        /// Call Dynamic DLL Function
+        /// </summary>
+        /// <param name="request">HttpRequest</param>
+        /// <param name="response">HttpRespone </param>
+        /// <param name="funcName">Register Function Name </param>
+        /// <returns></returns>
         public static object InvokeFunctionDynamic(HttpRequest request, HttpResponse response, string funcName)
         {
             object? retObj = null;

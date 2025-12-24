@@ -10,7 +10,7 @@ using System.Reflection;
 
 namespace Frameset.Core.Common
 {
-    public class ConvertUtil
+    public static class ConvertUtil
     {
         private static string[] DEFAULTFORMATTER = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "MM-dd-yy" };
         public static object ParseByType(Type targetType, object input)
@@ -121,14 +121,14 @@ namespace Frameset.Core.Common
         {
             object retObj;
 
-            retObj = translateValue(value, meta.ColumnType, meta.ColumnCode, formatter);
+            retObj = TranslateValue(value, meta.ColumnType, meta.ColumnCode, formatter);
             if (retObj == null && meta.DefaultValue != null)
             {
                 retObj = meta.DefaultValue;
             }
             return retObj;
         }
-        private static object translateValue(object valueObj, Constants.MetaType columnType, string columnName, DateTimeFormatter dateformat)
+        private static object TranslateValue(object valueObj, Constants.MetaType columnType, string columnName, DateTimeFormatter dateformat)
         {
             object retObj;
             try

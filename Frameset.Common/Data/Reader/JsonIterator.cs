@@ -92,7 +92,7 @@ namespace Frameset.Common.Data.Reader
                     }
                     else if (jsonReader.TokenType == JsonToken.PropertyName)
                     {
-                        string propName = jsonReader.Value?.ToString();
+                        string? propName = jsonReader.Value?.ToString();
                         jsonReader.Read();
                         object? value = jsonReader.Value;
                         DataSetColumnMeta? meta;

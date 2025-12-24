@@ -3,6 +3,7 @@ using ClickHouse.Client.ADO.Parameters;
 using ClickHouse.Client.Copy;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
+using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using System;
@@ -74,9 +75,13 @@ namespace Frameset.Core.Dao.Meta
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
             ClickHouseCommand command = new ClickHouseCommand((ClickHouseConnection)connection);
-            command.CommandText = sql;
+            if (!sql.IsNullOrEmpty())
+            {
+                command.CommandText = sql;
+            }
             return command;
         }
+
 
         public override DbConnection GetDbConnection(string connectStr)
         {

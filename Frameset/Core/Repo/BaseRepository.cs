@@ -200,10 +200,10 @@ namespace Frameset.Core.Repo
         public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
             IJdbcDao queryDao = GetDao();
-            using (DbConnection connection = queryDao.GetDialect().GetDbConnection(queryDao.GetConnectString()))
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
                 connection.Open();
-                using (DbCommand command = queryDao.GetDialect().GetDbCommand(connection, sql))
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
                 {
                     return queryDao.QueryBySql(command, values);
                 }
@@ -364,6 +364,27 @@ namespace Frameset.Core.Repo
                 throw new ConfigMissingException("id " + queryId + " does not found in namespace " + nameSpace);
             }
         }
+        public bool ExecuteOperation(Action<IJdbcDao, DbCommand> action)
+        {
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                DbTransaction transaction = connection.BeginTransaction();
+                try
+                {
+                    DbCommand command = GetDao().GetDialect().GetDbCommand(connection, "");
+                    command.Transaction = transaction;
+                    action.Invoke(GetDao(), command);
+                    transaction.Commit();
+                    return true;
+                }
+                catch (Exception ex)
+                {
+                    transaction.Rollback();
+                    throw new BaseSqlException(ex.Message);
+                }
+            }
+        }
 
         public int ExecuteMapper(string nameSpace, string exeId, object input)
         {
@@ -472,11 +493,9 @@ namespace Frameset.Core.Repo
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
                 connection.Open();
-
                 try
                 {
-                    return GetDao().GetDialect().BatchInsert<V>(dao, connection, models, token);
-
+                    return GetDao().GetDialect().BatchInsert<V>(GetDao(), connection, models, token);
                 }
                 catch (Exception ex)
                 {
@@ -505,7 +524,6 @@ namespace Frameset.Core.Repo
                     return GetDao().QueryByFields<O>(entityType, command, queryParams);
                 }
             }
-
         }
         public string GetDsName()
         {
@@ -559,7 +577,6 @@ namespace Frameset.Core.Repo
                     transaction.Rollback();
                     throw new BaseSqlException(ex.Message);
                 }
-
             }
         }
 
@@ -582,7 +599,6 @@ namespace Frameset.Core.Repo
                     transaction.Rollback();
                     throw new BaseSqlException(ex.Message);
                 }
-
             }
         }
         internal virtual DbTransaction OpenTransaction(DbConnection connection)
@@ -596,7 +612,6 @@ namespace Frameset.Core.Repo
                 return transcationFunc.Invoke(connection);
             }
         }
-
     }
     public class RepositoryBuilder<V, P> where V : BaseEntity
     {
@@ -659,8 +674,5 @@ namespace Frameset.Core.Repo
         {
             return repository;
         }
-
-
-
     }
 }

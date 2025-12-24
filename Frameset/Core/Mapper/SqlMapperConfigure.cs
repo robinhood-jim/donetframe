@@ -8,7 +8,7 @@ using System.Xml;
 
 namespace Frameset.Core.Mapper
 {
-    public class SqlMapperConfigure
+    public static class SqlMapperConfigure
     {
         public static readonly string SELECT = "select";
         public static readonly string RESULTMAP = "resultMap";
@@ -18,14 +18,11 @@ namespace Frameset.Core.Mapper
         public static readonly string INCLUDE = "include";
         public static readonly string SCRIPT = "script";
         public static readonly string SQL = "sql";
-        private static Dictionary<string, MapperConfig> configMap = new Dictionary<string, MapperConfig>();
-        private static Dictionary<string, Dictionary<string, AbstractSegment>> executeMap = new Dictionary<string, Dictionary<string, AbstractSegment>>();
+        private static Dictionary<string, MapperConfig> configMap = new();
+        private static Dictionary<string, Dictionary<string, AbstractSegment>> executeMap = new();
 
         private static IList<string> operType = new string[] { "select", "update", "delete", "insert" }.ToList();
-        protected SqlMapperConfigure()
-        {
 
-        }
         public static void DoInit(string mapperPath)
         {
             FileInfo[] infos = ConfigResourceScanner.DoScan(mapperPath);
@@ -49,7 +46,7 @@ namespace Frameset.Core.Mapper
                     XmlNode pnode = doc.SelectSingleNode("mapper");
                     string namespaceStr = ((XmlElement)pnode).GetAttribute("namespace");
                     configMap.TryAdd(namespaceStr, new MapperConfig());
-                    executeMap.TryAdd(namespaceStr, new Dictionary<string, AbstractSegment>());
+                    executeMap.TryAdd(namespaceStr, new());
                     XmlNodeList nodeList = pnode.ChildNodes;
                     foreach (XmlNode node in nodeList)
                     {

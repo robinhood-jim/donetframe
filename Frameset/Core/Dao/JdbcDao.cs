@@ -160,7 +160,7 @@ namespace Frameset.Core.Dao
         }
         public IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects)
         {
-            DbParameter[] parameters = parseParameter(objects);
+            DbParameter[] parameters = ParseParameter(objects);
             command.Parameters.AddRange(parameters);
             IList<Dictionary<string, object>> list = new List<Dictionary<string, object>>();
             using (DbDataReader reader = command.ExecuteReader())
@@ -179,7 +179,7 @@ namespace Frameset.Core.Dao
             }
             return list;
         }
-        private DbParameter[] parseParameter(object[] obj)
+        private DbParameter[] ParseParameter(object[] obj)
         {
             if (obj != null && obj.Length > 0)
             {
@@ -192,7 +192,7 @@ namespace Frameset.Core.Dao
             }
             return [];
         }
-        void parseParameter(DbCommand command, Dictionary<string, object> paramMap)
+        void ParseParameter(DbCommand command, Dictionary<string, object> paramMap)
         {
             if (!paramMap.IsNullOrEmpty())
             {
@@ -206,7 +206,7 @@ namespace Frameset.Core.Dao
 
         public PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query)
         {
-            parseParameter(command, query.Parameters);
+            ParseParameter(command, query.Parameters);
             string querySql = null;
             string countSql = null;
             ResultMap mappingMap = null;
@@ -333,7 +333,7 @@ namespace Frameset.Core.Dao
                 Log.Debug("using Query {Query}", builder.ToString());
             }
             string querySql = builder.ToString();
-            parseParameter(command, queryParamter);
+            ParseParameter(command, queryParamter);
             command.CommandText = querySql;
             bool ifRetMap = false;
             Dictionary<string, MethodParam> methodMap = null;
@@ -356,7 +356,6 @@ namespace Frameset.Core.Dao
                     MethodParam param = null;
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
-                        string name = reader.GetName(col);
                         if (ifRetMap)
                         {
                             (entity as Dictionary<string, object>)[reader.GetName(col)] = reader[col];
@@ -381,20 +380,20 @@ namespace Frameset.Core.Dao
             StringBuilder newColumnsBuilder = new();
             StringBuilder havingBuiler = new();
             StringBuilder groupByBuilder = new();
-            string orderByStr = "";
+            string orderByStr ;
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             Dictionary<string, string> propFieldMap = [];
 
             Dictionary<string, int> duplicatedMap = [];
-            StringBuilder whereBuilder = new StringBuilder();
+            StringBuilder whereBuilder = new();
             Dictionary<string, object> preparedMap = [];
             if (!queryParams.SelectColumns.IsNullOrEmpty())
             {
-                StringBuilder originBuilder = new StringBuilder(Constants.SQL_SELECT);
+                StringBuilder originBuilder = new(Constants.SQL_SELECT);
                 foreach (var columnName in queryParams.SelectColumns.Split(','))
                 {
                     fieldMap.TryGetValue(columnName, out FieldContent oContent);
-                    Trace.Assert(oContent != null, "");
+                    Trace.Assert(oContent != null, "property " + columnName + " not defined in Model " + entityType.Name);
                     originBuilder.Append(oContent.FieldName).Append(Constants.SQL_AS).Append(oContent.PropertyName).Append(",");
                 }
                 originBuilder.Remove(originBuilder.Length - 1, 1);
@@ -406,14 +405,14 @@ namespace Frameset.Core.Dao
                 {
                     string asColumnName = newEntry.Key;
                     List<string> columns = JsonSerializer.Deserialize<List<string>>(newEntry.Value.ToString());
-                    StringBuilder arithBuilder = new StringBuilder();
+                    StringBuilder arithBuilder = new();
                     bool containFunc = false;
                     foreach (var selPart in columns)
                     {
                         if (Constants.SQLFUNCTIONS.Contains(selPart.ToUpper()))
                         {
                             containFunc = true;
-                            arithBuilder.Append(selPart).Append("(");
+                            arithBuilder.Append(selPart).Append('(');
                         }
                         else
                         {
@@ -430,7 +429,7 @@ namespace Frameset.Core.Dao
                     }
                     if (containFunc)
                     {
-                        arithBuilder.Append(")");
+                        arithBuilder.Append(')');
                     }
                     newColumnsBuilder.Append(arithBuilder).Append(Constants.SQL_AS).Append(asColumnName);
                     propFieldMap.TryAdd(asColumnName, arithBuilder.ToString());
@@ -441,7 +440,7 @@ namespace Frameset.Core.Dao
                 foreach (var columnName in queryParams.GroupBy.Split(','))
                 {
                     fieldMap.TryGetValue(columnName, out FieldContent oContent);
-                    Trace.Assert(oContent != null, "");
+                    Trace.Assert(oContent != null, "property " + columnName + " not defined in Model " + entityType.Name);
                     groupByBuilder.Append(oContent.FieldName).Append(",");
                 }
             }
@@ -458,12 +457,12 @@ namespace Frameset.Core.Dao
                         Constants.SqlOperator compareOper = Constants.Parse(dict1["operator"].ToString());
                         double cmpValue = Convert.ToDouble(dict1["values"].ToString());
 
-                        havingBuiler.Append(funcStr).Append(Constants.OperatorValue(compareOper)).Append("@").Append(columnName).Append(Constants.SQL_AND);
+                        havingBuiler.Append(funcStr).Append(Constants.OperatorValue(compareOper)).Append('@').Append(columnName).Append(Constants.SQL_AND);
                         preparedMap.TryAdd(columnName, cmpValue);
                     }
                     else
                     {
-                        havingBuiler.Append(funcStr).Append("=").Append("@").Append(columnName).Append(Constants.SQL_AND);
+                        havingBuiler.Append(funcStr).Append('=').Append('@').Append(columnName).Append(Constants.SQL_AND);
                         preparedMap.TryAdd(columnName, Convert.ToDouble(havingEntry.Value.ToString()));
                     }
                 }
@@ -488,7 +487,7 @@ namespace Frameset.Core.Dao
                 builder.Append(selectPart);
                 if (newColumnsBuilder.Length > 0)
                 {
-                    builder.Append(",").Append(newColumnsBuilder);
+                    builder.Append(',').Append(newColumnsBuilder);
                 }
                 builder.Append(" FROM ").Append(entityContent.GetTableName()).Append(Constants.SQL_WHERE);
             }
@@ -524,7 +523,7 @@ namespace Frameset.Core.Dao
             {
                 methodMap = AnnotationUtils.ReflectObject(retType);
             }
-            parseParameter(command, preparedMap);
+            ParseParameter(command, preparedMap);
             using (DbDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
@@ -533,7 +532,6 @@ namespace Frameset.Core.Dao
                     MethodParam param = null;
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
-                        string name = reader.GetName(col);
                         if (ifRetMap)
                         {
                             (entity as Dictionary<string, object>)[reader.GetName(col)] = reader[col];
@@ -542,7 +540,7 @@ namespace Frameset.Core.Dao
                         {
                             if (methodMap.TryGetValue(reader.GetName(col), out param))
                             {
-                                param.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
+                                param.SetMethod.Invoke(entity, [ ConvertUtil.ParseByType(param.ParamType, reader[col]) ]);
                             }
                         }
                     }
@@ -699,7 +697,7 @@ namespace Frameset.Core.Dao
                 connection.Open();
                 using (DbCommand command = dataMeta.GetDbCommand(connection, sql))
                 {
-                    DbParameter[] parameters = parseParameter(obj);
+                    DbParameter[] parameters = ParseParameter(obj);
                     if (parameters != null && parameters.Length > 0)
                     {
                         command.Parameters.AddRange(parameters);

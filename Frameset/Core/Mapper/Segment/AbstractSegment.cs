@@ -16,7 +16,7 @@ namespace Frameset.Core.Mapper.Segment
         {
             get; set;
         }
-        public AbstractSegment(string nameSpace, string id, string value)
+        protected AbstractSegment(string nameSpace, string id, string value)
         {
             this.Id = id;
             this.Namespace = nameSpace;

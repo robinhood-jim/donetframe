@@ -1,13 +1,15 @@
-﻿using Frameset.Core.Exceptions;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Context;
+using Frameset.Web.Controller;
 using Microsoft.Extensions.DependencyInjection;
 using System.Diagnostics;
+using System.Reflection;
 
 namespace Frameset.Web.Utils
 {
     public class ApplicationContext
     {
         private static IServiceProvider provider = null!;
-        private static readonly Dictionary<Type, object> registerMap = [];
         private ApplicationContext()
         {
 
@@ -15,6 +17,7 @@ namespace Frameset.Web.Utils
         public static void SetContext(IServiceProvider serviceProvider)
         {
             provider = serviceProvider;
+            AutoWireInject(serviceProvider);
         }
         public static object? GetBean(Type type, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         {
@@ -24,7 +27,7 @@ namespace Frameset.Web.Utils
                 object? cachedObj = scope.ServiceProvider.GetRequiredService(type);
                 if (cachedObj == null)
                 {
-                    registerMap.TryGetValue(type, out cachedObj);
+                    cachedObj = RegServiceContext.GetBean(type);
                 }
                 return cachedObj;
             }
@@ -37,19 +40,42 @@ namespace Frameset.Web.Utils
                 object? cachedObj = scope.ServiceProvider.GetRequiredService(type);
                 if (cachedObj == null)
                 {
-                    registerMap.TryGetValue(type, out cachedObj);
+                    cachedObj = RegServiceContext.GetBean<T>();
                 }
                 return (T)cachedObj;
             }
         }
+        private static void AutoWireInject(IServiceProvider serviceProvider)
+        {
+            IEnumerator<AbstractControllerBase> webControllers = serviceProvider.GetServices<AbstractControllerBase>().GetEnumerator();
+            while (webControllers.MoveNext())
+            {
+                AbstractControllerBase controllerBase = webControllers.Current;
+                AutoWireInject(controllerBase);
+            }
+        }
+        private static void AutoWireInject(AbstractControllerBase originObj)
+        {
+            var fields = originObj.GetType().GetTypeInfo().DeclaredFields.Where(field => Attribute.IsDefined(field, typeof(ResourceAttribute))).GetEnumerator();
+            while (fields.MoveNext())
+            {
+                FieldInfo info = fields.Current;
+                if (info.GetValue(originObj) == null)
+                {
+                    object? constructObj = GetBean(info.FieldType);
+                    if (constructObj == null)
+                    {
+                        constructObj = RegServiceContext.GetBean(info.FieldType);
+                    }
+                    info.SetValue(originObj, constructObj);
+                }
+            }
+
+        }
         public static void Register(Type type, object obj)
         {
             Trace.Assert((obj.GetType().GetInterfaces().Length > 0 && obj.GetType().GetInterfaces()[0] == type) || obj.GetType() == type || obj.GetType().IsSubclassOf(type));
-            if (registerMap.ContainsKey(type))
-            {
-                throw new OperationFailedException("type already register!");
-            }
-            registerMap.TryAdd(type, obj);
+            RegServiceContext.Register(type, obj);
 
         }
     }
