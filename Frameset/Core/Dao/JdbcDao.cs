@@ -380,7 +380,7 @@ namespace Frameset.Core.Dao
             StringBuilder newColumnsBuilder = new();
             StringBuilder havingBuiler = new();
             StringBuilder groupByBuilder = new();
-            string orderByStr ;
+            string orderByStr;
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             Dictionary<string, string> propFieldMap = [];
 
@@ -540,7 +540,7 @@ namespace Frameset.Core.Dao
                         {
                             if (methodMap.TryGetValue(reader.GetName(col), out param))
                             {
-                                param.SetMethod.Invoke(entity, [ ConvertUtil.ParseByType(param.ParamType, reader[col]) ]);
+                                param.SetMethod.Invoke(entity, [ConvertUtil.ParseByType(param.ParamType, reader[col])]);
                             }
                         }
                     }

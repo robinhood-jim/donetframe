@@ -1,9 +1,14 @@
-# Generic Net framewortk
+# Generic DotNet framework
 =========
 #### Introduction
 Based on Net Frame 8.Now including basic ORM frame support (including EF Core).This may be most simplify code to intergrate ORM ability
+Stream Reader/Writer for Excel and word. Customer Ioc Support to support AutoWire Service and support recursive AutoWired.
+United FileSystem and Data File Reader and Write,Support CSV/XML/JSON/AVRO/PARQUET/ORC File Format
+Add Serverless Function for dynamic load and unload DLL at runtime
+Customer MVC Frame to easy develop WebApi
+Bigdate Support for Nosql ElasticSearch/Cassandra/MongoDb/Hbase
 
-
+- Core SubModule
 ## Specification
 - Customer Annotation MappingEntity MappingField
 - Global DAOFactory Manager Datasource;
@@ -35,6 +40,14 @@ DAOFactory f = DAOFactory.init("f:/1.yaml");
 BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
 
 ```
+
+- Customer Ioc Support
+
+```cs
+RegServiceContext.ScanServices(typeof(ServiceAttribute));
+```
+Auto register Class with Attribute ServiceAttribute and recusive AutoWrie service with Attribute ResourceAttribute
+- 
 
 - CRUD Operator
 ```cs
@@ -102,82 +115,12 @@ repository.ExecuteMapper("Frameset.Test", "insert1", vo);
     <sql id="sqlpart1">
         id,name,code_desc,cs_id,create_time
     </sql>
-    <sql id="sqlpart2">
-        name,code_desc,cs_id,create_time
-    </sql>
-    <select id="select1" resultMap="rsMap1" parameterType="rsMap1">
-        select
-        <include refid="sqlpart1" />
-         from t_test where 1=1
-        <script lang="js" id="test1" resultMap="rsMap1">
-            var returnstr="";
-            if(Name!=null){
-                returnstr+=" and name like @Name";
-            }
-            if(Description!=null){
-                returnstr+=" and code_desc like @Description";
-            }
-            if(CsId!=0){
-                returnstr+=" and cs_id=@CsId";
-            }
-            returnstr;
-        </script>
-    </select>
-    <insert id="insert1" parameterType="rsMap1" useGeneratedKeys="true" keyProperty="Id">
-        insert into t_test (
-        <script lang="js" id="test2">
-            var returnstr="";
-            if(Name!=null){
-                returnstr+="name,"
-            }
-            if(Description!=null){
-                returnstr+="code_desc,"
-            }
-            if(CsId!=0){
-                returnstr+="cs_id,"
-            }
-            returnstr+="create_time";
-        </script>
-        ) values (
-        <script lang="js" id="test3">
-            var returnstr="";
-            if(Name!=null){
-                returnstr+="@Name,";
-            }
-            if(Description!=null){
-                returnstr+="@Description,";
-            }if(CsId!=0){
-                returnstr+="@CsId,";
-            }
-            returnstr+="sysdate()";
-        </script>
-        )
-    </insert>
-    <batch id="batch1" parameterType="rsMap1">
-        insert into t_test
-        <include refid="sqlpart2" />
-        values (@Name,@Description,@CsId,sysdate())
-    </batch>
-    <update id="update1" parameterType="rsMap1">
-        update t_test set
-        <script lang="js" id="test4">
-            var returnstr="";
-            if(name!=null){
-                returnstr+="name=@Name,";
-            }
-            if(description!=null){
-                returnstr+="code_desc=@Description,";
-            }
-            if(csId!=0){
-                returnstr+="cs_id=@CsId,";
-            }
-            returnstr.substr(0,returnstr.length-1);
-        </script>
-          where id=@Id
-    </update>
+    ...
     
 </mapper>
 ```
+- Common SubModule
+
 - Read/Write File format(CSV/XML/JSON/AVRO/PARQUET) using FileSystem(Local/FTP/SFTP/WebHDFS/AmazonS3)
 Read From FileSystem
 ```java
@@ -195,7 +138,7 @@ Read From FileSystem
  }
 ```
 Write to target FileSystem
-```java
+```cs
 DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
 //assign Path and column metadata define
 builder.Path("e:/1.parquet").AddColumnDefine("id", Constants.MetaType.BIGINT).AddColumnDefine("name", Constants.MetaType.STRING)
@@ -218,3 +161,29 @@ using (AbstractDataWriter<Dictionary<string, object>> writer = DataFileExporter.
     }
 }
 ```
+- Serverless Dynamic Dll support
+
+1.With webapi project add in appsetting,json,serverlessPrefix Parameter
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "serverlessPrefix": "/serverless",
+  
+}
+```
+Add Class with Method with Attribute ServerlessFunc,and pack to DLL
+```cs
+ public class TestService
+    {
+        [ServerlessFunc]
+        public static object GetRole(HttpRequest request, HttpResponse response, long id, IBaseRepository<SysRole, long> repository)
+        {
+```
+then use DynamicFunctionLoader RegisterFunction to register at runtime
+you can call through /serverless/{functionName} to call DLL function dynamic

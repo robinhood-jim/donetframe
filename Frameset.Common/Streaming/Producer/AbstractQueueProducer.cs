@@ -65,7 +65,7 @@ namespace Frameset.Common.Streaming.Producer
         {
             foreach (var entry in methodMap)
             {
-                object? obj = entry.Value.GetMethod.Invoke(message,[]);
+                object? obj = entry.Value.GetMethod.Invoke(message, []);
                 if (obj != null)
                 {
                     record.Add(entry.Key, obj);

@@ -11,16 +11,30 @@ using System.Reflection;
 
 namespace Frameset.Core.Context
 {
+    /// <summary>
+    /// Register Service Context
+    /// </summary>
     public static class RegServiceContext
     {
+        //以接口为Type的注册对象池
         private static readonly Dictionary<Type, object> registerMap = [];
+        //以实现类为Type的注册对象池
         private static readonly Dictionary<Type, object> targetTypeMap = [];
+        //生命周期
         private static readonly Dictionary<Type, ServiceLifetime> lifeTimeMap = [];
+        //注解定义的接口和实现类对应
         private static readonly Dictionary<Type, Type> interfaceTargetMap = [];
+        //具体实现类存在否
         private static readonly Dictionary<Type, int> wiredTypeMap = [];
+        /// <summary>
+        /// Register Transient Type
+        /// </summary>
+        /// <param name="baseInterface"></param>
+        /// <param name="subType"></param>
+        /// <exception cref="OperationFailedException"></exception>
         public static void Register(Type baseInterface, Type subType)
         {
-            if (!interfaceTargetMap.TryGetValue(baseInterface, out Type defineType))
+            if (!interfaceTargetMap.TryGetValue(baseInterface, out Type _))
             {
                 interfaceTargetMap.TryAdd(baseInterface, subType);
                 lifeTimeMap.TryAdd(subType, ServiceLifetime.Scoped);
@@ -30,14 +44,27 @@ namespace Frameset.Core.Context
                 throw new OperationFailedException("type already register!");
             }
         }
+        /// <summary>
+        /// Register Type with Object
+        /// </summary>
+        /// <param name="baseInterface"></param>
+        /// <param name="valueObj"></param>
+        /// <param name="lifetime"></param>
         public static void Register(Type baseInterface, object valueObj, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         {
-            if (!registerMap.TryGetValue(baseInterface, out object registerObj))
+            if (!registerMap.TryGetValue(baseInterface, out object _) && lifetime == ServiceLifetime.Singleton)
             {
                 registerMap.TryAdd(baseInterface, valueObj);
-                lifeTimeMap.TryAdd(baseInterface, lifetime);
+                targetTypeMap.TryAdd(valueObj.GetType(), valueObj);
             }
+            lifeTimeMap.TryAdd(baseInterface, lifetime);
         }
+        /// <summary>
+        /// GetRequired
+        /// </summary>
+        /// <param name="interfaceType"></param>
+        /// <returns></returns>
+        /// <exception cref="OperationFailedException"></exception>
         public static object GetBean(Type interfaceType)
         {
             object retObj = null;
@@ -49,7 +76,7 @@ namespace Frameset.Core.Context
                     lifeTimeMap.TryGetValue(subType, out ServiceLifetime lifeTime);
                     if (!targetTypeMap.TryGetValue(subType, out retObj))
                     {
-                        retObj = Activator.CreateInstance(subType);
+                        retObj = GetServiceRequired(interfaceType, subType, lifeTime, []);
                         if (lifeTime.Equals(ServiceLifetime.Singleton))
                         {
                             registerMap.TryAdd(interfaceType, retObj);
@@ -62,7 +89,7 @@ namespace Frameset.Core.Context
                     Type targetType = GetParameterType(interfaceType);
                     if (targetType != null)
                     {
-                        retObj = Activator.CreateInstance(targetType);
+                        retObj = GetServiceRequired(interfaceType, targetType, ServiceLifetime.Singleton, []);
                         registerMap.TryAdd(interfaceType, retObj);
                         targetTypeMap.TryAdd(retObj.GetType(), retObj);
                     }
@@ -81,54 +108,21 @@ namespace Frameset.Core.Context
                 throw new OperationFailedException("type is not subType!");
             }
         }
+        /// <summary>
+        /// GetRequired
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        /// <exception cref="OperationFailedException"></exception>
         public static T GetBean<T>()
         {
-            object retObj = null;
-            Type interfaceType = typeof(T);
-            if (!registerMap.TryGetValue(interfaceType, out retObj))
-            {
-                if (interfaceTargetMap.TryGetValue(interfaceType, out Type subType))
-                {
-                    lifeTimeMap.TryGetValue(subType, out ServiceLifetime lifeTime);
-                    if (!targetTypeMap.TryGetValue(subType, out retObj))
-                    {
-                        retObj = Activator.CreateInstance<T>();
-                        if (lifeTime.Equals(ServiceLifetime.Singleton))
-                        {
-                            registerMap.TryAdd(interfaceType, retObj);
-                            targetTypeMap.TryAdd(retObj.GetType(), retObj);
-                        }
-                    }
-                }
-                else
-                {
-                    Type targetType = GetParameterType(interfaceType);
-                    if (targetType != null)
-                    {
-                        retObj = Activator.CreateInstance(targetType);
-                        registerMap.TryAdd(interfaceType, retObj);
-                        targetTypeMap.TryAdd(retObj.GetType(), retObj);
-                    }
-                    else
-                    {
-                        throw new OperationFailedException("type does not register!");
-                    }
-                }
-            }
-            if (interfaceType.IsAssignableFrom(retObj.GetType()))
-            {
-                return (T)retObj;
-            }
-            else
-            {
-                throw new OperationFailedException("type is not subType!");
-            }
+            return (T)GetBean(typeof(T));
         }
         /// <summary>
-        /// Customer IOC Register
+        /// Customer IOC Scanner
         /// </summary>
         /// <param name="type">Attribute Type</param>
-        /// <param name="action"></param>
+        /// <param name="action">User Defined Action</param>
         public static void ScanServices(Type type, Action<Type, Type> action = null)
         {
             Trace.Assert(type.IsSubclassOf(typeof(Attribute)), "");
@@ -160,8 +154,7 @@ namespace Frameset.Core.Context
                     }
                     else
                     {
-                        object singletonObj = ConstructRequired(i, impl, []);
-                        Register(i, singletonObj);
+                        GetServiceRequired(i, impl, ServiceLifetime.Singleton, []);
                     }
                 });
             });
@@ -173,8 +166,7 @@ namespace Frameset.Core.Context
             switch (lifetime)
             {
                 case ServiceLifetime.Singleton:
-                    object singletonObj = ConstructRequired(interfaceType, impl, []);
-                    Register(interfaceType, singletonObj);
+                    GetServiceRequired(interfaceType, impl, lifetime, []);
                     break;
                 case ServiceLifetime.Transient:
                 case ServiceLifetime.Scoped:
@@ -184,7 +176,39 @@ namespace Frameset.Core.Context
                     break;
             }
         }
-        private static object ConstructInject(Type implementType, Dictionary<Type, int> scannnedTypes)
+
+        private static object GetServiceRequired(Type baseType, Type wireType, ServiceLifetime lifeTime, Dictionary<Type, int> scannedTypes)
+        {
+            if (scannedTypes.TryGetValue(wireType, out int _))
+            {
+                throw new OperationFailedException("dependency cycle exists");
+            }
+            object retObj = null;
+            if (registerMap.TryGetValue(baseType, out retObj) && retObj != null)
+            {
+                return retObj;
+            }
+            if (IsClassNoParamConstruct(wireType))
+            {
+                if (!targetTypeMap.TryGetValue(wireType, out retObj))
+                {
+                    retObj = Activator.CreateInstance(wireType);
+                }
+                //Get Resource Annotation
+                AutoWireInject(retObj, wireType, lifeTime, scannedTypes);
+            }
+            else
+            {
+                retObj = ConstructInject(wireType, lifeTime, scannedTypes);
+                //AutoWireInject(retObj, wireType, lifeTime, scannedTypes);
+            }
+            if (retObj != null)
+            {
+                Register(baseType, retObj, lifeTime);
+            }
+            return retObj;
+        }
+        private static object ConstructInject(Type implementType, ServiceLifetime lifeTime, Dictionary<Type, int> scannnedTypes)
         {
             ConstructorInfo[] constructorInfos = implementType.GetConstructors();
             object retObj = null;
@@ -198,7 +222,7 @@ namespace Frameset.Core.Context
                     {
                         ParameterInfo parameter = parameterInfos[i];
                         Type tagetType = GetParameterType(parameter.ParameterType);
-                        paramObj[i] = ConstructRequired(parameter.ParameterType, tagetType, scannnedTypes);
+                        paramObj[i] = GetServiceRequired(parameter.ParameterType, tagetType, lifeTime, scannnedTypes);
                         scannnedTypes.TryAdd(parameter.ParameterType, 1);
                     }
                     retObj = constructorInfo.Invoke(paramObj);
@@ -207,35 +231,7 @@ namespace Frameset.Core.Context
             }
             return retObj;
         }
-        private static object ConstructRequired(Type baseType, Type wireType, Dictionary<Type, int> scannedTypes)
-        {
-            if (scannedTypes.TryGetValue(wireType, out int nums))
-            {
-                throw new OperationFailedException("dependency cycle exists");
-            }
-            object retObj = null;
-            if (IsClassNoParamConstruct(wireType))
-            {
-                try
-                {
-                    retObj = GetBean(baseType);
-                    //Get Resource Annotation
-                    AutoWireInject(retObj, wireType, scannedTypes);
-                }
-                finally
-                {
-
-                }
-
-            }
-            else
-            {
-                retObj = ConstructInject(wireType, scannedTypes);
-                AutoWireInject(retObj, wireType, scannedTypes);
-            }
-            return retObj;
-        }
-        private static void AutoWireInject(object originObj, Type wiredType, Dictionary<Type, int> scannedTypes)
+        private static void AutoWireInject(object originObj, Type wiredType, ServiceLifetime lifeTime, Dictionary<Type, int> scannedTypes)
         {
             if (wiredTypeMap.TryGetValue(wiredType, out _))
             {
@@ -248,7 +244,8 @@ namespace Frameset.Core.Context
                 if (info.GetValue(originObj) == null)
                 {
                     Type implementType = GetParameterType(info.FieldType);
-                    object constructObj = ConstructRequired(info.FieldType, implementType, scannedTypes);
+                    object constructObj = GetServiceRequired(info.FieldType, implementType, lifeTime, scannedTypes);
+                    scannedTypes.TryAdd(info.FieldType, 1);
                     info.SetValue(originObj, constructObj);
                 }
             }
