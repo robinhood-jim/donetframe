@@ -12,7 +12,7 @@ namespace Frameset.Core.Repo
 {
     public static class ParameterHelper
     {
-        internal static IList<DbParameter> AddQueryParam(IJdbcDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
+        public static IList<DbParameter> AddQueryParam(IJdbcDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
         {
             IList<DbParameter> parameters = new List<DbParameter>();
             AssertUtils.IsTrue(values.Count() > 0, "");
@@ -52,7 +52,7 @@ namespace Frameset.Core.Repo
                 case Constants.SqlOperator.IN:
                     whereBuilder.Append(content.FieldName).Append(GetOperator(oper)).Append("(");
                     parameterSize = values.Length;
-                    List<object> inValues = values[0].ToString().Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.GetMethod.ReflectedType, input)).ToList();
+                    List<object> inValues = values[0].ToString().Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.ParamType, input)).ToList();
                     inValues.ForEach(o =>
                     {
                         paramStartPos++;

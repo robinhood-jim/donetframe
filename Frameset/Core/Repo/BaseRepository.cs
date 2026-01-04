@@ -13,7 +13,6 @@ using Microsoft.IdentityModel.Tokens;
 using Spring.Util;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
@@ -57,7 +56,7 @@ namespace Frameset.Core.Repo
             AssertUtils.IsTrue(genericType[0].IsSubclassOf(typeof(BaseEntity)));
             content = EntityReflectUtils.GetEntityInfo(genericType[0]);
             fieldContents = EntityReflectUtils.GetFieldsContent(genericType[0]);
-            pkColumn = fieldContents.Where(x => x.IfPrimary).ToList()[0];
+            pkColumn = fieldContents.First(x => x.IfPrimary);
             entityType = genericType[0];
             pkType = genericType[1];
             if (content.DsName != null && dsName.IsNullOrEmpty())
@@ -73,7 +72,7 @@ namespace Frameset.Core.Repo
             {
                 return saveFunc.Invoke(entity);
             }
-            return ExecuteInTransaction<bool>(segment.InsertSql, entity, (command, v) =>
+            return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.InsertSql, entity, (command, v) =>
             {
                 bool? executeRs = false;
 
@@ -89,18 +88,20 @@ namespace Frameset.Core.Repo
         }
         public bool UpdateEntity(V entity)
         {
-            UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), entity);
+            V origin = GetById((P)pkColumn.GetMethod.Invoke(entity, null));
+            Trace.Assert(origin != null, "id not found in entity");
+            UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), origin, entity);
             if (updateFunc != null)
             {
                 return updateFunc.Invoke(entity);
             }
             else
             {
-                return ExecuteInTransaction<bool>(segment.UpdateSql, entity, (command, v) =>
+                return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.UpdateSql, entity, (command, v) =>
                 {
                     bool? executeRs = false;
                     updateBeforeAction?.Invoke(v);
-                    executeRs = GetDao().UpdateEntity(command, v, segment);
+                    executeRs = GetDao().UpdateEntity(command, segment);
                     if (updateAfterAction != null)
                     {
                         executeRs = updateAfterAction?.Invoke(command, v);
@@ -132,7 +133,7 @@ namespace Frameset.Core.Repo
                     }
                 }
                 string removeSql = removeBuilder.Append(idsBuilder.ToString().Substring(0, idsBuilder.Length - 1)).Append(")").ToString();
-                return ExecuteInTransaction<int>(removeSql, null, (command, v) =>
+                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, null, (command, v) =>
                 {
                     return GetDao().Execute(command, removeSql, parameters);
                 });
@@ -155,7 +156,7 @@ namespace Frameset.Core.Repo
                     parameters[i] = GetDao().GetDialect().WrapParameter(i + 1, pks[i]);
                 }
                 string removeSql = builder.Append(idsBuilder.ToString().Substring(0, idsBuilder.Length - 1)).ToString();
-                return ExecuteInTransaction<int>(removeSql, null, (command, v) =>
+                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, null, (command, v) =>
                 {
                     return GetDao().Execute(command, removeSql, parameters);
                 });
@@ -189,7 +190,7 @@ namespace Frameset.Core.Repo
                     }
                     if (!Convert.IsDBNull(value))
                     {
-                        fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.GetMethod.ReturnType, value) });
+                        fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.ParamType, value) });
                     }
                 }
 
@@ -209,6 +210,18 @@ namespace Frameset.Core.Repo
                 }
             }
         }
+        public List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter)
+        {
+            IJdbcDao queryDao = GetDao();
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
+                {
+                    return queryDao.QueryByNamedParameter<O>(command, nameParamter);
+                }
+            }
+        }
 
         public IList<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
@@ -216,32 +229,17 @@ namespace Frameset.Core.Repo
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             if (!fields.IsNullOrEmpty())
             {
-                FieldContent fielContent = fields.First(x => string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
-                if (fielContent == null)
-                {
-                    fielContent = fields.First(x => string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase));
-                }
-                if (fielContent == null)
-                {
-                    throw new BaseSqlException("propertyName " + propertyName + " not found in Model");
-                }
-                StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
-
-                IList<DbParameter> parameters = ParameterHelper.AddQueryParam(GetDao(), fielContent, builder, 0, out int endPos, oper, values);
-                if (!orderByStr.IsNullOrEmpty())
-                {
-                    builder.Append(" order by ").Append(orderByStr);
-                }
+                Tuple<StringBuilder, IList<DbParameter>> tuple = RepositoryHelper.QueryModelByFieldBefore(entityType, GetDao(), fields, propertyName, oper, values, orderByStr);
                 using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
                 {
                     connection.Open();
-                    using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, builder.ToString()))
+                    using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, tuple.Item1.ToString()))
                     {
-                        return GetDao().QueryModelsBySql<V>(entityType, command, parameters);
+                        return GetDao().QueryModelsBySql<V>(entityType, command, tuple.Item2);
                     }
                 }
             }
-            return null;
+            return [];
         }
         public PageDTO<V> QueryModelsPage(PageQuery query)
         {
@@ -250,66 +248,8 @@ namespace Frameset.Core.Repo
             StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
             if (query != null && !query.Parameters.IsNullOrEmpty())
             {
-                int currentParamCount = 0;
-                foreach (var item in query.Parameters)
-                {
-                    if (fieldMap.TryGetValue(item.Key, out FieldContent fieldContent) && fieldContent != null && item.Value != null)
-                    {
-                        Constants.SqlOperator oper = Constants.SqlOperator.EQ;
 
-                        List<object> values = [];
-                        if (item.Value.ToString().Contains('%'))
-                        {
-                            if (item.Value.ToString().StartsWith('%'))
-                            {
-                                oper = Constants.SqlOperator.LLIKE;
-                            }
-                            else if (item.Value.ToString().EndsWith('%'))
-                            {
-                                oper = Constants.SqlOperator.RLIKE;
-                            }
-                            else
-                            {
-                                oper = Constants.SqlOperator.LIKE;
-                            }
-                            values.Add(item.Value.ToString().Replace("%", ""));
-                        }
-                        else if (item.Value.ToString().Contains("|"))
-                        {
-                            string[] sep = item.Value.ToString().Split('|');
-                            oper = Constants.Parse(sep[0]);
-                            values.Add(sep[1]);
-                        }
-                        else
-                        {
-                            values.Add(item.Value.ToString());
-                        }
-                        IList<DbParameter> parameters = ParameterHelper.AddQueryParam(GetDao(), fieldContent, builder, currentParamCount, out int addCount, oper, values.ToArray());
-                        if (!parameters.IsNullOrEmpty())
-                        {
-                            dbParameters.AddRange(parameters);
-                            builder.Append(" AND ");
-                        }
-                        currentParamCount += addCount;
-                    }
-                }
-                if (builder.ToString().EndsWith(" AND "))
-                {
-                    builder.Remove(builder.Length - 5, 5);
-                }
-                if (!query.Order.IsNullOrEmpty())
-                {
-                    builder.Append(" ORDER BY ").Append(query.Order);
-                }
-                else if (!query.OrderField.IsNullOrEmpty())
-                {
-                    fieldMap.TryGetValue(query.OrderField, out FieldContent fieldContent);
-                    if (fieldContent == null)
-                    {
-                        throw new OperationFailedException("orderField " + query.OrderField + " not in table!");
-                    }
-                    builder.Append(" ORDER BY ").Append(fieldContent.FieldName).Append(query.OrderAsc ? " ASC" : " DESC");
-                }
+                RepositoryHelper.GetQueryParam(GetDao(), query, fieldMap, dbParameters, builder);
                 string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
                 string countSql = GetDao().GetDialect().GenerateCountSql(builder.ToString());
 
@@ -331,6 +271,7 @@ namespace Frameset.Core.Repo
             }
             return null;
         }
+
         public object QueryMapper(string nameSpace, string queryId, object queryObject)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, queryId);
@@ -393,54 +334,20 @@ namespace Frameset.Core.Repo
             {
                 AssertUtils.IsTrue(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
                 AssertUtils.IsTrue(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
-                Dictionary<string, object> paramMap = new Dictionary<string, object>();
                 CompositeSegment csegment = (CompositeSegment)segment;
-                string rsMap = csegment.Parametertype;
-                if (!csegment.Parametertype.IsNullOrEmpty())
-                {
-                    ConvertUtil.ToDict(input, paramMap);
-                }
-                else if (input.GetType().Equals(typeof(Dictionary<string, object>)))
-                {
-                    paramMap = (Dictionary<string, object>)input;
-                }
-
-                ResultMap map = SqlMapperConfigure.GetResultMap(nameSpace, rsMap);
-                Type retType = map != null ? map.ModelType : Type.GetType(rsMap);
+                Dictionary<string, object> paramMap = [];
+                bool returnInsert = false;
+                string generateKey = null;
                 bool retMap = false;
+                Type retType = null;
                 Dictionary<string, MethodParam> methodMap = null;
-                if (retType == null && string.Equals(rsMap, "Map", StringComparison.OrdinalIgnoreCase))
-                {
-                    retMap = true;
-                }
-                else
+                StringBuilder builder = new StringBuilder();
+                RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out builder, out paramMap, out retMap, out returnInsert, out generateKey, out methodMap);
+                if (!retMap)
                 {
                     methodMap = AnnotationUtils.ReflectObject(retType);
                 }
-
-                StringBuilder builder = new(segment.ReturnSqlPart(paramMap));
-                bool returnInsert = false;
-                string generateKey = null;
-                if (csegment.GetType().Equals(typeof(SqlInsertSegment)))
-                {
-                    SqlInsertSegment insertSegment = (SqlInsertSegment)segment;
-
-                    if (insertSegment.UseGenerateKey)
-                    {
-                        builder.Append(GetDao().GetDialect().AppendKeyHolder());
-                        returnInsert = true;
-                    }
-                    else if (!insertSegment.SequenceName.IsNullOrEmpty())
-                    {
-                        builder.Append(GetDao().GetDialect().AppendSequence(insertSegment.SequenceName));
-                        returnInsert = true;
-                    }
-                    generateKey = insertSegment.KeyProperty;
-
-                }
-                Trace.Assert(!paramMap.IsNullOrEmpty(), "all property is null");
-
-                return ExecuteInTransaction(builder.ToString(), (command) =>
+                return RepositoryHelper.ExecuteInTransaction(GetDao(), builder.ToString(), (command) =>
                 {
                     foreach (var item in paramMap)
                     {
@@ -558,49 +465,7 @@ namespace Frameset.Core.Repo
             }
             return dao;
         }
-        internal int ExecuteInTransaction(string sql, Func<DbCommand, int> func)
-        {
-            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
-            {
-                connection.Open();
-                DbTransaction transaction = connection.BeginTransaction();
-                try
-                {
-                    DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql);
-                    command.Transaction = transaction;
-                    int ret = func.Invoke(command);
-                    transaction.Commit();
-                    return ret;
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    throw new BaseSqlException(ex.Message);
-                }
-            }
-        }
 
-        internal T ExecuteInTransaction<T>(string sql, V entity, Func<DbCommand, V, T> func)
-        {
-            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
-            {
-                connection.Open();
-                DbTransaction transaction = connection.BeginTransaction();
-                try
-                {
-                    DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql);
-                    command.Transaction = transaction;
-                    T ret = func.Invoke(command, entity);
-                    transaction.Commit();
-                    return ret;
-                }
-                catch (Exception ex)
-                {
-                    transaction.Rollback();
-                    throw new BaseSqlException(ex.Message);
-                }
-            }
-        }
         internal virtual DbTransaction OpenTransaction(DbConnection connection)
         {
             if (transcationFunc == null)
@@ -613,66 +478,5 @@ namespace Frameset.Core.Repo
             }
         }
     }
-    public class RepositoryBuilder<V, P> where V : BaseEntity
-    {
-        private readonly BaseRepository<V, P> repository;
-        public RepositoryBuilder()
-        {
-            repository = new BaseRepository<V, P>();
-        }
-        public RepositoryBuilder<V, P> SaveFunction(Func<V, bool> insertFunction)
-        {
-            repository.saveFunc = insertFunction;
-            return this;
-        }
-        public RepositoryBuilder<V, P> UpdateFunction(Func<V, bool> updateFunc)
-        {
-            repository.updateFunc = updateFunc;
-            return this;
-        }
-        public RepositoryBuilder<V, P> SaveBeforeAction(Action<V> action)
-        {
-            repository.insertBeforeAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> UpdateBeforeAction(Action<V> action)
-        {
-            repository.updateBeforeAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> DeleteBeforeAction(Action<V> action)
-        {
-            repository.deleteBeforeAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> DeleteAfterAction(Action<DbCommand, V> action)
-        {
-            repository.deleteAfterAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> SaveAfterAction(Func<DbCommand, V, bool> action)
-        {
-            repository.insertAfterAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> UpdateAfterAction(Func<DbCommand, V, bool> action)
-        {
-            repository.updateAfterAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> TransctionManager(Func<DbConnection, DbTransaction> func)
-        {
-            repository.transcationFunc = func;
-            return this;
-        }
-        public RepositoryBuilder<V, P> DeleteFunc(Func<IList<P>, int> func)
-        {
-            repository.deleteFunc = func;
-            return this;
-        }
-        public BaseRepository<V, P> Build()
-        {
-            return repository;
-        }
-    }
+
 }

@@ -49,6 +49,12 @@ namespace Frameset.Core.Dao.Meta
         {
             return new DB2Connection(connectStr);
         }
+        public override DbCommand GetDbCommand(DbConnection connection)
+        {
+            DB2Command command = new DB2Command();
+            command.Connection = (DB2Connection)connection;
+            return command;
+        }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
             DB2Command command = new DB2Command();

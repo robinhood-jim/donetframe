@@ -81,7 +81,10 @@ namespace Frameset.Core.Dao.Meta
             }
             return command;
         }
-
+        public override DbCommand GetDbCommand(DbConnection connection)
+        {
+            return new ClickHouseCommand((ClickHouseConnection)connection);
+        }
 
         public override DbConnection GetDbConnection(string connectStr)
         {

@@ -8,7 +8,7 @@ namespace Frameset.Core.Dao.Utils
     {
         private string _fieldName;
         private string _propertyName;
-
+        
         public string FieldName
         {
             get => _fieldName;
@@ -58,6 +58,10 @@ namespace Frameset.Core.Dao.Utils
         {
             get; internal set;
         }
+        public Type ParamType
+        {
+            get;internal set;
+        }
         public int Precise
         {
             get; set;
@@ -90,6 +94,14 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         }
+        public Type ParentEntity
+        {
+            get; set;
+        }
+        public bool IsManyToOne
+        {
+            get; internal set;
+        } = false;
     }
     public class FieldBuilder
     {
@@ -131,6 +143,15 @@ namespace Frameset.Core.Dao.Utils
         public FieldBuilder GetMethod(MethodInfo getMethod)
         {
             content.GetMethod = getMethod;
+            Type baseType = getMethod.ReturnType;
+            if(baseType.IsGenericType && baseType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            {
+                content.ParamType = baseType.GetGenericArguments()[0];
+            }
+            else
+            {
+                content.ParamType = baseType;
+            }
             return this;
         }
         public FieldBuilder SetMethod(MethodInfo setMethod)
@@ -173,6 +194,12 @@ namespace Frameset.Core.Dao.Utils
         public FieldBuilder NotMapped()
         {
             content.Exist = false;
+            return this;
+        }
+        public FieldBuilder ManyToOne(Type parentType)
+        {
+            content.IsManyToOne = true;
+            content.ParentEntity = parentType;
             return this;
         }
         public bool Acceptable()

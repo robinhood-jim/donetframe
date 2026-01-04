@@ -1,5 +1,7 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Frameset.Core.Model;
+using Frameset.Core.Repo;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -90,7 +92,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append(entityContent.TableName);
             foreach (FieldContent content in fields)
             {
-                if (!content.IfIncrement && !content.IfSequence)
+                if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsPrimitive)
                 {
                     columnsBuilder.Append(content.FieldName).Append(",");
                     valuesBuilder.Append("?" + content.FieldName).Append(",");
@@ -100,11 +102,12 @@ namespace Frameset.Core.Dao.Utils
                 .Append(valuesBuilder.ToString().Substring(0, valuesBuilder.Length - 1)).Append(")");
             return builder.ToString();
         }
-        public static UpdateSegment GetUpdateSegment(IJdbcDao dao, BaseEntity vo)
+        public static UpdateSegment GetUpdateSegment(IJdbcDao dao, BaseEntity origin, BaseEntity update)
         {
+            Trace.Assert(origin.GetType().Equals(update.GetType()), "compare must be same type");
             int pos = 1;
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(vo.GetType());
-            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(vo.GetType());
+            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(origin.GetType());
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(origin.GetType());
             StringBuilder builder = new StringBuilder();
             builder.Append("update ");
             StringBuilder columnsBuilder = new StringBuilder();
@@ -120,14 +123,18 @@ namespace Frameset.Core.Dao.Utils
             IList<DbParameter> dbParameters = new List<DbParameter>();
             foreach (FieldContent content in fields)
             {
-                object realVal = content.GetMethod.Invoke(vo, null);
-                if (realVal != null)
+                object realVal = content.GetMethod.Invoke(update, null);
+                if (realVal != null && !string.IsNullOrWhiteSpace(realVal.ToString()))
                 {
-                    if (!content.IfPrimary)
+                    object originVal = content.GetMethod.Invoke(origin, null);
+                    if (!content.IfPrimary )
                     {
-                        string paramName = "@val" + pos++;
-                        columnsBuilder.Append(content.FieldName).Append("=").Append(paramName).Append(",");
-                        parameters.Add(dao.GetDialect().WrapParameter(paramName, realVal));
+                        if (!realVal.Equals(originVal))
+                        {
+                            string paramName = "@val" + pos++;
+                            columnsBuilder.Append(content.FieldName).Append("=").Append(paramName).Append(",");
+                            parameters.Add(dao.GetDialect().WrapParameter(paramName, realVal));
+                        }
                     }
                     else
                     {
@@ -135,7 +142,7 @@ namespace Frameset.Core.Dao.Utils
                         parameters.Add(dao.GetDialect().WrapParameter("@id", realVal));
                     }
                 }
-                else if (vo.GetDirties().Contains(content.FieldName))
+                else if (update.GetDirties().Contains(content.FieldName))
                 {
                     columnsBuilder.Append(content.FieldName).Append("=null,");
                 }
@@ -163,6 +170,19 @@ namespace Frameset.Core.Dao.Utils
                 }
             }
             return removeBuilder.ToString();
+        }
+        public static Tuple<StringBuilder, IList<DbParameter>> GetRemoveCondition(IJdbcDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
+        {
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
+            Dictionary<string, FieldContent> fieldMaps = EntityReflectUtils.GetFieldsMap(modelType);
+            if (!fieldMaps.TryGetValue(fieldName, out FieldContent fieldContent))
+            {
+                throw new BaseSqlException("field " + fieldName + " not found in entity");
+            }
+            StringBuilder builder = new StringBuilder("DELETE FROM ").Append(entityContent.GetTableName()).Append(" WHERE ");
+
+            IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, out int _, oper, values);
+            return Tuple.Create(builder, parameters);
         }
         public static string GetSelectSql(Type modelType)
         {
@@ -220,10 +240,15 @@ namespace Frameset.Core.Dao.Utils
             tabBuilder.Append(entityContent.TableName);
             return tabBuilder.ToString();
         }
-        public static void AppendPreparedSql(FilterCondition condition, Dictionary<string, object> valueMap, StringBuilder builder, Dictionary<string, int> duplicatedMap)
+        public static void AppendPreparedSql(FilterCondition condition, Dictionary<string, object> valueMap, StringBuilder builder, Dictionary<string, int> duplicatedMap, Dictionary<Type, string> entityAliasMap)
         {
             Trace.Assert(!condition.Values.IsNullOrEmpty(), "");
-            builder.Append(condition.ColumnName);
+            StringBuilder aliasNameBuilder = new StringBuilder();
+            if (!entityAliasMap.IsNullOrEmpty() && entityAliasMap.TryGetValue(condition.TargetEntity.EntityType, out string aliasName))
+            {
+                aliasNameBuilder.Append(aliasName).Append('.');
+            }
+            builder.Append(aliasNameBuilder).Append(condition.ColumnName);
             builder.Append(Constants.OperatorValue(condition.Operator));
             duplicatedMap.TryGetValue(condition.ColumnName, out int counts);
             string fieldName = condition.ColumnName + Convert.ToString(counts);
@@ -238,6 +263,7 @@ namespace Frameset.Core.Dao.Utils
             {
                 duplicatedMap[condition.ColumnName] = ++counts;
             }
+
             switch (Operator)
             {
                 case Constants.SqlOperator.EQ:
@@ -325,7 +351,7 @@ namespace Frameset.Core.Dao.Utils
             {
                 FilterCondition condition = Conditions[0];
                 builder.Append("SELECT").Append(condition.ColumnName).Append(" FROM ").Append(condition.TargetEntity.GetTableName());
-                builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap));
+                builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap, []));
             }
         }
         public static List<object> WrapParameter(string columnName, Type columnType, Constants.SqlOperator sqlOper, object value)
@@ -350,6 +376,7 @@ namespace Frameset.Core.Dao.Utils
             }
             return retList;
         }
+
     }
 
     public class InsertSegment

@@ -32,7 +32,7 @@ namespace Frameset.Core.Dao
         /// <param name="entity"></param>
         /// <param name="segment"></param>
         /// <returns></returns>
-        bool UpdateEntity(DbCommand command, BaseEntity entity, UpdateSegment segment);
+        bool UpdateEntity(DbCommand command, UpdateSegment segment);
         int Execute(DbCommand command, string sql, DbParameter[] parameters);
 
         AbstractSqlDialect GetDialect();
@@ -61,6 +61,7 @@ namespace Frameset.Core.Dao
         /// <param name="obj"></param>
         /// <param name="action"></param>
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
+        void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action);
         List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
@@ -71,5 +72,6 @@ namespace Frameset.Core.Dao
         /// <param name="queryParams">Query Parameter Model</param>
         /// <returns></returns>
         List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams);
+        List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter);
     }
 }

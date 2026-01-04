@@ -82,7 +82,8 @@ namespace Frameset.Core.Dao.Utils
         }
 
 
-        public string GeneratePreparedSql(Dictionary<string, object> valueMap, Dictionary<string, int> duplicatedMap)
+
+        public string GeneratePreparedSql(Dictionary<string, object> valueMap, Dictionary<string, int> duplicatedMap, Dictionary<Type, string> entityAliasMap)
         {
             StringBuilder builder = new StringBuilder(0);
 
@@ -95,7 +96,7 @@ namespace Frameset.Core.Dao.Utils
                     {
                         builder.Append("(");
                     }
-                    builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap));
+                    builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap, entityAliasMap));
                     if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase))
                     {
                         builder.Append(")");
@@ -110,7 +111,7 @@ namespace Frameset.Core.Dao.Utils
             else
             {
 
-                SqlUtils.AppendPreparedSql(this, valueMap, builder, duplicatedMap);
+                SqlUtils.AppendPreparedSql(this, valueMap, builder, duplicatedMap, entityAliasMap);
 
                 if (!GroupBy.IsNullOrEmpty())
                 {
@@ -131,7 +132,7 @@ namespace Frameset.Core.Dao.Utils
         }
 
     }
-    public class FilterConditionBuilder
+    public class SingleFilterConditionBuilder
     {
         private List<FilterCondition> filterConditions = [];
         private readonly Type modelType;
@@ -141,18 +142,18 @@ namespace Frameset.Core.Dao.Utils
         private string _groupBy;
         private string _having;
         private string _orderBy;
-        private FilterConditionBuilder(Type modelType)
+        private SingleFilterConditionBuilder(Type modelType)
         {
             Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)), "must use BaseEntity");
             this.modelType = modelType;
             targetEntity = EntityReflectUtils.GetEntityInfo(modelType);
             fieldMap = EntityReflectUtils.GetFieldsMap(modelType);
         }
-        public static FilterConditionBuilder NewBuilder<T>()
+        public static SingleFilterConditionBuilder NewBuilder<T>()
         {
-            return new FilterConditionBuilder(typeof(T));
+            return new SingleFilterConditionBuilder(typeof(T));
         }
-        public FilterConditionBuilder AddEq(string columnName, object value)
+        public SingleFilterConditionBuilder AddEq(string columnName, object value)
         {
             fieldMap.TryGetValue(columnName, out FieldContent content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
@@ -160,12 +161,12 @@ namespace Frameset.Core.Dao.Utils
             {
                 ColumnName = content.FieldName,
                 TargetEntity = targetEntity,
-                ColumnType = content.GetMethod.ReturnType,
+                ColumnType = content.ParamType,
                 Values = [value]
             });
             return this;
         }
-        public FilterConditionBuilder AddFilter(string columnName, Constants.SqlOperator sqlOperator, object[] objects)
+        public SingleFilterConditionBuilder AddFilter(string columnName, Constants.SqlOperator sqlOperator, object[] objects)
         {
             fieldMap.TryGetValue(columnName, out FieldContent content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
@@ -173,13 +174,13 @@ namespace Frameset.Core.Dao.Utils
             {
                 ColumnName = content.FieldName,
                 TargetEntity = targetEntity,
-                ColumnType = content.GetMethod.ReturnType,
+                ColumnType = content.ParamType,
                 Operator = sqlOperator,
                 Values = [objects]
             });
             return this;
         }
-        public FilterConditionBuilder LeftArithmetic(string arithColumn, Type valueType, Constants.SqlOperator sqlOperator, object[] objects)
+        public SingleFilterConditionBuilder LeftArithmetic(string arithColumn, Type valueType, Constants.SqlOperator sqlOperator, object[] objects)
         {
             filterConditions.Add(new FilterCondition()
             {
@@ -192,7 +193,7 @@ namespace Frameset.Core.Dao.Utils
             });
             return this;
         }
-        public FilterConditionBuilder AllArithmetic(string arithLeftColumn, string arithRightColumn, Constants.SqlOperator sqlOperator)
+        public SingleFilterConditionBuilder AllArithmetic(string arithLeftColumn, string arithRightColumn, Constants.SqlOperator sqlOperator)
         {
             filterConditions.Add(new FilterCondition()
             {
@@ -211,7 +212,7 @@ namespace Frameset.Core.Dao.Utils
             return new FilterCondition()
             {
                 ColumnName = content.FieldName,
-                ColumnType = content.GetMethod.ReturnType,
+                ColumnType = content.ParamType,
                 Values = [value]
             };
         }
@@ -223,16 +224,16 @@ namespace Frameset.Core.Dao.Utils
             {
                 ColumnName = content.FieldName,
                 Operator = sqlOperator,
-                ColumnType = content.GetMethod.ReturnType,
+                ColumnType = content.ParamType,
                 Values = [objects]
             };
         }
-        public FilterCondition Combine(Func<FilterConditionBuilder, FilterCondition> action)
+        public FilterCondition Combine(Func<SingleFilterConditionBuilder, FilterCondition> action)
         {
             FilterCondition condition = action.Invoke(this);
             return condition;
         }
-        public FilterConditionBuilder Or(Action<FilterConditionBuilder> action)
+        public SingleFilterConditionBuilder Or(Action<SingleFilterConditionBuilder> action)
         {
             action.Invoke(this);
             return this;
@@ -312,12 +313,12 @@ namespace Frameset.Core.Dao.Utils
                 LinkOper = Constants.LINK_AND
             };
         }
-        public FilterConditionBuilder Add(FilterCondition condition)
+        public SingleFilterConditionBuilder Add(FilterCondition condition)
         {
             filterConditions.Add(condition);
             return this;
         }
-        public FilterConditionBuilder And(List<FilterCondition> conditions)
+        public SingleFilterConditionBuilder And(List<FilterCondition> conditions)
         {
             filterConditions.Add(new FilterCondition()
             {
@@ -326,22 +327,22 @@ namespace Frameset.Core.Dao.Utils
             });
             return this;
         }
-        public FilterConditionBuilder SelectParts(string selectParts)
+        public SingleFilterConditionBuilder SelectParts(string selectParts)
         {
             _selectParts = selectParts;
             return this;
         }
-        public FilterConditionBuilder GroupBy(string groupBy)
+        public SingleFilterConditionBuilder GroupBy(string groupBy)
         {
             _groupBy = groupBy;
             return this;
         }
-        public FilterConditionBuilder Having(string having)
+        public SingleFilterConditionBuilder Having(string having)
         {
             _having = having;
             return this;
         }
-        public FilterConditionBuilder OrderBy(string orderBy)
+        public SingleFilterConditionBuilder OrderBy(string orderBy)
         {
             _orderBy = orderBy;
             return this;

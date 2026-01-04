@@ -49,12 +49,12 @@ namespace Frameset.Core.Dao.Meta
                 {
                     if (!content.IfIncrement)
                     {
-                        table.Columns.Add(content.FieldName, content.GetMethod.ReturnType);
+                        table.Columns.Add(content.FieldName, content.ParamType);
                         columns++;
                     }
                     else
                     {
-                        DataColumn column = table.Columns.Add(content.FieldName, content.GetMethod.ReflectedType);
+                        DataColumn column = table.Columns.Add(content.FieldName, content.ParamType);
                         column.AutoIncrement = true;
                         column.AllowDBNull = true;
                         column.AutoIncrementSeed = QueryIdentityByTable(dao, connection, transaction, entityContent);
@@ -131,6 +131,13 @@ namespace Frameset.Core.Dao.Meta
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
             return new MySqlCommand(sql, (MySqlConnection)connection);
+        }
+        public override DbCommand GetDbCommand(DbConnection connection)
+        {
+            return new MySqlCommand()
+            {
+                Connection = (MySqlConnection)connection
+            };
         }
         public override DbParameter WrapParameter(int pos, object value)
         {

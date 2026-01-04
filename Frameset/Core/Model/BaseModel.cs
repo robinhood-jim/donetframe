@@ -11,7 +11,7 @@ namespace Frameset.Core.Model
         public string ModifyTime { get; set; }
         [MappingField(field: "creator", IfRequired = true)]
         public long Creator { get; set; }
-        [MappingField("modifier", IfRequired = true)]
+        [MappingField(field: "modifier", IfRequired = true)]
         public long Modifier { get; set; }
 
 

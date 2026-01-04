@@ -12,6 +12,8 @@ namespace Frameset.Web.Controller
     public class AbstractController<R, V, P> : AbstractControllerBase where R : IBaseRepository<V, P> where V : BaseEntity
     {
         protected readonly R repository;
+
+
         public AbstractController(R baseRepository)
         {
             repository = baseRepository;
@@ -76,7 +78,7 @@ namespace Frameset.Web.Controller
                 {
                     MethodParam? param = null;
                     paramMap.TryGetValue(entry.Key, out param);
-                    param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.GetMethod.ReturnType, entry.Value) });
+                    param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
 
                 }
             }
@@ -88,7 +90,7 @@ namespace Frameset.Web.Controller
                     if (entry.Value != null)
                     {
                         paramMap.TryGetValue(entry.Key, out MethodParam? param);
-                        param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.GetMethod.ReturnType, entry.Value.GetMethod.Invoke(input, null)) });
+                        param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
                     }
                 }
             }

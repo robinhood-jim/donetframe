@@ -2,6 +2,7 @@
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.Model;
+using Microsoft.IdentityModel.Tokens;
 using Spring.Util;
 using System;
 using System.Collections.Generic;
@@ -15,8 +16,9 @@ namespace Frameset.Core.Dao.Utils
 
     public static class EntityReflectUtils
     {
-        private static readonly Dictionary<Type, EntityContent> entityContentMap = new Dictionary<Type, EntityContent>();
-        private static readonly Dictionary<Type, IList<FieldContent>> fieldsListMap = new Dictionary<Type, IList<FieldContent>>();
+        private static readonly Dictionary<Type, EntityContent> entityContentMap = [];
+        private static readonly Dictionary<Type, IList<FieldContent>> fieldsListMap = [];
+        private static readonly Dictionary<Type, FieldContent> pkFieldMap = [];
 
         public static EntityContent GetEntityInfo(Type entityType)
         {
@@ -24,7 +26,7 @@ namespace Frameset.Core.Dao.Utils
             EntityContent content = null;
             if (!entityContentMap.TryGetValue(entityType, out content))
             {
-                MappingEntity entity = (MappingEntity)entityType.GetCustomAttribute(typeof(MappingEntity));
+                MappingEntityAttribute entity = (MappingEntityAttribute)entityType.GetCustomAttribute(typeof(MappingEntityAttribute));
                 if (entity != null)
                 {
                     string tableName = entity.TableName;
@@ -66,7 +68,7 @@ namespace Frameset.Core.Dao.Utils
                 {
                     object[] attributes = prop.GetCustomAttributes(false);
                     string propName = prop.Name;
-
+                 
                     if (attributes.Length > 0)
                     {
                         FieldBuilder builder = new FieldBuilder();
@@ -74,9 +76,9 @@ namespace Frameset.Core.Dao.Utils
                         for (int i = 0; i < attributes.Length; i++)
                         {
 
-                            if (attributes[i].GetType().Equals(typeof(MappingField)))
+                            if (attributes[i].GetType().Equals(typeof(MappingFieldAttribute)))
                             {
-                                MappingField mappingField = attributes[i] as MappingField;
+                                MappingFieldAttribute mappingField = attributes[i] as MappingFieldAttribute;
                                 if (mappingField.Exist)
                                 {
                                     Constants.MetaType dataType = AdjustType(prop.PropertyType);
@@ -128,15 +130,21 @@ namespace Frameset.Core.Dao.Utils
                             {
                                 builder.NotMapped();
                             }
-
+                            else if (attributes[i].GetType().Equals(typeof(ManyToOneAttribute)))
+                            {
+                                ManyToOneAttribute attr = (ManyToOneAttribute)attributes[i];
+                                builder.ManyToOne(attr.ParentType);
+                                entityContent.ParentEntitys.Add(attr.ParentType);
+                            }
                         }
                         if (builder.Acceptable())
                         {
                             fields.Add(builder.Build());
                         }
-                        else
+                        else if (!entityContent.IfExplicit)
                         {
-                            throw new OperationFailedException("failed!");
+                            builder.PropertyName(propName).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                            fields.Add(builder.Build());
                         }
                     }
                     else if (!entityContent.IfExplicit)
@@ -153,16 +161,15 @@ namespace Frameset.Core.Dao.Utils
                 {
                     fieldsListMap.Add(entityType, fields);
                 }
-
             }
+            
             return fields;
         }
         public static Dictionary<string, FieldContent> GetFieldsMap(Type entityType)
         {
             AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
-            bool extendBaseModel = entityType.IsSubclassOf(typeof(BaseModel));
             IList<FieldContent> fields = GetFieldsContent(entityType);
-            if (!CollectionUtils.IsEmpty(fields))
+            if (!fields.IsNullOrEmpty())
             {
                 return fields.GroupBy(p => p.PropertyName).ToDictionary(k => k.Key, v => v.First());
             }
@@ -171,6 +178,23 @@ namespace Frameset.Core.Dao.Utils
                 return [];
             }
 
+        }
+        public static FieldContent GetPriamryKey(Type entityType)
+        {
+            AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
+            IList<FieldContent> fields = GetFieldsContent(entityType);
+            if (!pkFieldMap.TryGetValue(entityType, out FieldContent? content))
+            {
+                if (!fields.IsNullOrEmpty())
+                {
+                    content = fields.First(x => x.IfPrimary);
+                    if (content != null)
+                    {
+                        pkFieldMap.TryAdd(entityType, content);
+                    }
+                }
+            }
+            return content;
         }
 
 

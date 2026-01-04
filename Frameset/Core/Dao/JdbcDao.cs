@@ -114,7 +114,7 @@ namespace Frameset.Core.Dao
                         }
                         if (!Convert.IsDBNull(value) && content != null)
                         {
-                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethod.ReturnType, value) });
+                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.ParamType, value) });
                         }
                     }
                     retList.Add(entity);
@@ -149,7 +149,7 @@ namespace Frameset.Core.Dao
                         }
                         if (!Convert.IsDBNull(value) && content != null)
                         {
-                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.GetMethod.ReturnType, value) });
+                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.ParamType, value) });
                         }
                     }
                     retList.Add(entity);
@@ -178,6 +178,42 @@ namespace Frameset.Core.Dao
 
             }
             return list;
+        }
+        public List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter)
+        {
+            ParseParameter(command, namedParamter);
+            List<O> retList = new();
+            bool retMap = typeof(O).Equals(typeof(Dictionary<string, object>));
+            Dictionary<string, MethodParam> methodMap = [];
+            if (!retMap)
+            {
+                methodMap = AnnotationUtils.ReflectObject(typeof(O));
+            }
+            using (DbDataReader reader = command.ExecuteReader())
+            {
+
+                while (reader.Read())
+                {
+                    dynamic retObj = Activator.CreateInstance<O>();
+                    for (int col = 0; col < reader.FieldCount; col++)
+                    {
+                        if (retMap)
+                        {
+                            (retObj as Dictionary<string, object>)[reader.GetName(col)] = reader[col];
+                        }
+                        else
+                        {
+                            if (methodMap.TryGetValue(reader.GetName(col), out MethodParam param))
+                            {
+                                param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
+                            }
+                        }
+
+                    }
+                    retList.Add(retObj);
+                }
+            }
+            return retList;
         }
         private DbParameter[] ParseParameter(object[] obj)
         {
@@ -290,6 +326,7 @@ namespace Frameset.Core.Dao
         public bool SaveEntity(DbCommand command, BaseEntity model, InsertSegment segment)
         {
             command.Parameters.AddRange(segment.Parameters.ToArray());
+            command.CommandText = segment.InsertSql;
             if (segment.Increment || segment.Sequence)
             {
                 object genId = command.ExecuteScalar();
@@ -305,14 +342,16 @@ namespace Frameset.Core.Dao
             return true;
 
         }
-        public bool UpdateEntity(DbCommand command, BaseEntity entity, UpdateSegment segment)
+        public bool UpdateEntity(DbCommand command, UpdateSegment segment)
         {
+            command.CommandText = segment.UpdateSql;
             command.Parameters.AddRange(segment.Parameters.ToArray());
             return command.ExecuteNonQuery() == 1;
         }
         public int Execute(DbCommand command, string sql, DbParameter[] parameters)
         {
             command.Parameters.AddRange(parameters);
+            command.CommandText = sql;
             return command.ExecuteNonQuery();
         }
         public List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition)
@@ -327,7 +366,7 @@ namespace Frameset.Core.Dao
             {
                 builder.Append(SqlUtils.GetSelectSql(typeof(V)));
             }
-            builder.Append(condition.GeneratePreparedSql(queryParamter, []));
+            builder.Append(condition.GeneratePreparedSql(queryParamter, [], []));
             if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
             {
                 Log.Debug("using Query {Query}", builder.ToString());
@@ -511,6 +550,7 @@ namespace Frameset.Core.Dao
             {
                 Log.Debug("query Sql={Builder}", builder.ToString());
             }
+            command.CommandText = builder.ToString();
             bool ifRetMap = false;
             var retList = new List<O>();
             Type retType = typeof(O);
@@ -590,15 +630,15 @@ namespace Frameset.Core.Dao
                         sqloperator = Constants.Parse(operStr.ToString());
                     }
                     paramMap.TryGetValue("values", out object values);
-                    condition.Values = SqlUtils.WrapParameter(content.FieldName, content.GetMethod.ReturnType, sqloperator, values);
+                    condition.Values = SqlUtils.WrapParameter(content.FieldName, content.ParamType, sqloperator, values);
                 }
                 else
                 {
-                    condition.Values = [ConvertUtil.ParseByType(content.GetMethod.ReturnType, queryParam.ToString())];
+                    condition.Values = [ConvertUtil.ParseByType(content.ParamType, queryParam.ToString())];
                 }
                 condition.Operator = sqloperator;
 
-                SqlUtils.AppendPreparedSql(condition, preparedMap, builder, duplicateMap);
+                SqlUtils.AppendPreparedSql(condition, preparedMap, builder, duplicateMap, []);
             }
         }
         private void AppendSub(StringBuilder builder, string linkOper, Dictionary<string, object> dict, Dictionary<string, FieldContent> fieldMap, Dictionary<string, int> duplicateMap, Dictionary<string, object> preparedMap)
@@ -708,10 +748,23 @@ namespace Frameset.Core.Dao
                     }
                 }
             }
-
         }
+        public void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action)
+        {
 
-
+            using (DbConnection connection = dataMeta.GetDbConnection(connectionStr))
+            {
+                connection.Open();
+                using (DbCommand command = dataMeta.GetDbCommand(connection, sql))
+                {
+                    ParseParameter(command, QueryParameters);
+                    using (DbDataReader reader = command.ExecuteReader())
+                    {
+                        action.Invoke(reader);
+                    }
+                }
+            }
+        }
 
         public string GetConnectString()
         {

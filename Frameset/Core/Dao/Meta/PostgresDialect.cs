@@ -50,6 +50,13 @@ namespace Frameset.Core.Dao.Meta
         {
             return new NpgsqlCommand(sql, (NpgsqlConnection)connection);
         }
+        public override DbCommand GetDbCommand(DbConnection connection)
+        {
+            return new NpgsqlCommand()
+            {
+                Connection = (NpgsqlConnection)connection
+            };
+        }
         public override DbParameter WrapParameter(int pos, object value)
         {
             return new NpgsqlParameter("@" + Convert.ToString(pos), value);

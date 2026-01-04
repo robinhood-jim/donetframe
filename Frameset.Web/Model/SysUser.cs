@@ -10,7 +10,7 @@ namespace Frameset.Web.Model
         {
             get; set;
         }
-        public long OrgId
+        public long? OrgId
         {
             get; set;
         }
@@ -25,7 +25,7 @@ namespace Frameset.Web.Model
         public string AccountType
         {
             get; set;
-        } = "1";
+        } = string.Empty;
         public string Remark
         {
             get; set;
@@ -37,8 +37,8 @@ namespace Frameset.Web.Model
         public string PhoneNum
         {
             get; set;
-        }
-        public long EmployeeId
+        } = string.Empty;
+        public long? EmployeeId
         {
             get; set;
         }

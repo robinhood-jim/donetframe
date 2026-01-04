@@ -100,7 +100,7 @@ namespace Frameset.Office.Excel.Util
                     {
                         if (cells[i] != null && cells[i].GetValue() != null)
                         {
-                            param.SetMethod.Invoke(Current, new object[] { ConvertUtil.ParseByType(param.GetMethod.ReturnType, cells[i].GetValue()) });
+                            param.SetMethod.Invoke(Current, new object[] { ConvertUtil.ParseByType(param.ParamType, cells[i].GetValue()) });
                         }
                         else
                         {

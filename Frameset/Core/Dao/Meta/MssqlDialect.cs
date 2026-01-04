@@ -60,6 +60,13 @@ namespace Frameset.Core.Dao.Meta
         {
             return new SqlCommand(sql, (SqlConnection)connection);
         }
+        public override DbCommand GetDbCommand(DbConnection connection)
+        {
+            return new SqlCommand()
+            {
+                Connection = (SqlConnection)connection
+            };
+        }
         public override DbParameter WrapParameter(int pos, object value)
         {
             return new SqlParameter("@" + Convert.ToString(pos), value);

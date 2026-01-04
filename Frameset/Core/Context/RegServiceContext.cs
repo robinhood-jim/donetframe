@@ -26,6 +26,12 @@ namespace Frameset.Core.Context
         private static readonly Dictionary<Type, Type> interfaceTargetMap = [];
         //具体实现类存在否
         private static readonly Dictionary<Type, int> wiredTypeMap = [];
+        private static IServiceProvider provider;
+
+        public static void SetContext(IServiceProvider _provider)
+        {
+            provider = _provider;
+        }
         /// <summary>
         /// Register Transient Type
         /// </summary>
@@ -95,7 +101,14 @@ namespace Frameset.Core.Context
                     }
                     else
                     {
-                        throw new OperationFailedException("type does not register!");
+                        if (provider != null)
+                        {
+                            retObj = provider.GetRequiredService(interfaceType);
+                        }
+                        if (retObj == null)
+                        {
+                            throw new OperationFailedException("type does not register!");
+                        }
                     }
                 }
             }
@@ -241,10 +254,20 @@ namespace Frameset.Core.Context
             while (fields.MoveNext())
             {
                 FieldInfo info = fields.Current;
+                ResourceAttribute attribute = (ResourceAttribute)info.GetCustomAttribute(typeof(ResourceAttribute));
                 if (info.GetValue(originObj) == null)
                 {
                     Type implementType = GetParameterType(info.FieldType);
-                    object constructObj = GetServiceRequired(info.FieldType, implementType, lifeTime, scannedTypes);
+                    object constructObj = null;
+                    if (implementType == typeof(DbContext) || implementType.IsSubclassOf(typeof(DbContext)))
+                    {
+                        string contextName = attribute.ResourceName ?? DbContextFactory.CONTEXTDEFAULTNAME;
+                        constructObj = DbContextFactory.GetContext(contextName);
+                    }
+                    else
+                    {
+                        constructObj = GetServiceRequired(info.FieldType, implementType, lifeTime, scannedTypes);
+                    }
                     scannedTypes.TryAdd(info.FieldType, 1);
                     info.SetValue(originObj, constructObj);
                 }
@@ -255,7 +278,7 @@ namespace Frameset.Core.Context
         {
             if (!interfaceTargetMap.TryGetValue(baseType, out Type implementType))
             {
-                if (baseType.IsGenericType || baseType.GetGenericTypeDefinition().Equals(typeof(IBaseRepository<,>)))
+                if (baseType.IsGenericType && baseType.FullName.StartsWith("Frameset.Core.Repo.IBaseRepository"))
                 {
                     Type type = typeof(BaseRepository<,>);
                     Type[] types = baseType.GetGenericArguments();
@@ -265,6 +288,7 @@ namespace Frameset.Core.Context
             }
             return implementType;
         }
+        
         public static bool IsClassNoParamConstruct(Type implementType)
         {
             ConstructorInfo[] constructorInfos = implementType.GetConstructors();

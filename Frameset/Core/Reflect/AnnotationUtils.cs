@@ -34,7 +34,7 @@ namespace Frameset.Core.Reflect
         }
         private static bool validateEntity(Type type)
         {
-            bool isEntityDef = Attribute.IsDefined(type.Module, typeof(MappingEntity));
+            bool isEntityDef = Attribute.IsDefined(type.Module, typeof(MappingEntityAttribute));
             if (!isEntityDef)
             {
                 throw new ArgumentException("module is not a mappingEntity");

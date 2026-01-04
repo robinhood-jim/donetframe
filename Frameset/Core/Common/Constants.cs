@@ -49,7 +49,9 @@ namespace Frameset.Core.Common
             EXISTS,
             NOTEXISTS,
             NOTNULL,
-            ISNULL
+            ISNULL,
+            UNION,
+            UNIONALL
         }
         public enum FileSystemType
         {
@@ -86,6 +88,13 @@ namespace Frameset.Core.Common
             ORC,
             PARQUET,
             PROTOBUF
+        }
+        public enum JoinType
+        {
+            INNER,
+            LEFT,
+            RIGHT,
+            FULLOUTTER
         }
         public static readonly List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
         public static DbType DbTypeOf(string dbType)
@@ -178,7 +187,20 @@ namespace Frameset.Core.Common
                 SqlOperator.NOTEXISTS => " NOT EXISTS",
                 SqlOperator.NOTNULL => " NOT NULL",
                 SqlOperator.ISNULL => " IS NULL ",
+                SqlOperator.UNION => " UNION ",
+                SqlOperator.UNIONALL => " UNION ALL ",
                 _ => "="
+            };
+
+        }
+        public static string GetJoinType(JoinType joinType)
+        {
+            return joinType switch
+            {
+                JoinType.INNER => " INNER ",
+                JoinType.LEFT => " LEFT ",
+                JoinType.RIGHT => " RIGHT ",
+                JoinType.FULLOUTTER => " OUTTER "
             };
         }
         public static readonly string VALID = "1";
@@ -190,8 +212,14 @@ namespace Frameset.Core.Common
         public static readonly string SQL_AND = " AND ";
         public static readonly string SQL_OR = " OR ";
         public static readonly string SQL_AS = " AS ";
+        public static readonly string SQL_EQ = "=";
         public static readonly string SQL_SELECT = "SELECT ";
+        public static readonly string SQL_FROM = " FROM ";
         public static readonly string SQL_HAVING = " HAVING ";
+        public static readonly string SQL_JOIN = " JOIN ";
+        public static readonly string SQL_ON = " ON ";
+        public static readonly string SQL_IN = " IN ";
+        public static readonly string SQL_NOTIN = " NOT IN ";
         public static readonly string SQL_GROUPBY = " GROPU BY ";
         public static readonly string SQL_WHERE = " WHERE ";
         public static readonly string SQL_ORDERBY = " ORDER BY ";
@@ -211,5 +239,6 @@ namespace Frameset.Core.Common
 
         public static readonly List<string> IGNOREPARAMS = [WHERECAUSE, HAVING, GROUPBY, ORDERBY, SELECTCOLUMS, NEWCOLUMN];
         public static readonly List<string> SQLFUNCTIONS = [SUM, AVG, MAX, MIN, CASE, CONCAT, "UPPER", "LOWER", "LEN", "ROUND", "SUBSTR", "NOW", "SYSDATE", "FORMAT", "EXP", "TRIM", "LTRIM", "RTIME", "DATE", "MONTH", "DAY", "TO_DATE", "COALESCE", "CAST"];
+        public static readonly List<string> SQLOPERATORS = ["(", ")", "*", "/", "+", "-"];
     }
 }

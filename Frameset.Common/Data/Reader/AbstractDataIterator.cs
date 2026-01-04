@@ -205,7 +205,7 @@ namespace Frameset.Common.Data.Reader
                     MethodParam? param = null;
                     if (MethodMap.TryGetValue(item.Key, out param))
                     {
-                        param?.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param?.GetMethod.ReturnType, item.Value)]);
+                        param?.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param?.ParamType, item.Value)]);
                     }
                     else
                     {

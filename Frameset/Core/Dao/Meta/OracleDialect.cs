@@ -67,6 +67,13 @@ namespace Frameset.Core.Dao.Meta
         {
             return new OracleCommand(sql, (OracleConnection)connection);
         }
+        public override DbCommand GetDbCommand(DbConnection connection)
+        {
+            return new OracleCommand()
+            {
+                Connection = (OracleConnection)connection
+            };
+        }
         public override DbParameter WrapParameter(int pos, object value)
         {
             return new OracleParameter("@" + Convert.ToString(pos), value);

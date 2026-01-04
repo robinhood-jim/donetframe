@@ -5,23 +5,27 @@ namespace Frameset.Web.Model
 {
     public abstract class AbstractModel : BaseEntity
     {
-        public long Creator
+        public long? Creator
         {
             get; set;
         }
-        public DateTime CreateTm
+        public DateTime? CreateTm
         {
             get; set;
         }
-        public long Modifier
+        public DateTime? ModifyTm
+        {
+            get;set;
+        }
+        public long? Modifier
         {
             get; set;
         }
         public string Status
         {
             get; set;
-        } = Constants.VALID;
-        public long TenantId
+        } = string.Empty;
+        public long? TenantId
         {
             get; set;
         }

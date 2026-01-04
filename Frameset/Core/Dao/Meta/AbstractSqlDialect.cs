@@ -179,6 +179,8 @@ namespace Frameset.Core.Dao.Meta
         }
         public abstract DbConnection GetDbConnection(string connectStr);
         public abstract DbCommand GetDbCommand(DbConnection connection, string sql);
+
+        public abstract DbCommand GetDbCommand(DbConnection connection);
         public abstract DbParameter WrapParameter(int pos, object value);
         public abstract DbParameter WrapParameter(string column, object value);
         public virtual long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, DbTransaction transaction, EntityContent entityContent)

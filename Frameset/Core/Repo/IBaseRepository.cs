@@ -45,6 +45,12 @@ namespace Frameset.Core.Repo
         /// <param name="pk"></param>
         /// <returns></returns>
         V GetById(P pk);
+        /// <summary>
+        /// Query By Sql
+        /// </summary>
+        /// <param name="sql"></param>
+        /// <param name="values">Parameter as @1 @2</param>
+        /// <returns></returns>
         IList<Dictionary<string, object>> QueryBySql(string sql, object[] values);
         /// <summary>
         /// Query By Single Parameter
@@ -97,5 +103,6 @@ namespace Frameset.Core.Repo
         /// <returns></returns>
         List<O> QueryByFields<O>(QueryParameter queryParams);
         bool ExecuteOperation(Action<IJdbcDao, DbCommand> action);
+        List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter);
     }
 }

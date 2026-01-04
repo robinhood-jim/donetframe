@@ -1,5 +1,6 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Collections.Generic;
 using System.Text;
 
 namespace Frameset.Core.Dao.Utils
@@ -18,7 +19,7 @@ namespace Frameset.Core.Dao.Utils
                 this._tableName = value?.ToString();
             }
         }
-        public Type Clazz
+        public Type EntityType
         {
             get;
             set;
@@ -39,13 +40,17 @@ namespace Frameset.Core.Dao.Utils
                 this._dsName = value?.ToString();
             }
         }
+        public List<Type> ParentEntitys
+        {
+            get; set;
+        } = [];
         public bool IfExplicit
         {
             get; set;
         } = false;
         public EntityContent(Type className, string tableName, string schema, string dsName)
         {
-            this.Clazz = className;
+            this.EntityType = className;
             this._tableName = tableName;
             this._schema = schema;
             if (!dsName.IsNullOrEmpty())

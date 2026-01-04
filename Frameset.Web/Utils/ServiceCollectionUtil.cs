@@ -27,7 +27,7 @@ namespace Frameset.Web.Utils
                     switch (lifetime)
                     {
                         case ServiceLifetime.Singleton:
-                            object targetObject = RegServiceContext.GetBean(impl);
+                            object targetObject = RegServiceContext.GetBean(i);
                             services.AddSingleton(i, targetObject);
                             break;
                         case ServiceLifetime.Scoped:
