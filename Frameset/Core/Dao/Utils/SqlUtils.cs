@@ -119,12 +119,11 @@ namespace Frameset.Core.Dao.Utils
                 builder.Append(entityContent.Schema).Append(".");
             }
             builder.Append(entityContent.TableName).Append(" set ");
-
-            IList<DbParameter> dbParameters = new List<DbParameter>();
             foreach (FieldContent content in fields)
             {
                 object realVal = content.GetMethod.Invoke(update, null);
-                if (realVal != null && !string.IsNullOrWhiteSpace(realVal.ToString()))
+                //GetDirty不为空，代表修改字段名在Dirty中，避免非空类型初始化有值导致判断失效
+                if ((update.GetDirties().IsNullOrEmpty() || update.GetDirties().Contains(content.PropertyName)) && realVal != null && !string.IsNullOrWhiteSpace(realVal.ToString()))
                 {
                     object originVal = content.GetMethod.Invoke(origin, null);
                     if (!content.IfPrimary )
@@ -142,7 +141,7 @@ namespace Frameset.Core.Dao.Utils
                         parameters.Add(dao.GetDialect().WrapParameter("@id", realVal));
                     }
                 }
-                else if (update.GetDirties().Contains(content.FieldName))
+                else if (update.GetDirties().Contains(content.PropertyName))
                 {
                     columnsBuilder.Append(content.FieldName).Append("=null,");
                 }

@@ -16,7 +16,6 @@ namespace Frameset.Common.Data.Utils
         public static ParquetSchema GetSchema(DataCollectionDefine MetaDefine, List<DataField> fields)
         {
             Trace.Assert(!MetaDefine.ColumnList.IsNullOrEmpty());
-            int pos = 0;
             foreach (DataSetColumnMeta column in MetaDefine.ColumnList)
             {
                 DataField field = new DataField(column.ColumnCode, DataMetaUtils.GetValueType(column.ColumnType));

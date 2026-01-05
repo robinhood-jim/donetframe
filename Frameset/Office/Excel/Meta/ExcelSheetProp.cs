@@ -64,6 +64,10 @@ namespace Frameset.Office.Excel.Meta
         {
             get; internal set;
         }
+        public int? FlushOutBufferSize
+        {
+            get;set;
+        }
         public void AddCellProp(string columnName, string columnCode, Constants.MetaType columnType)
         {
             CellProps.Add(new ExcelCellProp(columnName, columnCode, columnType));
@@ -266,13 +270,13 @@ namespace Frameset.Office.Excel.Meta
         }
         public SheetPropBuilder StartRow(int startRow)
         {
-            AssertUtils.IsTrue(startRow > 0, "");
+            AssertUtils.IsTrue(startRow > 0, "start Row must large than zero!");
             prop.StartRow = startRow;
             return this;
         }
         public SheetPropBuilder StartCol(int startCol)
         {
-            AssertUtils.IsTrue(startCol > 0, "");
+            AssertUtils.IsTrue(startCol > 0, "start Column must large than zero!");
             prop.StartCol = startCol;
             return this;
         }
@@ -290,8 +294,14 @@ namespace Frameset.Office.Excel.Meta
         }
         public SheetPropBuilder MaxRows(int maxRows)
         {
-            AssertUtils.IsTrue(maxRows > 0, "");
+            AssertUtils.IsTrue(maxRows > 0, "must large than zero!");
             prop.MaxRows = maxRows;
+            return this;
+        }
+        public SheetPropBuilder FlushOutBufferSize(int bufferSize)
+        {
+            AssertUtils.IsTrue(bufferSize > 81920, "must large than 81920!");
+            prop.FlushOutBufferSize = bufferSize;
             return this;
         }
         public ExcelSheetProp Build()

@@ -13,7 +13,7 @@ namespace Frameset.Common.Data.Utils
         {
 
         }
-        private static readonly ConstructorInfo logicConstructor = typeof(LogicalSchema).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { typeof(Schema), typeof(string), typeof(PropertyMap) });
+        private static readonly ConstructorInfo? logicConstructor = typeof(LogicalSchema).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, new Type[] { typeof(Schema), typeof(string), typeof(PropertyMap) });
         public static RecordSchema GetSchema(DataCollectionDefine define, string? className = null)
         {
             RecordSchema schema = null!;
@@ -46,7 +46,7 @@ namespace Frameset.Common.Data.Utils
                             break;
                         case Constants.MetaType.TIMESTAMP:
                             Schema originSchema = PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap());
-                            LogicalSchema logical = (LogicalSchema)logicConstructor.Invoke(new object[] { originSchema, "timestamp-millis", new PropertyMap() });
+                            LogicalSchema logical = (LogicalSchema)logicConstructor?.Invoke(new object[] { originSchema, "timestamp-millis", new PropertyMap() });
                             baseSchema = logical;
                             break;
                         case Constants.MetaType.STRING:

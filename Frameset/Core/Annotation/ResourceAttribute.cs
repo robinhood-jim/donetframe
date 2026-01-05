@@ -5,7 +5,7 @@ namespace Frameset.Core.Annotation
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class ResourceAttribute : Attribute
     {
-        public String? ResourceName
+        public String ResourceName
         {
             get; set;
         }

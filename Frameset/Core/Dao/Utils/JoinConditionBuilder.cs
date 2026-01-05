@@ -41,7 +41,7 @@ namespace Frameset.Core.Dao.Utils
         public JoinConditionBuilder AddEq(string column, object value)
         {
             string columnName = null;
-            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
+            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -63,7 +63,7 @@ namespace Frameset.Core.Dao.Utils
         public JoinConditionBuilder AddFilter(string column, Constants.SqlOperator sqlOperator, object[] objects)
         {
             string columnName = null;
-            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
+            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -86,7 +86,7 @@ namespace Frameset.Core.Dao.Utils
         public FilterCondition Eq(string column, object value)
         {
             string columnName = null;
-            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
+            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -107,7 +107,7 @@ namespace Frameset.Core.Dao.Utils
         public FilterCondition Filter(string column, Constants.SqlOperator sqlOperator, object[] values)
         {
             string columnName = null;
-            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
+            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -162,7 +162,7 @@ namespace Frameset.Core.Dao.Utils
             }
         }
 
-        private Tuple<Type, EntityContent, FieldContent>? ParseColumn(string column)
+        private Tuple<Type, EntityContent, FieldContent> ParseColumn(string column)
         {
             if (column.Contains('.'))
             {

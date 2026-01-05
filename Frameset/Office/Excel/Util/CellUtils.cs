@@ -1,5 +1,7 @@
 ﻿using Frameset.Office.Core;
+using NodaTime;
 using System;
+using System.Collections.Generic;
 using System.Globalization;
 using System.Text;
 using System.Text.RegularExpressions;
@@ -42,38 +44,96 @@ namespace Frameset.Office.Excel.Util
         {
             return defaultFontName;
         }
-        public static string ReturnFormulaWithPos(string formula, int linePos)
+        public static string ReturnFormulaWithPos(Dictionary<string,List<CellFormula>> parseFormualMap, string formulaStr, int linePos)
         {
-            MatchCollection matcher = Regex.Matches(formula, pattern);
             StringBuilder builder = new StringBuilder();
-            int currentPos = 0;
-            foreach (Match match in matcher)
+            if (!parseFormualMap.TryGetValue(formulaStr, out List<CellFormula> formulas))
             {
-                GroupCollection groups = match.Groups;
-                if (groups.Count > 0)
+                MatchCollection matcher = Regex.Matches(formulaStr, pattern);
+                int currentPos = 0;
+                formulas = [];
+                foreach (Match match in matcher)
                 {
-                    Group group = groups[0];
-                    builder.Append(formula.Substring(currentPos, group.Index - currentPos));
-                    string groupStr = group.Value;
-                    int pos = groupStr.IndexOf("{P");
-                    string columnName = groupStr.Substring(0, pos);
-                    int stepNum = linePos;
-                    if (pos + 3 < groupStr.Length)
+                    GroupCollection groups = match.Groups;
+                    if (groups.Count > 0)
                     {
-                        string addPlustag = groupStr.Substring(pos + 2, 1);
-                        stepNum = "+".Equals(addPlustag) ? stepNum + Convert.ToInt16(groupStr.Substring(pos + 3, groupStr.Length - pos - 4)) : stepNum - Convert.ToInt16(groupStr.Substring(pos + 3, groupStr.Length - pos - 4));
-
+                        Group group = groups[0];
+                        builder.Append(formulaStr.Substring(currentPos, group.Index - currentPos));
+                        formulas.Add(new CellFormula()
+                        {
+                            OtherContent = formulaStr.Substring(currentPos, group.Index - currentPos)
+                        });
+                        string groupStr = group.Value;
+                        int pos = groupStr.IndexOf("{P");
+                        string columnName = groupStr.Substring(0, pos);
+                        int stepNum = linePos;
+                        if (pos + 3 < groupStr.Length)
+                        {
+                            string addPlustag = groupStr.Substring(pos + 2, 1);
+                            int offset = Convert.ToInt16(groupStr.Substring(pos + 3, groupStr.Length - pos - 4));
+                            bool isPlus = "+".Equals(addPlustag);
+                            stepNum = isPlus ? stepNum + offset : stepNum - offset;
+                            formulas.Add(new CellFormula(columnName, isPlus ? offset : -offset));
+                        }
+                        else
+                        {
+                            formulas.Add(new CellFormula(columnName, 0));
+                        }
+                        currentPos = group.Index + match.Value.Length;
+                        builder.Append(columnName).Append(stepNum);
                     }
-                    currentPos = group.Index + match.Value.Length;
-                    builder.Append(columnName + stepNum);
                 }
-
+                if (currentPos < formulaStr.Length - 1)
+                {
+                    builder.Append(formulaStr.Substring(currentPos, formulaStr.Length - currentPos));
+                    formulas.Add(new CellFormula()
+                    {
+                        OtherContent = formulaStr.Substring(currentPos, formulaStr.Length - currentPos)
+                    });
+                }
+                parseFormualMap.TryAdd(formulaStr, formulas);
             }
-            if (currentPos < formula.Length - 1)
+            else
             {
-                builder.Append(formula.Substring(currentPos, formula.Length - currentPos - 1));
+                foreach(CellFormula formula in formulas)
+                {
+                    if (!string.IsNullOrWhiteSpace(formula.OtherContent))
+                    {
+                        builder.Append(formula.OtherContent);
+                    }
+                    else
+                    {
+                        int stepNum = linePos + formula.Offset;
+                        builder.Append(formula.Column).Append(stepNum);
+                    }
+                }
             }
             return builder.ToString();
         }
+    }
+    public class CellFormula
+    {
+        public string Column
+        {
+            get; set;
+        }
+        public int Offset
+        {
+            get; set;
+        }
+        public string OtherContent
+        {
+            get;set;
+        }
+        public CellFormula()
+        {
+
+        }
+        public CellFormula(string column,int Offset)
+        {
+            this.Column = column;
+            this.Offset = Offset;
+        }
+
     }
 }

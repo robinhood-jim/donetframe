@@ -12,13 +12,13 @@ namespace Frameset.Core.Hardware
         private static readonly string DUBS_PATH_EXT = "/etc/machine-id";
         private static readonly string[] EXEC_DARWIN = { "ioreg", "-rd1", "-c", "IOPlatformExpertDevice" };
         private static readonly string NOTSPEICIFY = "Not Specified";
-        public static string? GetMachineId()
+        public static string GetMachineId()
         {
             string machineGuid = null;
             if (IsRunningOnWindows())
             {
                 RegistryKey registry = Registry.LocalMachine;
-                RegistryKey? software = registry.OpenSubKey("Software");
+                RegistryKey software = registry.OpenSubKey("Software");
                 object? machineGuidObj = software.OpenSubKey("Microsoft").OpenSubKey("Cryptography").GetValue("MachineGuid");
                 if (machineGuidObj != null)
                 {
@@ -56,7 +56,7 @@ namespace Frameset.Core.Hardware
             }
             return machineGuid;
         }
-        public static string? GetCpuSerial()
+        public static string GetCpuSerial()
         {
             string serialNo = null;
             if (IsRunningOnWindows())
@@ -81,7 +81,7 @@ namespace Frameset.Core.Hardware
             }
             return serialNo;
         }
-        public static string? GetSystemSerial()
+        public static string GetSystemSerial()
         {
             string serialNo = null;
             if (IsRunningOnWindows())

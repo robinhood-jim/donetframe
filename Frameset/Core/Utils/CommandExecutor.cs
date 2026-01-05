@@ -72,7 +72,6 @@ namespace Frameset.Core.Utils
         private static Tuple<bool, string> ReadOutputMeetSpecifyKey(Process process, string specifyKey)
         {
             StringBuilder builder = new StringBuilder();
-            bool executeOk = false;
             using (var reader = process.StandardOutput)
             {
                 while (!reader.EndOfStream)
@@ -102,7 +101,6 @@ namespace Frameset.Core.Utils
         {
             StringBuilder builder = new StringBuilder();
             int pos = 0;
-            bool executeOk = false;
             using (var reader = process.StandardOutput)
             {
                 while (!reader.EndOfStream)

@@ -183,7 +183,7 @@ namespace Frameset.Core.Dao.Utils
         {
             AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
             IList<FieldContent> fields = GetFieldsContent(entityType);
-            if (!pkFieldMap.TryGetValue(entityType, out FieldContent? content))
+            if (!pkFieldMap.TryGetValue(entityType, out FieldContent content))
             {
                 if (!fields.IsNullOrEmpty())
                 {

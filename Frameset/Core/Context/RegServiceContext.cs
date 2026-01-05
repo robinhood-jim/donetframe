@@ -154,7 +154,7 @@ namespace Frameset.Core.Context
                 //获取该类所继承的所有接口
                 Type[] interfaces = impl.GetInterfaces();
                 //获取该类注入的生命周期
-                Attribute? attribute = impl.GetCustomAttribute(type, false);
+                Attribute attribute = impl.GetCustomAttribute(type, false);
                 interfaces.ToList().ForEach(i =>
                 {
                     if (type.Equals(typeof(ServiceAttribute)))

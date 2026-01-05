@@ -86,6 +86,7 @@ namespace Frameset.Office.Excel
         } = WorkSheet.MAX_ROWS;
         protected WorkSheet currentSheet;
         protected int thresholdSize = 8 * 1024;
+        public static readonly int WRITEBUFFERSIZE = 1048576;
 
         public WorkBook(string fileName, ExcelSheetProp prop)
         {
@@ -471,7 +472,7 @@ namespace Frameset.Office.Excel
                     beginPart("xl/worksheets/sheet" + ws.Index + ".xml");
                     using (Stream inputStream = new FileStream(localTmpPath + Path.DirectorySeparatorChar + "sheet" + ws.Index + ".xml", FileMode.Open))
                     {
-                        inputStream.CopyTo(outputStream, 8192);
+                        inputStream.CopyTo(outputStream, SheetProp.FlushOutBufferSize ?? WRITEBUFFERSIZE);
                     }
                     File.Delete(localTmpPath + Path.DirectorySeparatorChar + "sheet" + ws.Index + ".xml");
                     outputStream.CloseEntry();

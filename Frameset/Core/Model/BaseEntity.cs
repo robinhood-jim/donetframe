@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Microsoft.IdentityModel.Tokens;
+using System;
 using System.Collections.Generic;
 
 
@@ -6,12 +7,12 @@ namespace Frameset.Core.Model
 {
     public class BaseEntity
     {
-        private IList<string> dirtyProperties = new List<string>();
+        private IList<string> dirtyProperties = [];
         private List<BaseEntity> _subEntitys = [];
        
-        public void AddDirtys(string[] dirtyColumns)
+        public void AddDirtys(params string[] dirtyColumns)
         {
-            if (dirtyColumns != null && dirtyColumns.Length > 0)
+            if (!dirtyColumns.IsNullOrEmpty())
             {
                 foreach (string column in dirtyColumns)
                 {

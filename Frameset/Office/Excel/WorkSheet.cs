@@ -100,6 +100,7 @@ namespace Frameset.Office.Excel
         Border defaultBorder;
         Alignment defaultAlignment;
         internal XmlBufferWriter w;
+        internal Dictionary<string, List<CellFormula>> formualMap = [];
         internal WorkSheet(WorkBook workBook, ExcelSheetProp prop, int index, string id, string sheetId, string name, SheetVisibility visibility) : this(workBook, index, id, sheetId, name, visibility)
         {
             this.Prop = prop;
@@ -205,7 +206,7 @@ namespace Frameset.Office.Excel
                         else
                         {
                             Formula formula = (Formula)GetCell(i, Prop).GetValue();
-                            formula.setExpression(CellUtils.ReturnFormulaWithPos(columnProp.Formula, CurrentRowNum));
+                            formula.setExpression(CellUtils.ReturnFormulaWithPos(formualMap,columnProp.Formula, CurrentRowNum));
 
                         }
                     }
@@ -324,7 +325,7 @@ namespace Frameset.Office.Excel
                     break;
                 case Constants.MetaType.FORMULA:
                     Formula formula = (Formula)cell.GetValue();
-                    formula.setExpression(CellUtils.ReturnFormulaWithPos(prop.Formula, CurrentRowNum));
+                    formula.setExpression(CellUtils.ReturnFormulaWithPos(formualMap, prop.Formula, CurrentRowNum));
                     break;
                 case Constants.MetaType.STRING:
                     cell.SetValue(value);
