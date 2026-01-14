@@ -140,11 +140,11 @@ namespace Frameset.Core.Sql
             if (entityTypeMap.TryGetValue(leftEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple)
                 && entityTypeMap.TryGetValue(rightEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple1))
             {
-               joins.Add(new TableJoin(leftEntityTuple.Item1, rightEntityTuple.Item1, leftEntityTuple.Item2, rightEntityTuple.Item2, joinType));  
+                joins.Add(new TableJoin(leftEntityTuple.Item1, rightEntityTuple.Item1, leftEntityTuple.Item2, rightEntityTuple.Item2, joinType));
             }
             return this;
         }
-        
+
         public SqlBuilder InSubQuery(string column, SqlBuilder sqlBuilder)
         {
             Tuple<Type, FieldContent> tuple = AliasColumn(column.Split('.'));
@@ -319,11 +319,12 @@ namespace Frameset.Core.Sql
             sqlBuilder.Append(Constants.SQL_FROM);
             if (fromBaseType != null)
             {
-                if (entityTypeMap.TryGetValue(fromBaseType, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple) && entityAliasMap.TryGetValue(fromBaseType, out string tabAlias)){
+                if (entityTypeMap.TryGetValue(fromBaseType, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple) && entityAliasMap.TryGetValue(fromBaseType, out string tabAlias))
+                {
                     sqlBuilder.Append(tuple.Item1.GetTableName()).Append(' ').Append(tabAlias);
                 }
             }
-            
+
             //join
             if (!joins.IsNullOrEmpty())
             {
@@ -333,7 +334,7 @@ namespace Frameset.Core.Sql
                     {
                         entityAliasMap.TryGetValue(join.LeftClass, out string leftAlias);
                         entityAliasMap.TryGetValue(join.RightClass, out string rightAlias);
-                        
+
                         joinBuilder.Append(Constants.GetJoinType(join.TabJoinType)).Append(Constants.SQL_JOIN);
                         joinBuilder.Append(tuple1.Item1.GetTableName()).Append(' ').Append(rightAlias);
                         joinBuilder.Append(Constants.SQL_ON).Append(leftAlias).Append('.').Append(join.LeftColumn.FieldName).Append(Constants.SQL_EQ)

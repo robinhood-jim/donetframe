@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Common;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Model;
@@ -12,7 +13,7 @@ using System.Threading;
 
 namespace Frameset.Core.Context
 {
-    public interface IDbContext:IDisposable
+    public interface IDbContext : IDisposable
     {
         /// <summary>
         /// Save Single Entity
@@ -28,7 +29,7 @@ namespace Frameset.Core.Context
 
         int RemoveLogic<V, P>(IList<P> pks, string logicColumn, int status) where V : BaseEntity;
 
-        V GetById<V, P>(P pk);
+        V GetById<V, P>(P pk) where V : BaseEntity;
         IList<Dictionary<string, object>> QueryBySql(string sql, object[] values);
 
         IList<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
@@ -56,5 +57,7 @@ namespace Frameset.Core.Context
         string GetContextName();
         void SetAutoCommit(bool autoCommit);
         void ResetCommitStatus();
+        void ManyToOne(Type subType, string fieldName, Type parentType);
+        void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType);
     }
 }

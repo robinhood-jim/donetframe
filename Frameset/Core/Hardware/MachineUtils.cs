@@ -19,7 +19,7 @@ namespace Frameset.Core.Hardware
             {
                 RegistryKey registry = Registry.LocalMachine;
                 RegistryKey software = registry.OpenSubKey("Software");
-                object? machineGuidObj = software.OpenSubKey("Microsoft").OpenSubKey("Cryptography").GetValue("MachineGuid");
+                object machineGuidObj = software.OpenSubKey("Microsoft").OpenSubKey("Cryptography").GetValue("MachineGuid");
                 if (machineGuidObj != null)
                 {
                     machineGuid = machineGuidObj.ToString();

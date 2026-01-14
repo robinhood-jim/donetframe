@@ -3,6 +3,7 @@
 namespace Frametest.Models
 {
     [MappingEntity("t_sys_user_info")]
+
     public class SysUser : AbstractModel
     {
         [MappingField(IfPrimary = true, IfIncrement = true)]

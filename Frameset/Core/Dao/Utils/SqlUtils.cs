@@ -126,7 +126,7 @@ namespace Frameset.Core.Dao.Utils
                 if ((update.GetDirties().IsNullOrEmpty() || update.GetDirties().Contains(content.PropertyName)) && realVal != null && !string.IsNullOrWhiteSpace(realVal.ToString()))
                 {
                     object originVal = content.GetMethod.Invoke(origin, null);
-                    if (!content.IfPrimary )
+                    if (!content.IfPrimary)
                     {
                         if (!realVal.Equals(originVal))
                         {
@@ -145,6 +145,10 @@ namespace Frameset.Core.Dao.Utils
                 {
                     columnsBuilder.Append(content.FieldName).Append("=null,");
                 }
+            }
+            if (columnsBuilder.Length > 0)
+            {
+                segment.UpdateRequired = true;
             }
             segment.UpdateSql = builder.Append(columnsBuilder.ToString().Substring(0, columnsBuilder.Length - 1)).Append(whereSegment).ToString();
             segment.Parameters = parameters;
@@ -197,7 +201,10 @@ namespace Frameset.Core.Dao.Utils
             tabBuilder.Append(entityContent.TableName);
             foreach (FieldContent content in fields)
             {
-                fieldsBuilder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
+                if (!content.IsManyToOne && !content.IsOneToMany)
+                {
+                    fieldsBuilder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
+                }
             }
             return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).ToString();
 
@@ -412,6 +419,10 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         }
+        public bool UpdateRequired
+        {
+            get; set;
+        } = false;
     }
     public class SelectSegment
     {

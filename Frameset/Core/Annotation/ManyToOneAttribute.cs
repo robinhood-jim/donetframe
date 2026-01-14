@@ -1,18 +1,20 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Linq;
-using System.Text;
-using System.Threading.Tasks;
 
 namespace Frameset.Core.Annotation
 {
-    [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
-    public class ManyToOneAttribute: Attribute
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
+    public class ManyToOneAttribute : Attribute
     {
         public Type ParentType;
+        public string ColumnName;
         public ManyToOneAttribute(Type parentType)
         {
             this.ParentType = parentType;
+        }
+        public ManyToOneAttribute(Type parentType, string columnName)
+        {
+            this.ParentType = parentType;
+            this.ColumnName = columnName;
         }
     }
 }

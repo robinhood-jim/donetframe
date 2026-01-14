@@ -74,6 +74,7 @@ namespace Frametest.Office
                     workBook.WriteRow(cachedMap);
                 }
             }
+            Console.ReadLine();
             return true;
         }
         public static void TestReadExcel()

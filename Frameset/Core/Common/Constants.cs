@@ -220,7 +220,7 @@ namespace Frameset.Core.Common
         public static readonly string SQL_ON = " ON ";
         public static readonly string SQL_IN = " IN ";
         public static readonly string SQL_NOTIN = " NOT IN ";
-        public static readonly string SQL_GROUPBY = " GROPU BY ";
+        public static readonly string SQL_GROUPBY = " GROUP BY ";
         public static readonly string SQL_WHERE = " WHERE ";
         public static readonly string SQL_ORDERBY = " ORDER BY ";
         public static readonly string WHERECAUSE = "WHERE";

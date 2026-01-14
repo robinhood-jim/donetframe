@@ -2,7 +2,7 @@
 
 namespace Frameset.Core.Annotation
 {
-    [AttributeUsage(AttributeTargets.Class , AllowMultiple = false)]
+    [AttributeUsage(AttributeTargets.Property, AllowMultiple = false)]
     public class OneToManyAttribute : Attribute
     {
         public Type SubType
@@ -11,12 +11,29 @@ namespace Frameset.Core.Annotation
         }
         public string JoinColumn
         {
-            get;set;
+            get; set;
         }
-        public OneToManyAttribute(Type subType,string joinColumn)
+        public CascadeType Cascade
+        {
+            get; set;
+        } = CascadeType.DETACH;
+        public OneToManyAttribute(Type subType)
+        {
+            this.SubType = subType;
+        }
+        public OneToManyAttribute(Type subType, string joinColumn)
         {
             this.SubType = subType;
             this.JoinColumn = joinColumn;
         }
+    }
+    public enum CascadeType
+    {
+        PERSIST,
+        MERGE,
+        REMOVE,
+        REFRESH,
+        DETACH,
+        ALL
     }
 }

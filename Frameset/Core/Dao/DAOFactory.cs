@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Dao.Meta;
+﻿using Frameset.Core.Context;
+using Frameset.Core.Dao.Meta;
 using Frameset.Core.Exceptions;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -19,7 +20,8 @@ namespace Frameset.Core.Dao
         /// Dao Accessor Factory init
         /// </summary>
         /// <param name="yamlPath">resource Path</param>
-        public static void DoInit(string yamlPath)
+        /// <param name="autoConstructDbContext"> Auto Construct DbContext</param>
+        public static void DoInit(string yamlPath, bool autoConstructDbContext = false)
         {
 
             if (keyValues.IsNullOrEmpty())
@@ -36,11 +38,16 @@ namespace Frameset.Core.Dao
                     StreamReader reader = File.OpenText(processPath);
                     keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
                     Dictionary<object, object> keyDict = (Dictionary<object, object>)GetKeyValues()["dataSource"];
-                    foreach (string key in keyDict.Keys)
+                    foreach (var entry in keyDict)
                     {
-                        Dictionary<object, object> dict1 = keyDict[key] as Dictionary<object, object>;
+                        string key = entry.Key.ToString();
+                        Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
                         IJdbcDao dao = ConstructWithDict(dict1);
                         containner.Add(key, dao);
+                        if (autoConstructDbContext)
+                        {
+                            DbContextFactory.Register(new DbContext(key));
+                        }
                     }
 
                 }
@@ -120,7 +127,7 @@ namespace Frameset.Core.Dao
 
             return dao;
         }
-        public static void Register(string dsName, Dictionary<object, object> configMap)
+        public static void Register(string dsName, Dictionary<object, object> configMap, bool autoConstructDbContext = false)
         {
             if (containner.ContainsKey(dsName))
             {
@@ -138,6 +145,10 @@ namespace Frameset.Core.Dao
                 else
                 {
                     containner.Add(dsName, dao);
+                    if (autoConstructDbContext)
+                    {
+                        DbContextFactory.Register(new DbContext(dsName));
+                    }
                 }
             }
         }

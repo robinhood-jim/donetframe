@@ -1,5 +1,4 @@
-﻿using Frameset.Core.Common;
-using Frameset.Core.Model;
+﻿using Frameset.Core.Model;
 
 namespace Frameset.Web.Model
 {
@@ -15,7 +14,7 @@ namespace Frameset.Web.Model
         }
         public DateTime? ModifyTm
         {
-            get;set;
+            get; set;
         }
         public long? Modifier
         {

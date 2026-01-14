@@ -40,8 +40,8 @@ namespace Frameset.Core.Dao
         int QueryByInt(DbCommand command, List<DbParameter> parameters = null);
         long QueryByLong(DbCommand command, List<DbParameter> parameters = null);
         IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
-        PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query);
-        IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters = null);
+        PageDTO<V> QueryPage<V>(Func<V> modelFunc,DbCommand command, PageQuery query);
+        IList<V> QueryModelsBySql<V>(Func<V> modelFunc, DbCommand command, IList<DbParameter> parameters);
         /// <summary>
         /// Mybatis Like Query
         /// </summary>
@@ -62,7 +62,7 @@ namespace Frameset.Core.Dao
         /// <param name="action"></param>
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
         void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action);
-        List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition);
+        List<V> QueryByConditon<V>(Func<V> modelFunc, DbCommand command, FilterCondition condition);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
         /// </summary>
@@ -71,7 +71,7 @@ namespace Frameset.Core.Dao
         /// <param name="command">DbCommand </param>
         /// <param name="queryParams">Query Parameter Model</param>
         /// <returns></returns>
-        List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams);
-        List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter);
+        List<O> QueryByFields<O>(Func<O> modelFunc, Type entityType, DbCommand command, QueryParameter queryParams);
+        List<O> QueryByNamedParameter<O>(Func<O> modelFunc, DbCommand command, Dictionary<string, object> namedParamter);
     }
 }

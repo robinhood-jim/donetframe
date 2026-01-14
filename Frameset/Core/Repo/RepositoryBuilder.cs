@@ -22,36 +22,9 @@ namespace Frameset.Core.Repo
             repository.updateFunc = updateFunc;
             return this;
         }
-        public RepositoryBuilder<V, P> SaveBeforeAction(Action<V> action)
-        {
-            repository.insertBeforeAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> UpdateBeforeAction(Action<V> action)
-        {
-            repository.updateBeforeAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> DeleteBeforeAction(Action<V> action)
-        {
-            repository.deleteBeforeAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> DeleteAfterAction(Action<DbCommand, V> action)
-        {
-            repository.deleteAfterAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> SaveAfterAction(Func<DbCommand, V, bool> action)
-        {
-            repository.insertAfterAction = action;
-            return this;
-        }
-        public RepositoryBuilder<V, P> UpdateAfterAction(Func<DbCommand, V, bool> action)
-        {
-            repository.updateAfterAction = action;
-            return this;
-        }
+        
+       
+        
         public RepositoryBuilder<V, P> TransctionManager(Func<DbConnection, DbTransaction> func)
         {
             repository.transcationFunc = func;

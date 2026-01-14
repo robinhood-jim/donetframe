@@ -13,17 +13,18 @@ namespace Frameset.Web.Controller
 {
     public class AbstractCrudController<V, P> : AbstractControllerBase where V : BaseEntity
     {
-        protected string contextName = DbContextFactory.CONTEXTDEFAULTNAME;
         protected IDbContext dbContext;
         protected Type modelType;
         protected bool isDefaultColumnModel;
         protected Dictionary<string, FieldContent> fieldMap = [];
+        protected EntityContent entityContent;
         public AbstractCrudController()
         {
             modelType = typeof(V);
+            entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             fieldMap = EntityReflectUtils.GetFieldsMap(modelType);
             isDefaultColumnModel = modelType.IsSubclassOf(typeof(AbstractModel));
-            dbContext = DbContextFactory.GetContext(contextName);
+            dbContext = DbContextFactory.GetContext(entityContent.DsName);
         }
         protected JsonResult SaveEntity(object input)
         {
@@ -97,7 +98,7 @@ namespace Frameset.Web.Controller
                 return OutputErrMsg(ex.Message);
             }
         }
-        
+
 
         internal V GetValueFrom(object input)
         {
@@ -108,8 +109,11 @@ namespace Frameset.Web.Controller
                 foreach (var entry in (Dictionary<string, object>)input)
                 {
                     MethodParam? param = null;
-                    paramMap.TryGetValue(entry.Key, out param);
-                    param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                    if (paramMap.TryGetValue(entry.Key, out param))
+                    {
+                        param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                        retObj.AddDirtys(entry.Key);
+                    }
                 }
             }
             else
@@ -119,8 +123,11 @@ namespace Frameset.Web.Controller
                 {
                     if (entry.Value != null)
                     {
-                        paramMap.TryGetValue(entry.Key, out MethodParam? param);
-                        param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
+                        if (paramMap.TryGetValue(entry.Key, out MethodParam? param))
+                        {
+                            param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
+                            retObj.AddDirtys(entry.Key);
+                        }
                     }
                 }
             }
@@ -135,11 +142,13 @@ namespace Frameset.Web.Controller
                 {
                     fieldMap.TryGetValue(nameof(AbstractModel.Modifier), out FieldContent fieldContent);
                     var user = Request.HttpContext.User;
-                    var userId=user.Claims.First(x => x.Type.Equals("UserId")).Value;
-                    fieldContent.SetMethod.Invoke(entityModel,[Convert.ToInt64(userId) ]);
+                    var userId = user.Claims.First(x => x.Type.Equals("UserId")).Value;
+                    fieldContent.SetMethod.Invoke(entityModel, [Convert.ToInt64(userId)]);
+                    entityModel.AddDirtys(nameof(AbstractModel.Modifier));
                 }
                 fieldMap.TryGetValue(nameof(AbstractModel.ModifyTm), out FieldContent timeContent);
                 timeContent.SetMethod.Invoke(entityModel, [DateTime.UtcNow]);
+                entityModel.AddDirtys(nameof(AbstractModel.ModifyTm));
             }
         }
         internal void WrapEntityModelInsert(V entityModel)
@@ -155,7 +164,7 @@ namespace Frameset.Web.Controller
                 }
                 fieldMap.TryGetValue(nameof(AbstractModel.Status), out FieldContent statusContent);
                 var statusVal = statusContent.GetMethod.Invoke(entityModel, null);
-                if (statusVal==null || string.IsNullOrWhiteSpace(statusVal.ToString()))
+                if (statusVal == null || string.IsNullOrWhiteSpace(statusVal.ToString()))
                 {
                     statusContent.SetMethod.Invoke(entityModel, [Constants.VALID]);
                 }

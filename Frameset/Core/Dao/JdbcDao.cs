@@ -85,8 +85,9 @@ namespace Frameset.Core.Dao
 
 
 
-        public IList<V> QueryModelsBySql<V>(Type modelType, DbCommand command, IList<DbParameter> parameters = null)
+        public IList<V> QueryModelsBySql<V>(Func<V> modelFunc, DbCommand command, IList<DbParameter> parameters)
         {
+            Type modelType = typeof(V);
             Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
             if (!parameters.IsNullOrEmpty())
             {
@@ -98,24 +99,13 @@ namespace Frameset.Core.Dao
             {
                 while (reader.Read())
                 {
-                    dynamic entity = System.Activator.CreateInstance(modelType);
+                    dynamic entity = modelFunc();
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
                         string propName = reader.GetName(col);
                         object value = reader[col];
                         FieldContent content = map[propName];
-                        if (Convert.IsDBNull(value))
-                        {
-                            map.TryGetValue(propName.ToLower(), out content);
-                        }
-                        if (Convert.IsDBNull(value))
-                        {
-                            map.TryGetValue(propName.ToUpper(), out content);
-                        }
-                        if (!Convert.IsDBNull(value) && content != null)
-                        {
-                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.ParamType, value) });
-                        }
+                        WrapEntity(map, content, propName, entity, value);
                     }
                     retList.Add(entity);
                 }
@@ -139,23 +129,32 @@ namespace Frameset.Core.Dao
                         string propName = reader.GetName(col);
                         object value = reader[col];
                         FieldContent content = map[propName];
-                        if (Convert.IsDBNull(value))
-                        {
-                            map.TryGetValue(propName.ToLower(), out content);
-                        }
-                        if (Convert.IsDBNull(value))
-                        {
-                            map.TryGetValue(propName.ToUpper(), out content);
-                        }
-                        if (!Convert.IsDBNull(value) && content != null)
-                        {
-                            content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.ParamType, value) });
-                        }
+                        WrapEntity(map, content, propName, entity, value);
                     }
                     retList.Add(entity);
                 }
             }
             return retList;
+
+        }
+        private void WrapEntity(Dictionary<string, FieldContent> map, FieldContent content, string propName, object entity, object value)
+        {
+            object realValue = value;
+            if (Convert.IsDBNull(realValue))
+            {
+                map.TryGetValue(propName.ToLower(), out content);
+            }
+            if (Convert.IsDBNull(realValue))
+            {
+                map.TryGetValue(propName.ToUpper(), out content);
+            }
+            if (content != null)
+            {
+                if (!Convert.IsDBNull(realValue))
+                {
+                    content.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(content.ParamType, realValue) });
+                }
+            }
 
         }
         public IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects)
@@ -179,7 +178,7 @@ namespace Frameset.Core.Dao
             }
             return list;
         }
-        public List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter)
+        public List<O> QueryByNamedParameter<O>(Func<O> modelFunc, DbCommand command, Dictionary<string, object> namedParamter)
         {
             ParseParameter(command, namedParamter);
             List<O> retList = new();
@@ -194,7 +193,7 @@ namespace Frameset.Core.Dao
 
                 while (reader.Read())
                 {
-                    dynamic retObj = Activator.CreateInstance<O>();
+                    dynamic retObj = modelFunc();
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
                         if (retMap)
@@ -240,7 +239,7 @@ namespace Frameset.Core.Dao
         }
 
 
-        public PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query)
+        public PageDTO<V> QueryPage<V>(Func<V> modelFunc, DbCommand command, PageQuery query)
         {
             ParseParameter(command, query.Parameters);
             string querySql = null;
@@ -280,7 +279,7 @@ namespace Frameset.Core.Dao
 
                 while (reader.Read())
                 {
-                    V entity = System.Activator.CreateInstance<V>();
+                    V entity = modelFunc();
                     Dictionary<string, object> dict = null;
                     if (ifRetMap)
                     {
@@ -354,7 +353,7 @@ namespace Frameset.Core.Dao
             command.CommandText = sql;
             return command.ExecuteNonQuery();
         }
-        public List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition)
+        public List<V> QueryByConditon<V>(Func<V> modelFunc,DbCommand command, FilterCondition condition)
         {
             Dictionary<string, object> queryParamter = [];
             StringBuilder builder = new StringBuilder();
@@ -391,7 +390,7 @@ namespace Frameset.Core.Dao
             {
                 while (reader.Read())
                 {
-                    V entity = Activator.CreateInstance<V>();
+                    V entity = modelFunc();
                     MethodParam param = null;
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
@@ -412,7 +411,7 @@ namespace Frameset.Core.Dao
             }
             return retList;
         }
-        public List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams)
+        public List<O> QueryByFields<O>(Func<O> modelFunc,Type entityType, DbCommand command, QueryParameter queryParams)
         {
             StringBuilder builder = new();
             string selectPart = null;
@@ -568,7 +567,7 @@ namespace Frameset.Core.Dao
             {
                 while (reader.Read())
                 {
-                    O entity = Activator.CreateInstance<O>();
+                    O entity = modelFunc();
                     MethodParam param = null;
                     for (int col = 0; col < reader.FieldCount; col++)
                     {

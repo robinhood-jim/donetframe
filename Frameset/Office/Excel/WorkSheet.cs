@@ -206,7 +206,7 @@ namespace Frameset.Office.Excel
                         else
                         {
                             Formula formula = (Formula)GetCell(i, Prop).GetValue();
-                            formula.setExpression(CellUtils.ReturnFormulaWithPos(formualMap,columnProp.Formula, CurrentRowNum));
+                            formula.setExpression(CellUtils.ReturnFormulaWithPos(formualMap, columnProp.Formula, CurrentRowNum));
 
                         }
                     }

@@ -1,5 +1,4 @@
-﻿using Frameset.Core.Context;
-using System;
+﻿using System;
 
 namespace Frameset.Core.Annotation
 {
@@ -8,12 +7,9 @@ namespace Frameset.Core.Annotation
     {
         public string TableName { get; set; }
         public string Schema { get; set; }
-        public string DsName { get; set; }
+        public string DsName { get; set; } = "core";
         public bool IfExplicit { get; set; } = false;
-        public string DbContextName
-        {
-            get; set;
-        } = DbContextFactory.CONTEXTDEFAULTNAME;
+
         public MappingEntityAttribute()
         {
 

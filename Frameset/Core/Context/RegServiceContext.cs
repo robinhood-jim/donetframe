@@ -16,15 +16,15 @@ namespace Frameset.Core.Context
     /// </summary>
     public static class RegServiceContext
     {
-        //以接口为Type的注册对象池
+        //Interface Type object pool
         private static readonly Dictionary<Type, object> registerMap = [];
-        //以实现类为Type的注册对象池
+        //Implement Type Object Pool
         private static readonly Dictionary<Type, object> targetTypeMap = [];
-        //生命周期
+        //LifeTime cycle
         private static readonly Dictionary<Type, ServiceLifetime> lifeTimeMap = [];
-        //注解定义的接口和实现类对应
+        //Inteface attach Target Type 
         private static readonly Dictionary<Type, Type> interfaceTargetMap = [];
-        //具体实现类存在否
+        //Auto Wired Type Exists
         private static readonly Dictionary<Type, int> wiredTypeMap = [];
         private static IServiceProvider provider;
 
@@ -288,7 +288,7 @@ namespace Frameset.Core.Context
             }
             return implementType;
         }
-        
+
         public static bool IsClassNoParamConstruct(Type implementType)
         {
             ConstructorInfo[] constructorInfos = implementType.GetConstructors();

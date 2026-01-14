@@ -1,5 +1,7 @@
-﻿using Frameset.Core.Common;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using System;
+using System.Collections.Generic;
 using System.Reflection;
 
 namespace Frameset.Core.Dao.Utils
@@ -8,7 +10,10 @@ namespace Frameset.Core.Dao.Utils
     {
         private string _fieldName;
         private string _propertyName;
-        
+        public Type EntityType
+        {
+            get; set;
+        }
         public string FieldName
         {
             get => _fieldName;
@@ -60,7 +65,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public Type ParamType
         {
-            get;internal set;
+            get; internal set;
         }
         public int Precise
         {
@@ -102,13 +107,29 @@ namespace Frameset.Core.Dao.Utils
         {
             get; internal set;
         } = false;
+        public bool IsOneToMany
+        {
+            get; internal set;
+        } = false;
+        public string RealtionColumn
+        {
+            get; set;
+        }
+        public Type SubType
+        {
+            get; set;
+        }
+        public CascadeType Cascade
+        {
+            get; set;
+        }
     }
     public class FieldBuilder
     {
         private readonly FieldContent content = new FieldContent();
-        public FieldBuilder()
+        public FieldBuilder(Type entityType)
         {
-
+            content.EntityType = entityType;
         }
         public FieldBuilder PropertyName(string propName)
         {
@@ -144,7 +165,7 @@ namespace Frameset.Core.Dao.Utils
         {
             content.GetMethod = getMethod;
             Type baseType = getMethod.ReturnType;
-            if(baseType.IsGenericType && baseType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            if (baseType.IsGenericType && baseType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
             {
                 content.ParamType = baseType.GetGenericArguments()[0];
             }
@@ -196,10 +217,26 @@ namespace Frameset.Core.Dao.Utils
             content.Exist = false;
             return this;
         }
-        public FieldBuilder ManyToOne(Type parentType)
+        public FieldBuilder ManyToOne(ManyToOneAttribute attribute)
         {
             content.IsManyToOne = true;
-            content.ParentEntity = parentType;
+            content.ParentEntity = attribute.ParentType;
+            content.RealtionColumn = attribute.ColumnName;
+            if (EntityReflectUtils.GetRelationMap().TryGetValue(attribute.ParentType, out Dictionary<Type, string> childMap))
+            {
+                childMap.TryAdd(content.EntityType, attribute.ColumnName);
+            }
+            else
+            {
+                EntityReflectUtils.GetRelationMap().TryAdd(attribute.ParentType, new() { { content.EntityType, attribute.ColumnName } });
+            }
+            return this;
+        }
+        public FieldBuilder OneToMany(OneToManyAttribute attribute)
+        {
+            content.IsOneToMany = true;
+            content.SubType = attribute.SubType;
+            content.Cascade = attribute.Cascade;
             return this;
         }
         public bool Acceptable()

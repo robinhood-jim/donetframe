@@ -66,7 +66,7 @@ namespace Frameset.Office.Excel.Meta
         }
         public int? FlushOutBufferSize
         {
-            get;set;
+            get; set;
         }
         public void AddCellProp(string columnName, string columnCode, Constants.MetaType columnType)
         {
@@ -127,7 +127,7 @@ namespace Frameset.Office.Excel.Meta
                         {
                             parseAttribute(propAttr, cellProp, columnName, totalNum);
                         }
-                        FieldBuilder builder = new();
+                        FieldBuilder builder = new(entityType);
                         builder.Property(prop).PropertyName(propName).FieldName(columnName).DataType(metaType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                         propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                         cellMap.TryAdd(cellProp.Index, cellProp);
@@ -153,7 +153,7 @@ namespace Frameset.Office.Excel.Meta
                                 parseAttribute(propAttr, cellProp, columnName, totalNum);
                             }
 
-                            FieldBuilder builder = new();
+                            FieldBuilder builder = new(entityType);
                             builder.PropertyName(propName).FieldName(columnName).FieldInfo(field).DataType(cellProp.ColumnType);
                             propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                             cellMap.TryAdd(cellProp.Index, cellProp);

@@ -1,5 +1,4 @@
 ﻿using Frameset.Office.Core;
-using NodaTime;
 using System;
 using System.Collections.Generic;
 using System.Globalization;
@@ -44,7 +43,7 @@ namespace Frameset.Office.Excel.Util
         {
             return defaultFontName;
         }
-        public static string ReturnFormulaWithPos(Dictionary<string,List<CellFormula>> parseFormualMap, string formulaStr, int linePos)
+        public static string ReturnFormulaWithPos(Dictionary<string, List<CellFormula>> parseFormualMap, string formulaStr, int linePos)
         {
             StringBuilder builder = new StringBuilder();
             if (!parseFormualMap.TryGetValue(formulaStr, out List<CellFormula> formulas))
@@ -95,7 +94,7 @@ namespace Frameset.Office.Excel.Util
             }
             else
             {
-                foreach(CellFormula formula in formulas)
+                foreach (CellFormula formula in formulas)
                 {
                     if (!string.IsNullOrWhiteSpace(formula.OtherContent))
                     {
@@ -123,13 +122,13 @@ namespace Frameset.Office.Excel.Util
         }
         public string OtherContent
         {
-            get;set;
+            get; set;
         }
         public CellFormula()
         {
 
         }
-        public CellFormula(string column,int Offset)
+        public CellFormula(string column, int Offset)
         {
             this.Column = column;
             this.Offset = Offset;

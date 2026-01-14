@@ -18,13 +18,13 @@ namespace Frameset.Core.Repo
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        bool SaveEntity(V entity);
+        bool SaveEntity(V entity, Action<V> insertBeforeAction = null, Func<DbCommand, V, bool> insertAfterAction = null);
         /// <summary>
         /// Single Table Update
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        bool UpdateEntity(V entity);
+        bool UpdateEntity(V entity, Action<V> updateBeforeAction = null, Func<DbCommand, V, bool> updateAfterAction = null);
         /// <summary>
         /// Single Table Delete
         /// </summary>
