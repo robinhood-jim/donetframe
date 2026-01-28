@@ -85,7 +85,7 @@ namespace Frameset.Core.Dao
 
 
 
-        public IList<V> QueryModelsBySql<V>(Func<V> modelFunc, DbCommand command, IList<DbParameter> parameters)
+        public IList<V> QueryModelsBySql<V>(DbCommand command, IList<DbParameter> parameters)
         {
             Type modelType = typeof(V);
             Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
@@ -99,7 +99,7 @@ namespace Frameset.Core.Dao
             {
                 while (reader.Read())
                 {
-                    dynamic entity = modelFunc();
+                    dynamic entity = Activator.CreateInstance<V>();
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
                         string propName = reader.GetName(col);
@@ -178,12 +178,13 @@ namespace Frameset.Core.Dao
             }
             return list;
         }
-        public List<O> QueryByNamedParameter<O>(Func<O> modelFunc, DbCommand command, Dictionary<string, object> namedParamter)
+        public List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter)
         {
             ParseParameter(command, namedParamter);
             List<O> retList = new();
             bool retMap = typeof(O).Equals(typeof(Dictionary<string, object>));
             Dictionary<string, MethodParam> methodMap = [];
+
             if (!retMap)
             {
                 methodMap = AnnotationUtils.ReflectObject(typeof(O));
@@ -193,7 +194,7 @@ namespace Frameset.Core.Dao
 
                 while (reader.Read())
                 {
-                    dynamic retObj = modelFunc();
+                    dynamic retObj = Activator.CreateInstance<O>();
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
                         if (retMap)
@@ -239,13 +240,12 @@ namespace Frameset.Core.Dao
         }
 
 
-        public PageDTO<V> QueryPage<V>(Func<V> modelFunc, DbCommand command, PageQuery query)
+        public PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query)
         {
             ParseParameter(command, query.Parameters);
             string querySql = null;
             string countSql = null;
             ResultMap mappingMap = null;
-
             if (!query.QueryId.IsNullOrEmpty())
             {
                 SqlSelectSegment segment = (SqlSelectSegment)SqlMapperConfigure.GetExecuteSegment(query.NameSpace, query.QueryId);
@@ -279,7 +279,7 @@ namespace Frameset.Core.Dao
 
                 while (reader.Read())
                 {
-                    V entity = modelFunc();
+                    V entity = Activator.CreateInstance<V>();
                     Dictionary<string, object> dict = null;
                     if (ifRetMap)
                     {
@@ -353,7 +353,7 @@ namespace Frameset.Core.Dao
             command.CommandText = sql;
             return command.ExecuteNonQuery();
         }
-        public List<V> QueryByConditon<V>(Func<V> modelFunc,DbCommand command, FilterCondition condition)
+        public List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition)
         {
             Dictionary<string, object> queryParamter = [];
             StringBuilder builder = new StringBuilder();
@@ -375,7 +375,6 @@ namespace Frameset.Core.Dao
             command.CommandText = querySql;
             bool ifRetMap = false;
             Dictionary<string, MethodParam> methodMap = null;
-
             Type retType = typeof(V);
             var retList = new List<V>();
             if (retType.Equals(typeof(Dictionary<string, object>)))
@@ -390,7 +389,7 @@ namespace Frameset.Core.Dao
             {
                 while (reader.Read())
                 {
-                    V entity = modelFunc();
+                    V entity = Activator.CreateInstance<V>();
                     MethodParam param = null;
                     for (int col = 0; col < reader.FieldCount; col++)
                     {
@@ -411,7 +410,7 @@ namespace Frameset.Core.Dao
             }
             return retList;
         }
-        public List<O> QueryByFields<O>(Func<O> modelFunc,Type entityType, DbCommand command, QueryParameter queryParams)
+        public List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams)
         {
             StringBuilder builder = new();
             string selectPart = null;
@@ -567,7 +566,7 @@ namespace Frameset.Core.Dao
             {
                 while (reader.Read())
                 {
-                    O entity = modelFunc();
+                    O entity = Activator.CreateInstance<O>();
                     MethodParam param = null;
                     for (int col = 0; col < reader.FieldCount; col++)
                     {

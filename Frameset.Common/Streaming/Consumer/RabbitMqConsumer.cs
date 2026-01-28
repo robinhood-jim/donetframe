@@ -2,6 +2,7 @@
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using RabbitMQ.Client;
+using System.Diagnostics;
 
 namespace Frameset.Common.Streaming.Consumer
 {
@@ -14,9 +15,9 @@ namespace Frameset.Common.Streaming.Consumer
         private int? port;
         private string? userName;
         private string? passwd;
-        private bool bindable = false;
         private readonly string exchange = null!;
         private readonly string routingKey = null!;
+        private readonly string queueName = null!;
         public RabbitMqConsumer(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQHOST, out host);
@@ -25,6 +26,8 @@ namespace Frameset.Common.Streaming.Consumer
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQPASSWD, out passwd);
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQEXCHANGE, out exchange);
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQROUTINGKEY, out routingKey);
+            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQQUEUENAE, out queueName);
+            Trace.Assert(!string.IsNullOrWhiteSpace(queueName), "must provide queueName");
             host = host ?? ResourceConstants.RABBITMQDEFAULTHOST;
             port = portStr.IsNullOrEmpty() ? ResourceConstants.RABBITMQDEFAULTPORT : Convert.ToInt32(portStr);
 
@@ -43,33 +46,23 @@ namespace Frameset.Common.Streaming.Consumer
             channel.BasicQosAsync(10000, 64, false).RunSynchronously();
             exchange = exchange ?? string.Empty;
             routingKey = routingKey ?? string.Empty;
+            channel.QueueBindAsync(queueName, exchange, routingKey).RunSynchronously();
         }
 
-        public override List<T> PoolMessage(string queueName, Action<T> action)
+        public override List<T> PoolMessage(Action<T> action)
         {
-            if (!bindable)
-            {
-                channel.QueueBindAsync(queueName, exchange, routingKey).RunSynchronously();
-                bindable = true;
-            }
             List<T> retList = new();
-            PoolMessage(queueName, retList).RunSynchronously();
-            if (!retList.IsNullOrEmpty() && action != null)
-            {
-                foreach (var item in retList)
-                {
-                    action.Invoke(item);
-                }
-            }
+            PoolMessage(queueName, retList, action).RunSynchronously();
             return retList;
         }
-        private async Task PoolMessage(string queueName, List<T> values)
+        private async Task PoolMessage(string queueName, List<T> values, Action<T> action)
         {
             BasicGetResult? result;
             while ((result = await channel.BasicGetAsync(queueName, false)) != null)
             {
                 T getObj = DSerailize(result.Body.ToArray());
                 values.Add(getObj);
+                action?.Invoke(getObj);
                 await channel.BasicAckAsync(result.DeliveryTag, false);
             }
         }

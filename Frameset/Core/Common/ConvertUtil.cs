@@ -1,9 +1,12 @@
-﻿using Frameset.Core.Exceptions;
+﻿using Frameset.Core.Dao.Utils;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using Frameset.Core.Model;
 using Spring.Globalization.Formatters;
 using Spring.Util;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
 
@@ -114,6 +117,32 @@ namespace Frameset.Core.Common
                 MethodInfo info = prop.GetMethod;
                 object value = info.Invoke(obj, null);
                 dict.TryAdd(name, value);
+            }
+
+        }
+        public static void ToDictRef(object obj, out Dictionary<string, object> dict)
+        {
+            PropertyInfo[] propertyInfos = obj.GetType().GetProperties();
+            dict = [];
+            foreach (PropertyInfo prop in propertyInfos)
+            {
+                string name = prop.Name;
+                MethodInfo info = prop.GetMethod;
+                object value = info.Invoke(obj, null);
+                dict.TryAdd(name, value);
+            }
+        }
+        public static void WrapUpdate(BaseEntity origin, BaseEntity update)
+        {
+            Trace.Assert(origin.GetType().Equals(update.GetType()), "must have same type!");
+            IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(origin.GetType());
+            foreach (FieldContent fieldContent in fieldContents)
+            {
+                object value = fieldContent.GetMethod.Invoke(update, null);
+                if (value != null || update.GetDirties().Contains(fieldContent.PropertyName))
+                {
+                    fieldContent.SetMethod.Invoke(origin, [value]);
+                }
             }
 
         }

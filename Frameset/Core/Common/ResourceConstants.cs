@@ -45,9 +45,14 @@ namespace Frameset.Core.Common
         public static readonly string XMLDEFAULTENTITYNAME = "Record";
         //kafka
         public static readonly string KAFKABROKERURL = "kafka.brokerUrl";
-        public static readonly string CONSUMERGROUPID = "kafka.consumerGroupId";
         public static readonly string KAFKASERIALIZER = "kafka.serializer";
         public static readonly string KAFKACONSUMERGROUPID = "kafka.groupId";
+        public static readonly string KAFKAQUEUENAME = "kafka.queueName";
+        //rocketmq
+        public static readonly string ROCKETMQBROKERURL = "rocketmq.brokerUrl";
+        public static readonly string ROCKETMQSERIALIZER = "rocketmq.serializer";
+        public static readonly string ROCKETMQCONSUMERGROUPID = "rocketmq.groupId";
+        public static readonly string ROCKETMQUEUENAME = "rocketmq.queueName";
         //rabbitmq
         public static readonly string RABBITMQHOST = "rabbitmq.host";
         public static readonly string RABBITMQPORT = "rabbitmq.port";
@@ -56,6 +61,7 @@ namespace Frameset.Core.Common
         public static readonly string RABBITMQEXCHANGE = "rabbitmq.exchange";
         public static readonly string RABBITMQROUTINGKEY = "rabbitmq.routingKey";
         public static readonly string RABBITMQDEFAULTHOST = "localhost";
+        public static readonly string RABBITMQQUEUENAE = "rabbitmq.queueName";
         public static readonly int RABBITMQDEFAULTPORT = 5672;
         //elasticsearch
         public static readonly string ELASTICENDPOINTS = "elastic.endpoints";
@@ -75,6 +81,13 @@ namespace Frameset.Core.Common
         public static readonly string HBASEPROTOBUFURL = "hbase.protoBufUrl";
         public static readonly string HBASEUSERNAME = "hbase.userName";
         public static readonly string HBASEPASSWD = "hbase.passwd";
+        //CouchDb
+        public static readonly string COUCHDBURL = "couchdb.url";
+        public static readonly string COUCHDBNAME = "couchdb.name";
+        public static readonly string COUCHDBCREDENTIAL = "couchdb.credential";
+        //Redis
+        public static readonly string REDISURL = "redis.url";
+        public static readonly string REDISDBID = "redis.db";
 
         public enum SerializeType
         {

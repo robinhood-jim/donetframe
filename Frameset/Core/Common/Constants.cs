@@ -96,6 +96,15 @@ namespace Frameset.Core.Common
             RIGHT,
             FULLOUTTER
         }
+        public enum CycleType
+        {
+            HOUR,
+            DAY,
+            MONTH,
+            XUN,
+            SEASON,
+            YEAR
+        }
         public static readonly List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
         public static DbType DbTypeOf(string dbType)
         {
@@ -142,13 +151,26 @@ namespace Frameset.Core.Common
             FileFormatType resType = FileFormatType.CSV;
             foreach (FileFormatType rtype in Enum.GetValues(typeof(FileFormatType)))
             {
-                if (rtype.ToString().ToUpper().Equals(resourceType.ToUpper()))
+                if (string.Equals(resourceType, rtype.ToString(), StringComparison.OrdinalIgnoreCase))
                 {
                     resType = rtype;
                     break;
                 }
             }
             return resType;
+        }
+        public static FileSystemType FileSystemTypeOf(string systemType)
+        {
+            FileSystemType fsType = FileSystemType.LOCAL;
+            foreach (FileSystemType rtype in Enum.GetValues(typeof(FileSystemType)))
+            {
+                if (string.Equals(systemType, rtype.ToString(), StringComparison.OrdinalIgnoreCase))
+                {
+                    fsType = rtype;
+                    break;
+                }
+            }
+            return fsType;
         }
         public static SqlOperator Parse(string cmpOper)
         {

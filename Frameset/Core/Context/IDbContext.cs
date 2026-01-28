@@ -58,6 +58,6 @@ namespace Frameset.Core.Context
         void SetAutoCommit(bool autoCommit);
         void ResetCommitStatus();
         void ManyToOne(Type subType, string fieldName, Type parentType);
-        void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType);
+        void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
     }
 }

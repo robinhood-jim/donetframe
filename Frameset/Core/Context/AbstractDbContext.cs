@@ -10,7 +10,6 @@ using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Frameset.Core.Repo;
-using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Spring.Util;
@@ -41,7 +40,6 @@ namespace Frameset.Core.Context
         internal ConcurrentDictionary<Thread, UpdateEntry> requestChanges = [];
         internal IJdbcDao dao;
         protected MethodInfo queryByFieldsMethod = typeof(AbstractDbContext).GetMethod("QueryModelsByFieldSimple", BindingFlags.NonPublic | BindingFlags.Instance);
-        protected MethodInfo GetExpressionMethod = typeof(ExpressionUtils).GetMethod("GetExpressionFunction", BindingFlags.Static|BindingFlags.Public);
         public string ContextName
         {
             get; set;
@@ -163,12 +161,11 @@ namespace Frameset.Core.Context
             entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
             string selectSql = SqlUtils.GetSelectByIdSql(entityType, pkColumn);
             IList<Dictionary<string, object>> list = QueryBySql(selectSql, new object[] { pk });
-            Func<dynamic> func = (Func<dynamic>)GetExpressionMethod.MakeGenericMethod(entityType).Invoke(null,null);
-            object entity = func(); 
+            object entity = Activator.CreateInstance(entityType);
             ConstructEntity(list, tuple, entity);
             return entity as BaseEntity;
         }
-       
+
 
         protected V GetByIdSimple<V, P>(P pk) where V : BaseEntity
         {
@@ -181,8 +178,7 @@ namespace Frameset.Core.Context
             entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
             string selectSql = SqlUtils.GetSelectByIdSql(entityType, pkColumn);
             IList<Dictionary<string, object>> list = QueryBySql(selectSql, new object[] { pk });
-            Func<V> func = ExpressionUtils.GetExpressionFunction<V>();
-            V entity = func();
+            V entity = Activator.CreateInstance<V>();
             ConstructEntity(list, tuple, entity);
             return entity;
         }
@@ -229,7 +225,7 @@ namespace Frameset.Core.Context
                     connection.Open();
                     using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, tuple.Item1.ToString()))
                     {
-                        return GetDao().QueryModelsBySql<V>(ExpressionUtils.GetExpressionFunction<V>(), command, tuple.Item2);
+                        return GetDao().QueryModelsBySql<V>(command, tuple.Item2);
                     }
                 }
             }
@@ -263,7 +259,14 @@ namespace Frameset.Core.Context
 
         public string GetDsName()
         {
-            return dsName;
+            if (temporaryDsName.IsValueCreated)
+            {
+                return temporaryDsName.Value;
+            }
+            else
+            {
+                return dsName;
+            }
         }
         protected IJdbcDao GetDao()
         {
@@ -368,7 +371,7 @@ namespace Frameset.Core.Context
         public abstract bool SaveEntity<V>(V entity) where V : BaseEntity;
         public abstract bool UpdateEntity<V, P>(V entity) where V : BaseEntity;
         public abstract void ManyToOne(Type subType, string fieldName, Type parentType);
-        public abstract void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType);
+        public abstract void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
         protected List<Type> ScanPackage()
         {
             List<Type> retList = [];

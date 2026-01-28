@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq.Expressions;
+using System.Reflection;
 
 namespace Frameset.Core.Utils
 {
@@ -24,6 +25,26 @@ namespace Frameset.Core.Utils
             }
             return retFun;
         }
-        
+        public static ConstructorInfo GetConstructionInfo<V>(Type[] constructionTypes)
+        {
+            return typeof(V).GetConstructor(BindingFlags.Instance | BindingFlags.Public, null,
+                   CallingConventions.HasThis,
+                   constructionTypes,
+                   new ParameterModifier[0]);
+        }
+
+
+        public static List<ParameterExpression> GetLambdaParameterExpressions(Type[] argumentTypes)
+        {
+            List<ParameterExpression> Expressions = new List<ParameterExpression>();
+            for (int i = 0; i < argumentTypes.Length; i++)
+            {
+                Expressions.Add(Expression
+                   .Parameter(argumentTypes[i], string.Concat("param", i)));
+            }
+            return Expressions;
+        }
+
+
     }
 }

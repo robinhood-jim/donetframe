@@ -13,13 +13,15 @@ namespace Frameset.Common.Streaming.Consumer
         private readonly string groupId = null!;
         private readonly string? brokerUrl;
         private int maxReturnSize = 1000;
-        private bool subscribeTag = false;
+        private readonly string queueName;
         public KafkaConsumer(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.KAFKACONSUMERGROUPID, out groupId);
             Trace.Assert(groupId.IsNullOrEmpty(), "groupId missing");
             define.ResourceConfig.TryGetValue(ResourceConstants.KAFKABROKERURL, out brokerUrl);
-            Trace.Assert(!brokerUrl.IsNullOrEmpty());
+            define.ResourceConfig.TryGetValue(ResourceConstants.KAFKAQUEUENAME, out queueName);
+            Trace.Assert(!brokerUrl.IsNullOrEmpty(), " broker url must not be null");
+            Trace.Assert(!string.IsNullOrWhiteSpace(queueName), "must provide queueName");
             var consumerConfig = new ConsumerConfig
             {
                 GroupId = groupId,
@@ -28,16 +30,13 @@ namespace Frameset.Common.Streaming.Consumer
                 EnableAutoCommit = false
             };
             consumer = new ConsumerBuilder<string, byte[]>(consumerConfig).Build();
+            consumer.Subscribe(queueName);
         }
 
-        public override List<T> PoolMessage(string queueName, Action<T> action)
+        public override List<T> PoolMessage(Action<T> action)
         {
             int groupSize = 0;
-            if (!subscribeTag)
-            {
-                consumer.Subscribe(queueName);
-                subscribeTag = true;
-            }
+
             List<T> retList = new(maxReturnSize);
             try
             {
@@ -69,6 +68,7 @@ namespace Frameset.Common.Streaming.Consumer
             }
             return retList;
         }
+
         protected sealed override void Dispose(bool disposable)
         {
             base.Dispose(disposable);

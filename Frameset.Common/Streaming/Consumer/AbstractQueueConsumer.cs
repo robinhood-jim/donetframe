@@ -40,7 +40,7 @@ namespace Frameset.Common.Streaming.Consumer
         protected RecordSchema schema = null!;
         protected GenericRecord record = null!;
         protected Dictionary<string, MethodParam> methodMap = [];
-        public abstract List<T> PoolMessage(string queueName, Action<T> action);
+        public abstract List<T> PoolMessage(Action<T> action);
         protected GenericDatumReader<GenericRecord> dreader = null!;
         public void Dispose()
         {

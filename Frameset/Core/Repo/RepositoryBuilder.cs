@@ -22,9 +22,9 @@ namespace Frameset.Core.Repo
             repository.updateFunc = updateFunc;
             return this;
         }
-        
-       
-        
+
+
+
         public RepositoryBuilder<V, P> TransctionManager(Func<DbConnection, DbTransaction> func)
         {
             repository.transcationFunc = func;

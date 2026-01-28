@@ -41,7 +41,7 @@ namespace Frameset.Core.Context
             }
             dao = DAOFactory.GetJdbcDao(defaultDs);
             timer = new Timer(new TimerCallback(OnTimerEvent));
-            timer.Change(60000 * 5, 60000 * 10);
+            timer.Change(60000 * 2, 60000 * 5);
             refreshTag = new AtomicBoolean(false);
         }
         public void RegisterModels(Type[] models)
@@ -217,7 +217,7 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                    return GetDao().QueryByConditon<O>(ExpressionUtils.GetExpressionFunction<O>(),command, condition);
+                    return GetDao().QueryByConditon<O>(command, condition);
                 }
             }
         }
@@ -231,7 +231,7 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                    return GetDao().QueryByFields<O>(ExpressionUtils.GetExpressionFunction<O>(), entityType, command, queryParams);
+                    return GetDao().QueryByFields<O>(entityType, command, queryParams);
                 }
             }
         }
@@ -244,7 +244,7 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
                 {
-                    return GetDao().QueryByNamedParameter<O>(ExpressionUtils.GetExpressionFunction<O>(), command, nameParamter);
+                    return GetDao().QueryByNamedParameter<O>(command, nameParamter);
                 }
             }
         }
@@ -277,7 +277,7 @@ namespace Frameset.Core.Context
 
                         long totalCount = GetDao().QueryByLong(command, dbParameters);
                         command.CommandText = querySql;
-                        IList<V> list = GetDao().QueryModelsBySql<V>(ExpressionUtils.GetExpressionFunction<V>(),command, dbParameters);
+                        IList<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
 
                         PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize);
                         ret.Results = list;
@@ -297,7 +297,7 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection))
                 {
-                    return GetDao().QueryPage<O>(ExpressionUtils.GetExpressionFunction<O>(), command, query);
+                    return GetDao().QueryPage<O>(command, query);
                 }
             }
         }
@@ -459,7 +459,7 @@ namespace Frameset.Core.Context
             while (refreshTag.Get())
             {
                 Log.Information("refesh thread running,Waiting");
-                await Task.Delay(300);
+                await Task.Delay(300).ConfigureAwait(false);
             }
         }
         private int TakeAction(DbCommand command, EffectEntry entry)
@@ -570,8 +570,8 @@ namespace Frameset.Core.Context
         private int DoDelete(DbCommand command, Type superEntityType, List<object> pkList)
         {
             int effectRow = 0;
-            StringBuilder removeBuilder = new StringBuilder(SqlUtils.GetRemovePkSql(superEntityType));
-            StringBuilder idsBuilder = new StringBuilder();
+            StringBuilder removeBuilder = new(SqlUtils.GetRemovePkSql(superEntityType));
+            StringBuilder idsBuilder = new();
             DbParameter[] parameters = new DbParameter[pkList.Count];
             if (!pkList.IsNullOrEmpty())
             {
@@ -614,9 +614,9 @@ namespace Frameset.Core.Context
                 try
                 {
                     List<Thread> deleteList = [];
-                    foreach (var entry in requestChanges.Select(x=>x.Key))
+                    foreach (var entry in requestChanges.Select(x => x.Key))
                     {
-                        if((entry.ThreadState & System.Threading.ThreadState.Stopped)==System.Threading.ThreadState.Stopped || (entry.ThreadState & System.Threading.ThreadState.Aborted) == System.Threading.ThreadState.Aborted)
+                        if (!entry.IsAlive)
                         {
                             deleteList.Add(entry);
                         }
@@ -625,7 +625,7 @@ namespace Frameset.Core.Context
                     {
                         deleteList.ForEach(x =>
                         {
-                            while(!requestChanges.TryRemove(x, out _))
+                            while (!requestChanges.TryRemove(x, out _))
                             {
                                 Thread.Sleep(2);
                             }

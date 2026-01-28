@@ -9,7 +9,6 @@ using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
-using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Spring.Util;
 using System;
@@ -17,7 +16,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Linq.Expressions;
 using System.Reflection;
 using System.Text;
 using System.Threading;
@@ -42,7 +40,7 @@ namespace Frameset.Core.Repo
         protected readonly Type pkType;
         protected IList<FieldContent> fieldContents;
         protected ThreadLocal<string> temporaryDsName;
-        protected Func<V> modelFunc;
+
         public BaseRepository()
         {
             Type[] genericType = GetType().GetInterfaces()[0].GetGenericArguments();
@@ -62,9 +60,7 @@ namespace Frameset.Core.Repo
                 dsName = content.DsName;
             }
             dao = DAOFactory.GetJdbcDao(dsName);
-            NewExpression constructExpression = Expression.New(entityType);
-            Expression<Func<V>> lamadaExpression = Expression.Lambda<Func<V>>(constructExpression);
-            modelFunc = lamadaExpression.Compile();
+
         }
         public bool SaveEntity(V entity, Action<V> insertBeforeAction = null, Func<DbCommand, V, bool> insertAfterAction = null)
         {
@@ -86,7 +82,7 @@ namespace Frameset.Core.Repo
                 return executeRs.HasValue;
             });
         }
-       
+
         public bool UpdateEntity(V entity, Action<V> updateBeforeAction = null, Func<DbCommand, V, bool> updateAfterAction = null)
         {
             V origin = GetById((P)pkColumn.GetMethod.Invoke(entity, null));
@@ -168,7 +164,7 @@ namespace Frameset.Core.Repo
         {
             string selectSql = SqlUtils.GetSelectByIdSql(entityType, pkColumn);
             IList<Dictionary<string, object>> list = QueryBySql(selectSql, new object[] { pk });
-            V entity =modelFunc();
+            V entity = Activator.CreateInstance<V>();
 
             if (!list.IsNullOrEmpty())
             {
@@ -219,7 +215,7 @@ namespace Frameset.Core.Repo
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
                 {
-                    return queryDao.QueryByNamedParameter<O>(ExpressionUtils.GetExpressionFunction<O>(), command, nameParamter);
+                    return queryDao.QueryByNamedParameter<O>(command, nameParamter);
                 }
             }
         }
@@ -236,7 +232,7 @@ namespace Frameset.Core.Repo
                     connection.Open();
                     using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, tuple.Item1.ToString()))
                     {
-                        return GetDao().QueryModelsBySql<V>(modelFunc, command, tuple.Item2);
+                        return GetDao().QueryModelsBySql<V>(command, tuple.Item2);
                     }
                 }
             }
@@ -262,7 +258,7 @@ namespace Frameset.Core.Repo
 
                         long totalCount = GetDao().QueryByLong(command, dbParameters);
                         command.CommandText = querySql;
-                        IList<V> list = GetDao().QueryModelsBySql<V>(modelFunc,command, dbParameters);
+                        IList<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
 
                         PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize);
                         ret.Results = list;
@@ -390,8 +386,8 @@ namespace Frameset.Core.Repo
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                   
-                    return GetDao().QueryPage<O>(ExpressionUtils.GetExpressionFunction<O>(), command, query);
+
+                    return GetDao().QueryPage<O>(command, query);
                 }
             }
         }
@@ -419,8 +415,8 @@ namespace Frameset.Core.Repo
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                  
-                    return GetDao().QueryByConditon<O>(ExpressionUtils.GetExpressionFunction<O>() ,command, condition);
+
+                    return GetDao().QueryByConditon<O>(command, condition);
                 }
             }
         }
@@ -431,7 +427,7 @@ namespace Frameset.Core.Repo
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                    return GetDao().QueryByFields<O>(ExpressionUtils.GetExpressionFunction<O>(), entityType, command, queryParams);
+                    return GetDao().QueryByFields<O>(entityType, command, queryParams);
                 }
             }
         }
@@ -480,7 +476,7 @@ namespace Frameset.Core.Repo
                 return transcationFunc.Invoke(connection);
             }
         }
-        
+
     }
 
 }

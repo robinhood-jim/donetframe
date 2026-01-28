@@ -85,11 +85,8 @@ namespace Frameset.Core.Dao.Utils
             StringBuilder columnsBuilder = new StringBuilder();
             StringBuilder valuesBuilder = new StringBuilder();
             IList<DbParameter> parameters = new List<DbParameter>();
-            if (!entityContent.Schema.IsNullOrEmpty())
-            {
-                builder.Append(entityContent.Schema).Append(".");
-            }
-            builder.Append(entityContent.TableName);
+
+            builder.Append(entityContent.GetTableName());
             foreach (FieldContent content in fields)
             {
                 if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsPrimitive)
@@ -114,11 +111,8 @@ namespace Frameset.Core.Dao.Utils
             IList<DbParameter> parameters = new List<DbParameter>();
             string whereSegment = " where 1=0";
             UpdateSegment segment = new UpdateSegment();
-            if (!entityContent.Schema.IsNullOrEmpty())
-            {
-                builder.Append(entityContent.Schema).Append(".");
-            }
-            builder.Append(entityContent.TableName).Append(" set ");
+
+            builder.Append(entityContent.GetTableName()).Append(" set ");
             foreach (FieldContent content in fields)
             {
                 object realVal = content.GetMethod.Invoke(update, null);
@@ -159,11 +153,8 @@ namespace Frameset.Core.Dao.Utils
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder removeBuilder = new StringBuilder("delete from ");
-            if (!entityContent.Schema.IsNullOrEmpty())
-            {
-                removeBuilder.Append(entityContent.Schema).Append(".");
-            }
-            removeBuilder.Append(entityContent.TableName).Append(" where ");
+
+            removeBuilder.Append(entityContent.GetTableName()).Append(" where ");
             foreach (FieldContent content in fields)
             {
                 if (content.IfPrimary)
@@ -210,24 +201,7 @@ namespace Frameset.Core.Dao.Utils
 
         }
 
-        private static string GetSelectSqlAndPk(Type modelType)
-        {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
-            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
-            StringBuilder fieldsBuilder = new StringBuilder();
-            StringBuilder tabBuilder = new StringBuilder();
 
-            if (!entityContent.Schema.IsNullOrEmpty())
-            {
-                tabBuilder.Append(entityContent.Schema).Append(".");
-            }
-            tabBuilder.Append(entityContent.TableName);
-            foreach (FieldContent content in fields)
-            {
-                fieldsBuilder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
-            }
-            return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).ToString();
-        }
         public static string GetSelectByIdSql(Type modelType, FieldContent content)
         {
 
@@ -407,6 +381,10 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         }
+        public IList<object> ParamObjects
+        {
+            get; set;
+        }
 
     }
     public class UpdateSegment
@@ -416,6 +394,10 @@ namespace Frameset.Core.Dao.Utils
             get; set;
         }
         public IList<DbParameter> Parameters
+        {
+            get; set;
+        }
+        public IList<object> ParameterObjects
         {
             get; set;
         }

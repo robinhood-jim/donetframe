@@ -11,7 +11,7 @@
 	  <Description>.Net Framework Common Package united FileSystem(LOCAL/FTP/SFTP/WebHdfs/AMAZONS3/MINIO) and united DataFile reader and writer for CSV/JSON/XML/AVRO/PARQUET/ORC format resource.</Description>
 	  <PackageReadmeFile>README.en.md</PackageReadmeFile>
 	  <PackageLicenseFile>LICENSE</PackageLicenseFile>
-	  <Version>1.0.3</Version>
+	  <Version>1.1.1</Version>
 	  <PackageId></PackageId>
 	  <Authors>robinhoodjim</Authors>
 	  <RepositoryUrl>https://github.com/robinhood-jim/donetframe</RepositoryUrl>
@@ -45,7 +45,7 @@
 	<PackageReference Include="SharpZipLib" Version="1.4.2" PrivateAssets="All" />
 	<PackageReference Include="Snappier" Version="1.2.0" PrivateAssets="All" />
 	<PackageReference Include="SSH.NET" Version="2025.0.0" PrivateAssets="All" />
-	<PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.49" />
+	<PackageReference Include="Tencent.QCloud.Cos.Sdk" Version="5.4.49" PrivateAssets="All" />
 	<PackageReference Include="ZstdSharp.Port" Version="0.8.6" PrivateAssets="All" />
     <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.7.1.0" />
     <PackageReference Include="Serilog" Version="4.3.0" PrivateAssets="All" />
@@ -57,6 +57,7 @@
 	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.0" />
+	  
 	   
 	  <None Include="..\LICENSE" Pack="true" PackagePath="" />
 	  <None Include="..\README.en.md">
@@ -65,4 +66,5 @@
 	  </None>
   </ItemGroup>
 
+  
 </Project>

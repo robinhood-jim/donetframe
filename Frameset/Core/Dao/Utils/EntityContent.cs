@@ -41,7 +41,7 @@ namespace Frameset.Core.Dao.Utils
                 this._dsName = value?.ToString();
             }
         }
-       
+
         public List<Type> ParentEntitys
         {
             get; set;
@@ -50,7 +50,7 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = false;
-        public EntityContent(Type className,string tableName, string schema, string dsName)
+        public EntityContent(Type className, string tableName, string schema, string dsName)
         {
             this.EntityType = className;
             this._tableName = tableName;
