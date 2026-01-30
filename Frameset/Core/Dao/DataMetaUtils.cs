@@ -61,7 +61,7 @@ namespace Frameset.Core.Dao
         }
         public static IList<TableMeta> GetTables(DbConnection connection, string schema)
         {
-            IList<TableMeta> list = new List<TableMeta>();
+            IList<TableMeta> list = [];
             try
             {
                 string[] resrtictions = new string[2];

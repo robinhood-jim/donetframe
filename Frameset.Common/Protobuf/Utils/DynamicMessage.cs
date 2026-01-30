@@ -1,6 +1,5 @@
 ﻿using Google.Protobuf;
 using Google.Protobuf.Reflection;
-using ProtoBuf;
 using System.Reflection;
 
 namespace Frameset.Common.Protobuf.Utils;
@@ -28,7 +27,7 @@ public class DynamicMessage : IMessage
     }
     public void SetField(int num, object value)
     {
-        if (definition.fieldIdMap.TryGetValue(num, out FieldDescriptorProto field))
+        if (definition.fieldIdMap.TryGetValue(num, out FieldDescriptorProto? field))
         {
             DataContent.TryAdd(field.Name, value);
         }
@@ -44,84 +43,7 @@ public class DynamicMessage : IMessage
     {
         DataContent.Clear();
     }
-    
-    public void WriteDelimitedTo(ProtoWriter protoWriter)
-    {
-        foreach (FieldDescriptorProto fieldDescriptor in definition.descriptor.Field)
-        {
-            if (DataContent.TryGetValue(fieldDescriptor.Name, out object value) && value != null)
-            {
-                WriteObject(protoWriter, fieldDescriptor, value);
-            }
-            else
-            {
-                throw new ArgumentException("field {0} is Null", fieldDescriptor.Name);
-            }
-        }
-    }
-    private void WriteObject(ProtoWriter protoWriter, FieldDescriptorProto fieldDescriptor, object value)
-    {
 
-        switch (fieldDescriptor.Type)
-        {
-            case FieldDescriptorProto.Types.Type.Float:
-                float val = Convert.ToSingle(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Fixed32, protoWriter);
-                ProtoWriter.WriteSingle(val, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Int32:
-            case FieldDescriptorProto.Types.Type.Sint32:
-                int intval = Convert.ToInt32(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Variant, protoWriter);
-                ProtoWriter.WriteInt32(intval, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Int64:
-            case FieldDescriptorProto.Types.Type.Sint64:
-                long longval = Convert.ToInt64(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Variant, protoWriter);
-                ProtoWriter.WriteInt64(longval, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed64:
-                long fixlongval = Convert.ToInt64(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Fixed64, protoWriter);
-                ProtoWriter.WriteInt64(fixlongval, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed32:
-                int fixintval = Convert.ToInt32(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Fixed32, protoWriter);
-                ProtoWriter.WriteInt32(fixintval, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Bool:
-                bool boolval = Convert.ToBoolean(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Variant, protoWriter);
-                ProtoWriter.WriteBoolean(boolval, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.String:
-                string strVal = Convert.ToString(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.String, protoWriter);
-                ProtoWriter.WriteString(strVal, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Double:
-                double dVal = Convert.ToDouble(value);
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.Fixed64, protoWriter);
-                ProtoWriter.WriteDouble(dVal, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Bytes:
-                if (!(value is byte[]))
-                {
-                    throw new ArgumentException("{0} should be a byte[]", fieldDescriptor.Name);
-                }
-                ProtoWriter.WriteFieldHeader(fieldDescriptor.Number, WireType.String, protoWriter);
-                ProtoWriter.WriteBytes((byte[])value, protoWriter);
-                break;
-            case FieldDescriptorProto.Types.Type.Message:
-                //TODO
-
-                break;
-            default:
-                break;
-        }
-    }
     private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor, object value)
     {
         switch (fieldDescriptor.Type)
@@ -271,21 +193,38 @@ public class DynamicMessage : IMessage
                 //TODO
                 calculateSize = ((IMessage)value).CalculateSize();
                 break;
+            case FieldDescriptorProto.Types.Type.Double:
+                double dVal = Convert.ToDouble(value);
+                calculateSize = CodedOutputStream.ComputeDoubleSize(dVal);
+                break;
             default:
                 break;
         }
         return calculateSize;
     }
 
+    public bool MergeDelimitedFrom(Stream inputStream)
+    {
+        DataContent.Clear();
+        try
+        {
+            MessageExtensions.MergeDelimitedFrom(this, inputStream);
+        }
+        catch (Exception e)
+        {
+            return false;
+        }
+        return true;
+    }
 
-    
+
 
     public void MergeFrom(CodedInputStream input)
     {
         DataContent.Clear();
         foreach (FieldDescriptorProto proto in definition.descriptor.Field)
         {
-            if(!ReadObject(input, proto))
+            if (!ReadObject(input, proto))
             {
                 break;
             }
@@ -297,8 +236,8 @@ public class DynamicMessage : IMessage
         DataContent.Clear();
         foreach (FieldDescriptorProto proto in definition.descriptor.Field)
         {
-            
-            if(!ReadObject(input, proto))
+
+            if (!ReadObject(input, proto))
             {
                 return false;
             }

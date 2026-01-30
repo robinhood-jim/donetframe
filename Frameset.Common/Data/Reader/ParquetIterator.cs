@@ -23,14 +23,14 @@ namespace Frameset.Common.Data.Reader
         long readLines = 0;
         public ParquetIterator(DataCollectionDefine define) : base(define)
         {
-            Identifier = Constants.FileFormatType.AVRO;
+            Identifier = Constants.FileFormatType.PARQUET;
             useRawStream = true;
             Initalize(define.Path);
         }
 
         public ParquetIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
-            Identifier = Constants.FileFormatType.AVRO;
+            Identifier = Constants.FileFormatType.PARQUET;
             useRawStream = true;
             Initalize(define.Path);
         }

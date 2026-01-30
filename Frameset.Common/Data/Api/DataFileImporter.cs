@@ -36,7 +36,7 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.ORC => new OrcIterator<T>(fileSystem, processPath),
                 Constants.FileFormatType.XLSX => throw new NotImplementedException(),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
-                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTOBUF => new ParquetIterator<T>(fileSystem, processPath),
                 _ => throw new NotImplementedException()
             };
 

@@ -171,7 +171,7 @@ namespace Frameset.Core.Common
                 {
                     if (value.Contains('.'))
                     {
-                        value = value.Substring(0, value.IndexOf('.'));
+                        value = value[..value.IndexOf('.')];
                     }
                     retObj = Convert.ToInt32(value);
                 }
@@ -179,7 +179,7 @@ namespace Frameset.Core.Common
                 {
                     if (value.Contains('.'))
                     {
-                        value = value.Substring(0, value.IndexOf('.'));
+                        value = value[..value.IndexOf('.')];
                     }
                     retObj = Convert.ToInt64(value);
                 }

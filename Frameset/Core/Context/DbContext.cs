@@ -137,7 +137,7 @@ namespace Frameset.Core.Context
                 IList<V> list = QueryModelsByField<V>(fieldName, sqlOperator, values);
                 FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(entityType);
                 List<object> pkList = list.Select(x => pkColumn.GetMethod.Invoke(x, null)).ToList();
-                GetCurrrentUpdateEntry().Delete<V, P>(pkList.Cast<P>().ToList());
+                GetCurrrentUpdateEntry().Delete<V, P>([.. pkList.Cast<P>()]);
                 return pkList.Count;
             }
         }
@@ -155,15 +155,15 @@ namespace Frameset.Core.Context
             {
                 StringBuilder builder = new StringBuilder("update ").Append(SqlUtils.GetTableWithSchema(tuple.Item1)).Append(" set ").Append(logicColumn).Append("=").Append(status).Append(" where ").Append(pkColumn.FieldName).Append(" in (");
 
-                StringBuilder idsBuilder = new StringBuilder();
+                StringBuilder idsBuilder = new();
                 DbParameter[] parameters = new DbParameter[pks.Count];
                 for (int i = 0; i < pks.Count; i++)
                 {
                     string paramName = "@" + (i + 1).ToString();
-                    idsBuilder.Append(paramName).Append(",");
+                    idsBuilder.Append(paramName).Append(',');
                     parameters[i] = GetDao().GetDialect().WrapParameter(i + 1, pks[i]);
                 }
-                string removeSql = builder.Append(idsBuilder.ToString().Substring(0, idsBuilder.Length - 1)).ToString();
+                string removeSql = builder.Append(idsBuilder.ToString().AsSpan(0, idsBuilder.Length - 1)).ToString();
                 if (IsAutoCommit())
                 {
                     return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, null, (command, v) =>
@@ -582,7 +582,7 @@ namespace Frameset.Core.Context
                     parameters[i] = GetDao().GetDialect().WrapParameter(i + 1, pkList[i]);
                 }
             }
-            string removeSql = removeBuilder.Append(idsBuilder.ToString().Substring(0, idsBuilder.Length - 1)).Append(")").ToString();
+            string removeSql = removeBuilder.Append(idsBuilder.ToString()[..(idsBuilder.Length - 1)]).Append(")").ToString();
 
             effectRow += GetDao().Execute(command, removeSql, parameters);
 

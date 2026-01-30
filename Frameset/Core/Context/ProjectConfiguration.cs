@@ -36,7 +36,7 @@ namespace Frameset.Core.Context
                 Trace.Assert(typeof(T) == retConfig.GetType(), "");
                 return (T)retConfig;
             }
-            return default(T);
+            return default;
         }
     }
 }

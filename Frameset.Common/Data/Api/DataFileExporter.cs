@@ -26,7 +26,7 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.ORC => new OrcDataWriter<T>(fileSystem, processPath),
                 Constants.FileFormatType.XLSX => throw new NotImplementedException(),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
-                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTOBUF => new ProtoBufWriter<T>(fileSystem, processPath),
                 _ => throw new NotImplementedException()
             };
 
