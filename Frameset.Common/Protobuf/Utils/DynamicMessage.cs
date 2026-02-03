@@ -1,4 +1,6 @@
-﻿using Google.Protobuf;
+﻿using Frameset.Core.Common;
+using Frameset.Core.Reflect;
+using Google.Protobuf;
 using Google.Protobuf.Reflection;
 using System.Reflection;
 
@@ -43,6 +45,117 @@ public class DynamicMessage : IMessage
     {
         DataContent.Clear();
     }
+    
+    public bool MergeDelimitedFromNew(Stream inputStream)
+    {
+        DataContent.Clear();
+        int length = ReadRawVarint32(inputStream);
+        if (length != -1)
+        {
+            byte[] buffer = new byte[length];
+            inputStream.ReadExactly(buffer, 0, length);
+            using (CodedInputStream inputStream1 = new CodedInputStream(buffer))
+            {
+                MergeFrom(inputStream1);
+            }
+            return true;
+        }
+        return false;
+    }
+    private static int ReadRawVarint32(Stream stream)
+    {
+        int b = stream.ReadByte();
+        if (b == -1) return -1; 
+
+        int result = b & 0x7f;
+        if ((b & 0x80) == 0) return result;
+
+        int shift = 7;
+        while (shift < 32)
+        {
+            b = stream.ReadByte();
+            if (b == -1) throw new EndOfStreamException("Varint unexpected end");
+            result |= (b & 0x7f) << shift;
+            if ((b & 0x80) == 0) return result;
+            shift += 7;
+        }
+        throw new ArgumentException("Varint overflow limit");
+    }
+
+    public void MergeFrom(CodedInputStream input)
+    {
+        DataContent.Clear();
+        if (input.IsAtEnd)
+        {
+            return;
+        }
+        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
+        {
+            if (!ReadObject(input, proto))
+            {
+                break;
+            }
+        }
+
+    }
+    public bool ReadFrom(CodedInputStream input)
+    {
+        DataContent.Clear();
+        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
+        {
+
+            if (!ReadObject(input, proto))
+            {
+                return false;
+            }
+        }
+        return true;
+    }
+
+    public void WriteTo(CodedOutputStream output)
+    {
+        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
+        {
+            if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
+            {
+                WriteObject(output, proto, value);
+            }
+            else
+            {
+                throw new ArgumentException("field {0} is Null", proto.Name);
+            }
+        }
+    }
+
+    public int CalculateSize()
+    {
+        int totalCount = 0;
+        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
+        {
+            if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
+            {
+                totalCount += CalculateSize(proto, value);
+            }
+            else
+            {
+                throw new ArgumentException("field {0} is Null", proto.Name);
+            }
+        }
+        return totalCount;
+    }
+    public T ConvertToModel<T>()
+    {
+        T retObj = Activator.CreateInstance<T>();
+        Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
+        foreach(var entry in methodMap)
+        {
+            if(DataContent.TryGetValue(entry.Key,out object? value) && value!=null)
+            {
+                entry.Value.SetMethod.Invoke(retObj, [ConvertUtil.ParseByType(entry.Value.ParamType, value)]);
+            }
+        }
+        return retObj;
+    }
 
     private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor, object value)
     {
@@ -75,7 +188,7 @@ public class DynamicMessage : IMessage
                 codedOutput.WriteBool(boolval);
                 break;
             case FieldDescriptorProto.Types.Type.String:
-                string strVal = Convert.ToString(value);
+                string? strVal = Convert.ToString(value);
                 codedOutput.WriteString(strVal);
                 break;
             case FieldDescriptorProto.Types.Type.Double:
@@ -119,7 +232,6 @@ public class DynamicMessage : IMessage
                 break;
             case FieldDescriptorProto.Types.Type.Fixed64:
                 value = codedInput.ReadSFixed64();
-
                 break;
             case FieldDescriptorProto.Types.Type.Fixed32:
                 value = codedInput.ReadSFixed32();
@@ -131,7 +243,6 @@ public class DynamicMessage : IMessage
                 value = codedInput.ReadString();
                 break;
             case FieldDescriptorProto.Types.Type.Bytes:
-
                 value = codedInput.ReadBytes();
                 break;
             case FieldDescriptorProto.Types.Type.Double:
@@ -179,7 +290,7 @@ public class DynamicMessage : IMessage
                 calculateSize = CodedOutputStream.ComputeBoolSize(boolval);
                 break;
             case FieldDescriptorProto.Types.Type.String:
-                string strVal = Convert.ToString(value);
+                string? strVal = Convert.ToString(value);
                 calculateSize = CodedOutputStream.ComputeStringSize(strVal);
                 break;
             case FieldDescriptorProto.Types.Type.Bytes:
@@ -203,77 +314,5 @@ public class DynamicMessage : IMessage
         return calculateSize;
     }
 
-    public bool MergeDelimitedFrom(Stream inputStream)
-    {
-        DataContent.Clear();
-        try
-        {
-            MessageExtensions.MergeDelimitedFrom(this, inputStream);
-        }
-        catch (Exception e)
-        {
-            return false;
-        }
-        return true;
-    }
-
-
-
-    public void MergeFrom(CodedInputStream input)
-    {
-        DataContent.Clear();
-        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
-        {
-            if (!ReadObject(input, proto))
-            {
-                break;
-            }
-        }
-
-    }
-    public bool ReadFrom(CodedInputStream input)
-    {
-        DataContent.Clear();
-        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
-        {
-
-            if (!ReadObject(input, proto))
-            {
-                return false;
-            }
-        }
-        return true;
-    }
-
-    public void WriteTo(CodedOutputStream output)
-    {
-        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
-        {
-            if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
-            {
-                WriteObject(output, proto, value);
-            }
-            else
-            {
-                throw new ArgumentException("field {0} is Null", proto.Name);
-            }
-        }
-    }
-
-    public int CalculateSize()
-    {
-        int totalCount = 0;
-        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
-        {
-            if (DataContent.TryGetValue(proto.Name, out object value) && value != null)
-            {
-                totalCount += CalculateSize(proto, value);
-            }
-            else
-            {
-                throw new ArgumentException("field {0} is Null", proto.Name);
-            }
-        }
-        return totalCount;
-    }
+    
 }

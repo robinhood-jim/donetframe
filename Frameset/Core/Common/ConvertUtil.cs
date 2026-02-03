@@ -27,51 +27,58 @@ namespace Frameset.Core.Common
             }
             else
             {
-                switch (Type.GetTypeCode(targetType))
+                if (targetType.IsEnum)
                 {
-                    case TypeCode.Int32:
-                        retVal = Int32.Parse(input.ToString());
-                        break;
-                    case TypeCode.Int16:
-                        retVal = Int16.Parse(input.ToString());
-                        break;
-                    case TypeCode.Int64:
-                        retVal = long.Parse(input.ToString());
-                        break;
-                    case TypeCode.Double:
-                        retVal = double.Parse(input.ToString());
-                        break;
-                    case TypeCode.Decimal:
-                        retVal = double.Parse(input.ToString());
-                        break;
-                    case TypeCode.DateTime:
-                        DateTime? time = parseDateTime(input.ToString());
-                        if (time.HasValue)
-                        {
-                            retVal = time.Value;
-                        }
-                        break;
-                    default:
-                        if (targetType.Equals(typeof(DateTimeOffset)))
-                        {
-                            if (input.GetType().Equals(typeof(DateTime)))
+                    retVal = Enum.Parse(targetType, input.ToString()!);
+                }
+                else
+                {
+                    switch (Type.GetTypeCode(targetType))
+                    {
+                        case TypeCode.Int32:
+                            retVal = Int32.Parse(input.ToString());
+                            break;
+                        case TypeCode.Int16:
+                            retVal = Int16.Parse(input.ToString());
+                            break;
+                        case TypeCode.Int64:
+                            retVal = long.Parse(input.ToString());
+                            break;
+                        case TypeCode.Double:
+                            retVal = double.Parse(input.ToString());
+                            break;
+                        case TypeCode.Decimal:
+                            retVal = double.Parse(input.ToString());
+                            break;
+                        case TypeCode.DateTime:
+                            DateTime? time = parseDateTime(input.ToString());
+                            if (time.HasValue)
                             {
-                                retVal = new DateTimeOffset((DateTime)input, TimeSpan.FromHours(8));
+                                retVal = time.Value;
+                            }
+                            break;
+                        default:
+                            if (targetType.Equals(typeof(DateTimeOffset)))
+                            {
+                                if (input.GetType().Equals(typeof(DateTime)))
+                                {
+                                    retVal = new DateTimeOffset((DateTime)input, TimeSpan.FromHours(8));
+                                }
+                                else
+                                {
+                                    DateTime? stime = parseDateTime(input.ToString());
+                                    if (stime.HasValue)
+                                    {
+                                        retVal = new DateTimeOffset(stime.Value, TimeSpan.FromHours(8));
+                                    }
+                                }
                             }
                             else
                             {
-                                DateTime? stime = parseDateTime(input.ToString());
-                                if (stime.HasValue)
-                                {
-                                    retVal = new DateTimeOffset(stime.Value, TimeSpan.FromHours(8));
-                                }
+                                retVal = input.ToString();
                             }
-                        }
-                        else
-                        {
-                            retVal = input.ToString();
-                        }
-                        break;
+                            break;
+                    }
                 }
             }
             return retVal;
