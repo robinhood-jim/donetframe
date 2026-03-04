@@ -45,7 +45,7 @@ public class DynamicMessage : IMessage
     {
         DataContent.Clear();
     }
-    
+
     public bool MergeDelimitedFromNew(Stream inputStream)
     {
         DataContent.Clear();
@@ -65,7 +65,7 @@ public class DynamicMessage : IMessage
     private static int ReadRawVarint32(Stream stream)
     {
         int b = stream.ReadByte();
-        if (b == -1) return -1; 
+        if (b == -1) return -1;
 
         int result = b & 0x7f;
         if ((b & 0x80) == 0) return result;
@@ -147,14 +147,37 @@ public class DynamicMessage : IMessage
     {
         T retObj = Activator.CreateInstance<T>();
         Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
-        foreach(var entry in methodMap)
+        foreach (var entry in methodMap)
         {
-            if(DataContent.TryGetValue(entry.Key,out object? value) && value!=null)
+            if (DataContent.TryGetValue(entry.Key, out object? value) && value != null)
             {
                 entry.Value.SetMethod.Invoke(retObj, [ConvertUtil.ParseByType(entry.Value.ParamType, value)]);
             }
         }
         return retObj;
+    }
+    public void ParseFrom<T>(T model)
+    {
+        DataContent.Clear();
+        Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
+        TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
+        foreach (var entry in methodMap)
+        {
+            object value = entry.Value.GetMethod.Invoke(model, []);
+            if (value != null)
+            {
+                if (entry.Value.ParamType != typeof(DateTime) && entry.Value.ParamType != typeof(DateTimeOffset))
+                {
+                    DataContent.TryAdd(entry.Key, value);
+                }
+                else
+                {
+                    DateTime time = (DateTime)value;
+                    DateTimeOffset dateTime = new DateTimeOffset(time, timeZoneInfo.BaseUtcOffset);
+                    DataContent.TryAdd(entry.Key, dateTime.ToUnixTimeMilliseconds());
+                }
+            }
+        }
     }
 
     private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor, object value)
@@ -314,5 +337,5 @@ public class DynamicMessage : IMessage
         return calculateSize;
     }
 
-    
+
 }

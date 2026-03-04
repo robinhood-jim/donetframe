@@ -1,5 +1,5 @@
 ﻿using Cassandra;
-using Cassandra.Mapping;
+using Frameset.Bigdata.Dao;
 using Frameset.Bigdata.NoSql;
 using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
@@ -21,7 +21,8 @@ namespace Frameset.Bigdata.Cassandra
         private readonly Cluster cluster;
         private readonly ISession session;
         private readonly string? keySpace;
-        private readonly IMapper mapper;
+        //private readonly IMapper mapper;
+        private readonly Type modelType;
         public CassandraRepository(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.CASSANDRAURL, out string? connectUrl);
@@ -48,19 +49,21 @@ namespace Frameset.Bigdata.Cassandra
 
             cluster = builder.Build();
             session = cluster.Connect(keySpace);
-            mapper = new Mapper(session);
-            var map = new Map<V>().TableName(content.TableName).PartitionKey(u => pkColumn.PropertyInfomation);
+            content.Schema = keySpace;
+            /*mapper = new Mapper(session);
+            var map = new Map<V>().TableName(content.GetTableName()).PartitionKey(u => pkColumn.PropertyInfomation);
             foreach (FieldContent fieldContent in fieldContents)
             {
                 map.Column(u => fieldContent.PropertyInfomation, cm => cm.WithName(fieldContent.FieldName));
             }
-            MappingConfiguration.Global.Define(map);
+            MappingConfiguration.Global.Define(map);*/
+            modelType = typeof(V);
         }
 
 
         public override V GetById(P pk)
         {
-            var ps = session.Prepare("select * from " + content.TableName + " where " + pkColumn.FieldName + "=?");
+            var ps = session.Prepare("select * from " + content.GetTableName() + " where " + pkColumn.FieldName + "=?");
             var stmt = ps.Bind(pk);
             var rows = session.Execute(stmt);
             if (!rows.IsNullOrEmpty())
@@ -70,17 +73,23 @@ namespace Frameset.Bigdata.Cassandra
                     throw new OperationFailedException("getById return more than one rows!");
                 }
                 V entity = Activator.CreateInstance<V>();
-                rows.GetEnumerator().MoveNext();
-                var row = rows.GetEnumerator().Current;
-                foreach (FieldContent fieldContent in fieldContents)
+                if (rows.GetEnumerator().MoveNext())
                 {
-                    var obj = row[fieldContent.FieldName];
-                    if (obj != null)
+                    var row = rows.GetEnumerator().Current;
+                    foreach (FieldContent fieldContent in fieldContents)
                     {
-                        fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.GetMethod.ReturnType, obj) });
+                        var obj = row[fieldContent.FieldName];
+                        if (obj != null)
+                        {
+                            fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.ParamType, obj) });
+                        }
                     }
+                    return entity;
                 }
-                return entity;
+                else
+                {
+                    throw new BaseSqlException("id not found");
+                }
             }
             else
             {
@@ -90,34 +99,75 @@ namespace Frameset.Bigdata.Cassandra
 
         public override int RemoveEntity(IList<P> pks)
         {
-            mapper.Delete<V>(" WHERE " + pkColumn.FieldName + " in (?)", pks);
-            return 1;
+            StringBuilder cqlBuilder = new StringBuilder("delete from " + content.GetTableName() + " where " + pkColumn.FieldName + " in (");
+            for (int i = 0; i < pks.Count; i++)
+            {
+                cqlBuilder.Append("?");
+                if (i < pks.Count - 1)
+                {
+                    cqlBuilder.Append(",");
+                }
+            }
+            cqlBuilder.Append(")");
+            PreparedStatement statement = session.Prepare(cqlBuilder.ToString());
+            BoundStatement boundStatement = statement.Bind(pks.ToArray());
+            session.Execute(boundStatement);
+            return pks.Count;
         }
 
         public override bool SaveEntity(V entity)
         {
-            mapper.Insert<V>(entity);
+            InsertSegment segment = SqlGenUtils.GetInsertSegment(entity);
+            PreparedStatement prepared = session.Prepare(segment.InsertSql);
+            BoundStatement bound = prepared.Bind(segment.ParamObjects.ToArray());
+            var rowset = session.Execute(bound);
             return true;
         }
 
         public override bool UpdateEntity(V entity)
         {
-            mapper.Update<V>(entity);
+            FieldContent content = EntityReflectUtils.GetPrimaryKey(modelType);
+            object pkId = content.GetMethod.Invoke(entity, null);
+            V origin = GetById((P)pkId);
+            UpdateSegment updateSegment = SqlGenUtils.GetUpdateSegment(origin, entity);
+            PreparedStatement statement = session.Prepare(updateSegment.UpdateSql);
+            BoundStatement boundStatement = statement.Bind(updateSegment.ParameterObjects.ToArray());
+            session.Execute(boundStatement);
             return true;
         }
         public override IList<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = "")
         {
             fieldMap.TryGetValue(propertyName, out FieldContent? fieldContent);
+            IList<V> returnList = [];
             if (fieldContent == null)
             {
                 throw new OperationFailedException("property " + propertyName + " not defined!");
             }
-            StringBuilder selectSqlBuilder = new StringBuilder("select * from ").Append(content.TableName).Append(" where ").Append(AppendParameter(fieldContent, oper, values.Length));
+            StringBuilder selectSqlBuilder = new StringBuilder("select * from ").Append(content.GetTableName()).Append(" where ").Append(AppendParameter(fieldContent, oper, values.Length));
             if (!string.IsNullOrWhiteSpace(orderByStr))
             {
                 selectSqlBuilder.Append(" ").Append(orderByStr);
             }
-            return mapper.Fetch<V>(selectSqlBuilder.ToString(), values).ToList();
+            PreparedStatement prepared = session.Prepare(selectSqlBuilder.ToString());
+            BoundStatement boundStatement = prepared.Bind(values);
+            var rowSet = session.Execute(boundStatement);
+            while (rowSet.IsNullOrEmpty())
+            {
+                foreach (Row row in rowSet)
+                {
+                    V entity = Activator.CreateInstance<V>();
+                    foreach (FieldContent fieldContent1 in fieldContents)
+                    {
+                        var obj = row[fieldContent1.FieldName];
+                        if (obj != null)
+                        {
+                            fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent1.ParamType, obj) });
+                        }
+                    }
+                    returnList.Add(entity);
+                }
+            }
+            return returnList;
         }
         private static string AppendParameter(FieldContent fieldContent, Constants.SqlOperator oper, int parameterlength)
         {

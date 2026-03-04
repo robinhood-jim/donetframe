@@ -7,20 +7,21 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <Folder Include="Etcd\" />
-  </ItemGroup>
-
-  <ItemGroup>
     <PackageReference Include="CassandraCSharpDriver" Version="3.22.0" PrivateAssets="All" />
+    <PackageReference Include="dotnet-etcd" Version="8.1.0" />
     <PackageReference Include="Elastic.Clients.Elasticsearch" Version="9.2.2" PrivateAssets="All" />
+    <PackageReference Include="Microsoft.Extensions.Http" Version="8.0.1" />
     <PackageReference Include="Microsoft.HBase.Client" Version="0.4.3" PrivateAssets="All" />
 
 	  <PackageReference Include="Microsoft.IdentityModel.Tokens" Version="7.7.1.0" />
 	  <PackageReference Include="MongoDB.Driver" Version="3.5.2" PrivateAssets="All" />
+	  <PackageReference Include="protobuf-net" Version="3.2.56" />
+	  <PackageReference Include="RocketMQ.Client" Version="5.2.0-rc1" />
+	  <PackageReference Include="StackExchange.Redis" Version="2.10.1" />
   </ItemGroup>
 
   <ItemGroup>
-    <ProjectReference Include="..\Frameset\Frameset.csproj" />
+    <ProjectReference Include="..\Frameset.Common\Frameset.Common.csproj" />
   </ItemGroup>
 
 </Project>

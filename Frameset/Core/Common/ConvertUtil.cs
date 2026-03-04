@@ -60,16 +60,17 @@ namespace Frameset.Core.Common
                         default:
                             if (targetType.Equals(typeof(DateTimeOffset)))
                             {
+                                TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
                                 if (input.GetType().Equals(typeof(DateTime)))
                                 {
-                                    retVal = new DateTimeOffset((DateTime)input, TimeSpan.FromHours(8));
+                                    retVal = new DateTimeOffset((DateTime)input, timeZoneInfo.BaseUtcOffset);
                                 }
                                 else
                                 {
                                     DateTime? stime = parseDateTime(input.ToString());
                                     if (stime.HasValue)
                                     {
-                                        retVal = new DateTimeOffset(stime.Value, TimeSpan.FromHours(8));
+                                        retVal = new DateTimeOffset(stime.Value, timeZoneInfo.BaseUtcOffset);
                                     }
                                 }
                             }

@@ -185,7 +185,7 @@ namespace Frameset.Office.Excel.Util
                     {
                         processor.Value = "".Equals(processor.RawValue) ? null : parser.Invoke(processor.RawValue, addr);
                     }
-                    catch (ExcelException e)
+                    catch (ExcelException _)
                     {
                         definedType = CellType.ERROR;
                     }

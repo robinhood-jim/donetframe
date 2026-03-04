@@ -200,6 +200,7 @@ namespace Frameset.Core.FileSystem
             return this;
         }
 
+
     }
     public class DataSetColumnMeta
     {

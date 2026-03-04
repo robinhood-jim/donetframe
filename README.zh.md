@@ -1,7 +1,7 @@
 # 通用.net框架
 =========
 #### 介绍
-基于.Net5.0以上的 基础框架，目前包含基本ORM 框架，可支持EF Core的注解方式，整个框架小而精，集成了最小功能集合的ORM功能，未考虑微软的语法树等功能。代码直观易懂，整体代码都是原创，可通过阅读整体框架对ORM有深入的了解
+基于.Net8.0以上的 基础框架，目前包含基本ORM 框架，可支持EF Core的注解方式，整个框架小而精，集成了最小功能集合的ORM功能，未考虑微软的语法树等功能。代码直观易懂，整体代码都是原创，可通过阅读整体框架对ORM有深入的了解
 
 ##ORM 框架 说明
 - 使用自定义的标签 MappingEntity MappingField
@@ -11,6 +11,8 @@
 - 类似Mybatis 的xml配置查询框架，配置支持js脚本语言
 - 针对不同数据库，支持批量插入
 - 支持对EF core的注解标注实体的支持
+- 支持类似Java Resource的循环依赖注入
+- 支持线程安全的DbContext
 
 ## Examples
 - 数据库相关配置
@@ -177,6 +179,29 @@ PageDTO<TestVO> list = repository.QueryPage<TestVO>(query);
     
 </mapper>
 ```
+- 自定义线程安全DbContext
+基于ThreadLocal，保证单DbContext可以线程安全的处理SaveChanges和每个请求一个Transaction两种模式，数据源可以运行时使用dsName动态切换
+```cs
+
+IDbContext context = new DbContext();
+DbContextFactory.Register(context);
+
+```
+
+- 自定义的IoC支持
+除了支持构造函数注入以外，加入Spring的Resource 标签的注入方法，并支持注入的递归操作，全面兼容Spring的注入方式（微软迟早要加入非构造函数注入的支持）
+```cs
+RegServiceContext.ScanServices(typeof(ServiceAttribute));
+[Service]
+public class UserOperService : IUserOperService
+{
+    [Resource]
+    private ISysUserRepository _userRepository;
+    [Resource]
+    private IBaseRepository<SysRole, long> _roleRepository;
+...
+```
+
 - 统一的FileSystem与文件格式读写支持
 基于统一的IFileSystem 与 AbstractDataIterator AbstractDataWrite,实现对本地文件系统，FTP/SFTP、HDFS以及云存储类型（S3/aliyun OSS/tencent COS）等文件系统支持，数据格式支持csv/json/xml/avro/parquet等格式
 支持Dictionary 和对象两种模式
@@ -236,3 +261,28 @@ using (AbstractDataWriter<Dictionary<string, object>> writer = DataFileExporter.
     }
 }
 ```
+- 自定义函数的Serverless 动态 装载DLL 实现
+在承载的Asp.Net项目中appsetting.json 添加serverlessPrefix 参数
+```json
+{
+  "Logging": {
+    "LogLevel": {
+      "Default": "Information",
+      "Microsoft.AspNetCore": "Warning"
+    }
+  },
+  "AllowedHosts": "*",
+  "serverlessPrefix": "/serverless",
+  
+}
+```
+在承载的Class中调用方法加ServerlessFunc 的Attribute，并打包DLL
+```cs
+ public class TestService
+    {
+        [ServerlessFunc]
+        public static object GetRole(HttpRequest request, HttpResponse response, long id, IBaseRepository<SysRole, long> repository)
+        {
+```
+使用 DynamicFunctionLoader的RegisterFunction在运行时进行注册
+访问AspNet 项目对应对峙的 /serverless/{functionName} 动态调用方法

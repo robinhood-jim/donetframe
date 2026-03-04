@@ -58,13 +58,21 @@ namespace Frameset.Common.Streaming.Consumer
         private async Task PoolMessage(string queueName, List<T> values, Action<T> action)
         {
             BasicGetResult? result;
-            while ((result = await channel.BasicGetAsync(queueName, false)) != null)
+            int groupSize = 0;
+            while ((result = await channel.BasicGetAsync(queueName, false)) != null && groupSize < maxReturnSize)
             {
                 T getObj = DSerailize(result.Body.ToArray());
                 values.Add(getObj);
                 action?.Invoke(getObj);
                 await channel.BasicAckAsync(result.DeliveryTag, false);
+                groupSize++;
             }
+        }
+        protected sealed override void Dispose(bool disposable)
+        {
+            base.Dispose(disposable);
+            channel?.Dispose();
+            connection?.Dispose();
         }
     }
 }

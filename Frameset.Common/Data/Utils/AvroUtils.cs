@@ -1,4 +1,5 @@
 ﻿using Avro;
+using Frameset.Common.Annotation;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
@@ -70,35 +71,57 @@ namespace Frameset.Common.Data.Utils
         public static RecordSchema GetSchema(Type type)
         {
             string? classNameStr = type.FullName;
+            var attributeEnum = type.GetCustomAttributes(typeof(ProtoNumberAttribute));
             PropertyInfo[] infos = type.GetProperties();
-            if (!infos.IsNullOrEmpty())
+            if (infos.IsNullOrEmpty())
             {
-                List<Field> fields = new();
+                throw new OperationFailedException("PropertyInfo is null");
+            }
+            List<Field> fields = new();
+            if (!attributeEnum.IsNullOrEmpty())
+            {
+                foreach (PropertyInfo info in infos)
+                {
+                    Attribute? sourceAttribute = info.GetCustomAttribute(typeof(ProtoNumberAttribute));
+                    if (sourceAttribute != null)
+                    {
+                        ProtoNumberAttribute attribute = (ProtoNumberAttribute)sourceAttribute;
+                        Schema baseSchema = GetBaseSchema(info);
+                        Field field = new Field(baseSchema, info?.Name, attribute.Number);
+                        fields.Add(field);
+                    }
+                }
+                return RecordSchema.Create(classNameStr, fields);
+            }
+            else
+            {
                 int pos = 0;
                 foreach (PropertyInfo info in infos)
                 {
-                    Schema baseSchema = Type.GetTypeCode(info?.GetMethod?.ReturnType) switch
-                    {
-                        TypeCode.Int32 => PrimitiveSchema.Create(Schema.Type.Int, new PropertyMap()),
-                        TypeCode.Int64 => PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap()),
-                        TypeCode.Int16 => PrimitiveSchema.Create(Schema.Type.Int, new PropertyMap()),
-                        TypeCode.Double => PrimitiveSchema.Create(Schema.Type.Double, new PropertyMap()),
-                        TypeCode.DateTime => GetDateTimeFormat(),
-                        _ => PrimitiveSchema.Create(Schema.Type.String, new PropertyMap())
-
-                    };
+                    Schema baseSchema = GetBaseSchema(info);
                     Field field = new Field(baseSchema, info?.Name, pos);
                     fields.Add(field);
                     pos++;
                 }
                 return RecordSchema.Create(classNameStr, fields);
             }
-            else
-            {
-                throw new OperationFailedException("PropertyInfo is null");
-            }
 
         }
+
+        private static Schema GetBaseSchema(PropertyInfo info)
+        {
+            return Type.GetTypeCode(info?.GetMethod?.ReturnType) switch
+            {
+                TypeCode.Int32 => PrimitiveSchema.Create(Schema.Type.Int, new PropertyMap()),
+                TypeCode.Int64 => PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap()),
+                TypeCode.Int16 => PrimitiveSchema.Create(Schema.Type.Int, new PropertyMap()),
+                TypeCode.Double => PrimitiveSchema.Create(Schema.Type.Double, new PropertyMap()),
+                TypeCode.DateTime => GetDateTimeFormat(),
+                _ => PrimitiveSchema.Create(Schema.Type.String, new PropertyMap())
+
+            };
+        }
+
         private static Schema GetDateTimeFormat()
         {
             Schema originSchema = PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap());

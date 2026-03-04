@@ -31,7 +31,7 @@ namespace Frameset.Common.Data.Writer
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 DataSetColumnMeta columnMeta = MetaDefine.ColumnList[i];
-                builder.AddField("required", ProtobufUtils.GetTypeStr(columnMeta), columnMeta.ColumnCode, i + 1);
+                builder.AddField("required", ProtobufUtils.GetTypeStr(columnMeta.ColumnType), columnMeta.ColumnCode, i + 1);
             }
             definition = builder.Build();
             message = new DynamicMessage(definition);

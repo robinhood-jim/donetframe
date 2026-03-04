@@ -14,8 +14,7 @@ namespace Frameset.Common.Streaming.Producer
         private int? port;
         private string? userName;
         private string? passwd;
-        //private string? exchange;
-        //private string? routingKey;
+       
         public RabbitMqProducer(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQHOST, out host);
@@ -37,7 +36,6 @@ namespace Frameset.Common.Streaming.Producer
             }
             connection = factory.CreateConnectionAsync().Result;
             channel = connection.CreateChannelAsync().Result;
-
         }
 
         public override bool SendMessage(string queueName, string key, T message)
@@ -49,6 +47,12 @@ namespace Frameset.Common.Streaming.Producer
         {
             await channel.BasicPublishAsync(queueName, key, Serailize(message));
             yield return true;
+        }
+        protected sealed override void Dispose(bool disposable)
+        {
+            base.Dispose(disposable);
+            connection?.Dispose();
+            channel?.Dispose();
         }
     }
 }

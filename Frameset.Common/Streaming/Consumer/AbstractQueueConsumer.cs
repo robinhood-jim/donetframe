@@ -2,10 +2,13 @@
 using Avro.Generic;
 using Avro.IO;
 using Frameset.Common.Data.Utils;
+using Frameset.Common.Protobuf.Utils;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
+using Google.Protobuf;
+using MessagePack;
 using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
@@ -22,16 +25,26 @@ namespace Frameset.Common.Streaming.Consumer
         {
             MetaDefine = define;
             string? serializer = null;
-            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.KAFKASERIALIZER, out serializer))
+            messageType = typeof(T);
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.MQMSGSERIALIZER, out serializer))
             {
                 serializeType = ResourceConstants.SerialzeTypeOf(serializer);
             }
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.MQPOLLMAXSIZE, out string? maxPollSizeStr))
+            {
+                maxReturnSize = Convert.ToInt32(maxPollSizeStr);
+            }
             if (ResourceConstants.SerializeType.AVRO == serializeType)
             {
-                schema = AvroUtils.GetSchema(typeof(T));
+                schema = AvroUtils.GetSchema(messageType);
                 record = new(schema);
                 dreader = new(schema, schema);
-                methodMap = AnnotationUtils.ReflectObject(typeof(T));
+                methodMap = AnnotationUtils.ReflectObject(messageType);
+            }
+            else if (ResourceConstants.SerializeType.PROTOBUF == serializeType)
+            {
+                methodMap = AnnotationUtils.ReflectObject(messageType);
+                dynamicMessage = ProtobufUtils.ConstructDynamicMessage(methodMap, messageType);
             }
         }
         protected string hostUrl = null!;
@@ -42,6 +55,9 @@ namespace Frameset.Common.Streaming.Consumer
         protected Dictionary<string, MethodParam> methodMap = [];
         public abstract List<T> PoolMessage(Action<T> action);
         protected GenericDatumReader<GenericRecord> dreader = null!;
+        protected DynamicMessage dynamicMessage=null!;
+        protected Type messageType;
+        protected int maxReturnSize = 1000;
         public void Dispose()
         {
             Dispose(true);
@@ -57,16 +73,20 @@ namespace Frameset.Common.Streaming.Consumer
         protected T DSerailize(byte[] message)
         {
             Trace.Assert(message != null);
+#pragma warning disable CS8603 // 可能返回 null 引用。
             return serializeType switch
             {
                 ResourceConstants.SerializeType.JSON => JsonSerializer.Deserialize<T>(Encoding.UTF8.GetString(message)),
 
                 ResourceConstants.SerializeType.AVRO => AvroDSerailize(message),
-                _ => throw new NotImplementedException()
+                ResourceConstants.SerializeType.PROTOBUF => ProtoBufDSerializer(message),
+                ResourceConstants.SerializeType.MESSAGEPACK => MessagePackDSerializer(message),
+                _ => default
             };
+#pragma warning restore CS8603 // 可能返回 null 引用。
 
         }
-        private T AvroDSerailize(byte[] message)
+        protected T AvroDSerailize(byte[] message)
         {
             BinaryDecoder decoder = new BinaryDecoder(new MemoryStream(message));
             GenericRecord genericRecord = dreader.Read(record, decoder);
@@ -89,6 +109,15 @@ namespace Frameset.Common.Streaming.Consumer
             {
                 throw new OperationFailedException("schema parse error!");
             }
+        }
+        protected T ProtoBufDSerializer(byte[] message)
+        {
+            dynamicMessage.MergeFrom(new CodedInputStream(message));
+            return dynamicMessage.ConvertToModel<T>();
+        }
+        protected T MessagePackDSerializer(byte[] message)
+        {
+            return MessagePackSerializer.Deserialize<T>(message);
         }
     }
 }

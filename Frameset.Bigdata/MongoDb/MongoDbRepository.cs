@@ -9,10 +9,11 @@ using MongoDB.Bson;
 using MongoDB.Driver;
 namespace Frameset.Bigdata.MongoDb
 {
-    public class MongoDbRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity
+    public class MongoDbRepository<V> : NoSqlRepository<V, string> where V : BaseEntity
     {
-        private MongoClient client;
-        private IMongoDatabase database;
+        private readonly MongoClient client;
+        private readonly IMongoDatabase database;
+
         public MongoDbRepository(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.MONGODBURL, out string? connectUrl);
@@ -22,12 +23,12 @@ namespace Frameset.Bigdata.MongoDb
             database = client.GetDatabase(content.Schema);
         }
 
-        public override V GetById(P pk)
+        public override V GetById(string pk)
         {
             var collection = database.GetCollection<BsonDocument>(content.TableName);
             if (collection != null)
             {
-                var filter = Builders<BsonDocument>.Filter.Eq(pkColumn.FieldName, pk);
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(pk));
                 var result = collection.Find(filter).ToList();
                 if (!result.IsNullOrEmpty())
                 {
@@ -61,21 +62,82 @@ namespace Frameset.Bigdata.MongoDb
             }
         }
 
-        public override int RemoveEntity(IList<P> pks)
+        public override int RemoveEntity(IList<string> pks)
         {
-            throw new NotImplementedException();
+            var collection = database.GetCollection<BsonDocument>(content.TableName);
+            if (collection != null)
+            {
+                var filter = Builders<BsonDocument>.Filter.AnyIn("_id", pks.Select(x => new ObjectId(x)));
+                var result = collection.DeleteMany(filter);
+                return Convert.ToInt32(result.DeletedCount);
+            }
+            else
+            {
+                throw new OperationFailedException("collection" + content.TableName + " does not exists!");
+            }
         }
-
-
 
         public override bool SaveEntity(V entity)
         {
-            throw new NotImplementedException();
+            var collection = database.GetCollection<BsonDocument>(content.TableName);
+            object pk = pkColumn.GetMethod.Invoke(entity, null);
+            if (collection != null)
+            {
+                Dictionary<string, object> dict = [];
+
+                foreach (FieldContent fieldContent in fieldContents)
+                {
+                    var obj = fieldContent.GetMethod.Invoke(entity, null);
+                    if (obj != null)
+                    {
+                        dict.TryAdd(fieldContent.PropertyName, obj);
+                    }
+                }
+                if (pk != null)
+                {
+                    dict.TryAdd("_id", new ObjectId(pk.ToString()));
+                }
+                var bsonDocument = new BsonDocument(dict);
+                collection.InsertOne(bsonDocument);
+                return true;
+            }
+            else
+            {
+                throw new OperationFailedException("collection" + content.TableName + " does not exists!");
+            }
         }
 
         public override bool UpdateEntity(V entity)
         {
-            throw new NotImplementedException();
+            var collection = database.GetCollection<BsonDocument>(content.TableName);
+            object pk = pkColumn.GetMethod.Invoke(entity, null);
+            if (collection != null)
+            {
+                Dictionary<string, object> dict = [];
+                foreach (FieldContent fieldContent in fieldContents)
+                {
+                    if (!fieldContent.IfPrimary)
+                    {
+                        var obj = fieldContent.GetMethod.Invoke(entity, null);
+                        if (obj != null || entity.GetDirties().Contains(fieldContent.PropertyName))
+                        {
+                            dict.TryAdd(fieldContent.PropertyName, obj);
+                        }
+                    }
+                }
+                var updateEle = new BsonDocument(dict);
+                var filter = Builders<BsonDocument>.Filter.Eq("_id", new ObjectId(pk.ToString()));
+                var updateBuilder = Builders<BsonDocument>.Update;
+                var update = updateBuilder.Combine(updateEle.Select(u => u.Value != null ?
+                    updateBuilder.Set(u.Name, u.Value) : updateBuilder.Unset(u.Name)
+                ));
+                collection.UpdateOne(filter, update);
+                return true;
+            }
+            else
+            {
+                throw new OperationFailedException("collection" + content.TableName + " does not exists!");
+            }
         }
     }
 }

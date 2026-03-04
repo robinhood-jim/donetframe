@@ -165,7 +165,7 @@ namespace Frameset.Core.Dao.Utils
             }
             return removeBuilder.ToString();
         }
-        public static Tuple<StringBuilder, IList<DbParameter>> GetRemoveCondition(IJdbcDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
+        public static Tuple<string, IList<DbParameter>> GetRemoveCondition(IJdbcDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             Dictionary<string, FieldContent> fieldMaps = EntityReflectUtils.GetFieldsMap(modelType);
@@ -176,7 +176,7 @@ namespace Frameset.Core.Dao.Utils
             StringBuilder builder = new StringBuilder("DELETE FROM ").Append(entityContent.GetTableName()).Append(" WHERE ");
 
             IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, out int _, oper, values);
-            return Tuple.Create(builder, parameters);
+            return Tuple.Create(builder.ToString(), parameters);
         }
         public static string GetSelectSql(Type modelType)
         {

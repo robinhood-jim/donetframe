@@ -43,6 +43,8 @@ namespace Frameset.Core.Common
         public static readonly string XMLENTITYIONNAME = "xml.entityName";
         public static readonly string XMLDEFUALTCOLLECTIONAME = "Records";
         public static readonly string XMLDEFAULTENTITYNAME = "Record";
+        public static readonly string MQMSGSERIALIZER = "mqmsg.serializer";
+        public static readonly string MQPOLLMAXSIZE = "mqmsg.maxPollSize";
         //kafka
         public static readonly string KAFKABROKERURL = "kafka.brokerUrl";
         public static readonly string KAFKASERIALIZER = "kafka.serializer";
@@ -52,7 +54,12 @@ namespace Frameset.Core.Common
         public static readonly string ROCKETMQBROKERURL = "rocketmq.brokerUrl";
         public static readonly string ROCKETMQSERIALIZER = "rocketmq.serializer";
         public static readonly string ROCKETMQCONSUMERGROUPID = "rocketmq.groupId";
-        public static readonly string ROCKETMQUEUENAME = "rocketmq.queueName";
+        public static readonly string ROCKETMTOPICS = "rocketmq.topics";
+        public static readonly string ROCKETMQSECRETKEY = "rocketmq.sercretkey";
+        public static readonly string ROCKETMQACCESSKEY = "rocketmq.accesskey";
+        public static readonly string ROCKETMQENDPOINT = "rocketmq.endpoint";
+        public static readonly string ROCKETMQMESSAGEGROUP = "rocketmq.messagegroup";
+        public static readonly string ROCETMQCONSUMERGROUP = "rocketmq.consumergroup";
         //rabbitmq
         public static readonly string RABBITMQHOST = "rabbitmq.host";
         public static readonly string RABBITMQPORT = "rabbitmq.port";
@@ -92,8 +99,9 @@ namespace Frameset.Core.Common
         public enum SerializeType
         {
             JSON,
-            XML,
-            AVRO
+            AVRO,
+            PROTOBUF,
+            MESSAGEPACK
         }
         public static SerializeType SerialzeTypeOf(string serialzeType)
         {

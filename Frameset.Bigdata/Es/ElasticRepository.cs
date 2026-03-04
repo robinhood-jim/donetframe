@@ -64,7 +64,6 @@ namespace Frameset.Bigdata.Es
             {
                 idList.Add(GetFieldValue(pk));
             }
-            var ids = new string[] { "1", "2" };
             DeleteByQueryResponse response = client.DeleteByQuery<V>(content.TableName, action =>
                 action.Query(rq => rq
                     .Bool(b => b

@@ -2,9 +2,13 @@
 using Avro.Generic;
 using Avro.IO;
 using Frameset.Common.Data.Utils;
+using Frameset.Common.Protobuf.Utils;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
+using Google.Protobuf;
+using MessagePack;
+using System.Diagnostics;
 using System.Text;
 using System.Text.Json;
 
@@ -20,16 +24,22 @@ namespace Frameset.Common.Streaming.Producer
         {
             MetaDefine = define;
             string? serializer = null;
-            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.KAFKASERIALIZER, out serializer))
+            messageType = typeof(T);
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.MQMSGSERIALIZER, out serializer))
             {
                 serializeType = ResourceConstants.SerialzeTypeOf(serializer);
             }
             if (ResourceConstants.SerializeType.AVRO == serializeType)
             {
-                schema = AvroUtils.GetSchema(typeof(T));
+                schema = AvroUtils.GetSchema(messageType);
                 record = new(schema);
                 dwriter = new(schema);
-                methodMap = AnnotationUtils.ReflectObject(typeof(T));
+                methodMap = AnnotationUtils.ReflectObject(messageType);
+            }
+            else if (ResourceConstants.SerializeType.PROTOBUF == serializeType)
+            {
+                methodMap = AnnotationUtils.ReflectObject(messageType);
+                dynamicMessage = ProtobufUtils.ConstructDynamicMessage(methodMap, messageType);
             }
         }
         protected string hostUrl = null!;
@@ -40,6 +50,8 @@ namespace Frameset.Common.Streaming.Producer
         protected Dictionary<string, MethodParam> methodMap = [];
         public abstract bool SendMessage(string queueName, string key, T message);
         protected GenericDatumWriter<GenericRecord> dwriter = null!;
+        protected DynamicMessage dynamicMessage = null!;
+        protected Type messageType;
         public void Dispose()
         {
             Dispose(true);
@@ -58,6 +70,8 @@ namespace Frameset.Common.Streaming.Producer
             {
                 ResourceConstants.SerializeType.JSON => encoding.GetBytes(JsonSerializer.Serialize(message)),
                 ResourceConstants.SerializeType.AVRO => SerializeAvro(message),
+                ResourceConstants.SerializeType.PROTOBUF => SerializeProtoBuf(message),
+                ResourceConstants.SerializeType.MESSAGEPACK => SerializeMessagePack(message),
                 _ => throw new NotImplementedException()
             };
         }
@@ -77,13 +91,30 @@ namespace Frameset.Common.Streaming.Producer
             }
 
             byte[] bytes;
-            using (MemoryStream stream = new MemoryStream())
+            using (MemoryStream stream = new())
             {
                 BinaryEncoder encoder = new(stream);
                 dwriter?.Write(record, encoder);
                 bytes = stream.ToArray();
             }
             return bytes;
+        }
+        protected byte[] SerializeProtoBuf(T message)
+        {
+            Trace.Assert(dynamicMessage != null, "");
+            dynamicMessage.ParseFrom<T>(message);
+            using (MemoryStream stream = new())
+            {
+                using (CodedOutputStream outputStream = new CodedOutputStream(stream))
+                {
+                    dynamicMessage.WriteTo(outputStream);
+                    return stream.ToArray();
+                }
+            }
+        }
+        protected byte[] SerializeMessagePack(T message)
+        {
+            return MessagePackSerializer.Serialize(message, MessagePackSerializerOptions.Standard);
         }
     }
 }

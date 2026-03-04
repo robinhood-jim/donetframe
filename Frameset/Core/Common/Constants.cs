@@ -225,6 +225,24 @@ namespace Frameset.Core.Common
                 JoinType.FULLOUTTER => " OUTTER "
             };
         }
+        public static string GetMetaTypeProtoBufType(Type targetType)
+        {
+            return Type.GetTypeCode(targetType) switch
+            {
+                TypeCode.Int64 => "int64",
+                TypeCode.Int32 => "int32",
+                TypeCode.Int16 => "int32",
+                TypeCode.Single => "float",
+                TypeCode.Double => "double",
+                TypeCode.DateTime => "int64",
+                TypeCode.SByte => "bytes",
+                TypeCode.Boolean => "bool",
+                TypeCode.String => "string",
+                TypeCode.Object => throw new ArgumentException("object serailize not supported!"),
+                _ => "string"
+            };
+
+        }
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";
         public static readonly string TRUEVALUE = "true";

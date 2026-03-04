@@ -16,6 +16,8 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Common", "Frameset
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Web", "Frameset.Web\Frameset.Web.csproj", "{C644CE0C-6140-442F-8388-908BB36FAFC6}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Bigdata", "Frameset.Bigdata\Frameset.Bigdata.csproj", "{974899E5-39F0-40B6-98B3-EDCDCD63E83D}"
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

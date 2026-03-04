@@ -12,7 +12,7 @@ namespace Frameset.Common.Streaming.Consumer
         private IConsumer<string, byte[]> consumer;
         private readonly string groupId = null!;
         private readonly string? brokerUrl;
-        private int maxReturnSize = 1000;
+
         private readonly string queueName;
         public KafkaConsumer(DataCollectionDefine define) : base(define)
         {
@@ -50,7 +50,7 @@ namespace Frameset.Common.Streaming.Consumer
                         T retObj = DSerailize(message.Message.Value);
                         action?.Invoke(retObj);
                         retList.Add(retObj);
-                        if (groupSize == maxReturnSize)
+                        if (groupSize >= maxReturnSize)
                         {
                             breakable = true;
                         }

@@ -21,6 +21,7 @@ namespace Frameset.Bigdata.Hbase
 
         public override V GetById(P pk)
         {
+
             throw new NotImplementedException();
         }
 

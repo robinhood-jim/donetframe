@@ -126,10 +126,10 @@ namespace Frameset.Core.Context
             CheckTypeExists(entityType);
             if (IsAutoCommit())
             {
-                Tuple<StringBuilder, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(GetDao(), entityType, fieldName, sqlOperator, values);
+                Tuple<string, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(GetDao(), entityType, fieldName, sqlOperator, values);
                 return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1.ToString(), null, (command, v) =>
                 {
-                    return GetDao().Execute(command, tuple.Item1.ToString(), tuple.Item2.ToArray());
+                    return GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
                 });
             }
             else
@@ -525,6 +525,10 @@ namespace Frameset.Core.Context
                     if (list != null && !list.IsNullOrEmpty())
                     {
                         Type subType = list.GetType().GetGenericArguments()[0];
+                        //remove origin
+                        Tuple<string, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao,subType, content.RealtionColumn, Constants.SqlOperator.EQ, [id]);
+                        GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
+
                         Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
                         if (!subFieldMap.TryGetValue(subColumn, out FieldContent realtionContent))
                         {
@@ -599,8 +603,8 @@ namespace Frameset.Core.Context
                     {
                         throw new BaseSqlException("refrence column " + subColumn + " not defined in entity " + subType.Name);
                     }
-                    Tuple<StringBuilder, IList<DbParameter>> tuple1 = SqlUtils.GetRemoveCondition(GetDao(), subType, relationContent.FieldName, Constants.SqlOperator.IN, [pkList]);
-                    effectRow += GetDao().Execute(command, tuple1.Item1.ToString(), tuple1.Item2.ToArray());
+                    Tuple<string, IList<DbParameter>> tuple1 = SqlUtils.GetRemoveCondition(GetDao(), subType, relationContent.FieldName, Constants.SqlOperator.IN, [pkList]);
+                    effectRow += GetDao().Execute(command, tuple1.Item1, tuple1.Item2.ToArray());
                 }
             }
             return effectRow;

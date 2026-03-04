@@ -15,7 +15,7 @@ Bigdate Support for Nosql ElasticSearch/Cassandra/MongoDb/Hbase
 - Single JdbcDao per DataSource;
 - Service Layer BaseRepository，with basic CRUD operator,can enhace or override;
 - Mybatis xml query ability,with js script enabled;
-- Integarte with propluar Database system;
+- Intergarte with propluar Database system;
 - Support EF core Annotation
 
 ## Examples
@@ -33,11 +33,20 @@ dataSource:
 
 
 - DAO/Repository initialize
+Each Dao present as ADO Provider for one datasource
 ```cs
 
 DAOFactory f = DAOFactory.init("f:/1.yaml");
 //Construct Repository
 BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
+
+```
+- Customer IDbContext
+Thread safe DbContext,SaveChanges operation separate with ManagedThreadId,can switch dataSource with dsName at runtime.
+```cs
+
+IDbContext context = new DbContext();
+DbContextFactory.Register(context);
 
 ```
 
@@ -163,7 +172,7 @@ using (AbstractDataWriter<Dictionary<string, object>> writer = DataFileExporter.
 ```
 - Serverless Dynamic Dll support
 
-1.With webapi project add in appsetting,json,serverlessPrefix Parameter
+1.With webapi project add in appsetting.json,serverlessPrefix Parameter
 ```json
 {
   "Logging": {
