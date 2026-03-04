@@ -57,7 +57,7 @@
 	<PackageReference Include="Microsoft.Extensions.Configuration.Json" Version="9.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Binder" Version="9.0.0" />
 	<PackageReference Include="Microsoft.Extensions.Configuration.Abstractions" Version="9.0.0" />
-	  
+	<PackageReference Include="MessagePack" Version="3.1.4" />
 	   
 	  <None Include="..\LICENSE" Pack="true" PackagePath="" />
 	  <None Include="..\README.en.md">
