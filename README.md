@@ -1,4 +1,7 @@
 # Generic DotNet framework
+
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
+
 =========
 #### Introduction
 Based on Net Frame 8.Now including basic ORM frame support (including EF Core).This may be most simplify code to intergrate ORM ability

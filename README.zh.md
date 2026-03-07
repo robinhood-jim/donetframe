@@ -1,4 +1,6 @@
 # 通用.net框架
+[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
+
 =========
 #### 介绍
 基于.Net8.0以上的 基础框架，目前包含基本ORM 框架，可支持EF Core的注解方式，整个框架小而精，集成了最小功能集合的ORM功能，未考虑微软的语法树等功能。代码直观易懂，整体代码都是原创，可通过阅读整体框架对ORM有深入的了解
