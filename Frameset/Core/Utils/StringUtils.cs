@@ -16,7 +16,7 @@ namespace Frameset.Core.Utils
         {
             if (HasLegth(value))
             {
-                return changeFirstCharacterCase(value, true);
+                return ChangeFirstCharacterCase(value, true);
             }
             else
             {
@@ -28,7 +28,7 @@ namespace Frameset.Core.Utils
         {
             if (HasLegth(value))
             {
-                return changeFirstCharacterCase(value, false);
+                return ChangeFirstCharacterCase(value, false);
             }
             else
             {
@@ -102,7 +102,7 @@ namespace Frameset.Core.Utils
             return value != null && !string.IsNullOrWhiteSpace(value);
         }
 
-        private static string changeFirstCharacterCase(string str, bool capitalize)
+        private static string ChangeFirstCharacterCase(string str, bool capitalize)
         {
             if (!HasLegth(str))
             {

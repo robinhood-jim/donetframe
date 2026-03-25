@@ -238,6 +238,10 @@ namespace Frameset.Core.Dao
                 }
             }
         }
+        public DbParameter WrapParameter(string key, object value)
+        {
+            return dataMeta.WrapParameter(key, value);
+        }
 
 
         public PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query)

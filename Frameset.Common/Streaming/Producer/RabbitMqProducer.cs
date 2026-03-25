@@ -14,7 +14,7 @@ namespace Frameset.Common.Streaming.Producer
         private int? port;
         private string? userName;
         private string? passwd;
-       
+
         public RabbitMqProducer(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQHOST, out host);

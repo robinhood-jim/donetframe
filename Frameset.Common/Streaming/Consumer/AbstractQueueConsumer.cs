@@ -55,7 +55,7 @@ namespace Frameset.Common.Streaming.Consumer
         protected Dictionary<string, MethodParam> methodMap = [];
         public abstract List<T> PoolMessage(Action<T> action);
         protected GenericDatumReader<GenericRecord> dreader = null!;
-        protected DynamicMessage dynamicMessage=null!;
+        protected DynamicMessage dynamicMessage = null!;
         protected Type messageType;
         protected int maxReturnSize = 1000;
         public void Dispose()

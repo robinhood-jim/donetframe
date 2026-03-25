@@ -32,6 +32,6 @@ namespace Frameset.Common.Streaming.Producer
             base.Dispose(disposable);
             producer?.Dispose();
         }
-        
+
     }
 }

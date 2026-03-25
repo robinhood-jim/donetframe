@@ -51,7 +51,7 @@ namespace Frameset.Core.Common
                             retVal = double.Parse(input.ToString());
                             break;
                         case TypeCode.DateTime:
-                            DateTime? time = parseDateTime(input.ToString());
+                            DateTime? time = ParseDateTime(input.ToString());
                             if (time.HasValue)
                             {
                                 retVal = time.Value;
@@ -67,7 +67,7 @@ namespace Frameset.Core.Common
                                 }
                                 else
                                 {
-                                    DateTime? stime = parseDateTime(input.ToString());
+                                    DateTime? stime = ParseDateTime(input.ToString());
                                     if (stime.HasValue)
                                     {
                                         retVal = new DateTimeOffset(stime.Value, timeZoneInfo.BaseUtcOffset);
@@ -85,7 +85,7 @@ namespace Frameset.Core.Common
             return retVal;
 
         }
-        public static DateTime? parseDateTime(string dateStr)
+        public static DateTime? ParseDateTime(string dateStr)
         {
             DateTime? retTime = null;
             if (NumberUtils.IsNumber(dateStr))
@@ -118,26 +118,49 @@ namespace Frameset.Core.Common
         }
         public static void ToDict(object obj, Dictionary<string, object> dict)
         {
-            PropertyInfo[] propertyInfos = obj.GetType().GetProperties();
-            foreach (PropertyInfo prop in propertyInfos)
+            if (obj.GetType().IsSubclassOf(typeof(BaseModel)))
             {
-                string name = prop.Name;
-                MethodInfo info = prop.GetMethod;
-                object value = info.Invoke(obj, null);
-                dict.TryAdd(name, value);
+                IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
+                foreach (FieldContent fieldContent in fieldContents)
+                {
+                    object value = fieldContent.GetMethod.Invoke(obj, null);
+                    dict.TryAdd(fieldContent.PropertyName, value);
+                }
             }
-
+            else
+            {
+                PropertyInfo[] propertyInfos = obj.GetType().GetProperties();
+                foreach (PropertyInfo prop in propertyInfos)
+                {
+                    string name = prop.Name;
+                    MethodInfo info = prop.GetMethod;
+                    object value = info.Invoke(obj, null);
+                    dict.TryAdd(name, value);
+                }
+            }
         }
         public static void ToDictRef(object obj, out Dictionary<string, object> dict)
         {
-            PropertyInfo[] propertyInfos = obj.GetType().GetProperties();
             dict = [];
-            foreach (PropertyInfo prop in propertyInfos)
+            if (obj.GetType().IsSubclassOf(typeof(BaseModel)))
             {
-                string name = prop.Name;
-                MethodInfo info = prop.GetMethod;
-                object value = info.Invoke(obj, null);
-                dict.TryAdd(name, value);
+                IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
+                foreach (FieldContent fieldContent in fieldContents)
+                {
+                    object value = fieldContent.GetMethod.Invoke(obj, null);
+                    dict.TryAdd(fieldContent.PropertyName, value);
+                }
+            }
+            else
+            {
+                PropertyInfo[] propertyInfos = obj.GetType().GetProperties();
+                foreach (PropertyInfo prop in propertyInfos)
+                {
+                    string name = prop.Name;
+                    MethodInfo info = prop.GetMethod;
+                    object value = info.Invoke(obj, null);
+                    dict.TryAdd(name, value);
+                }
             }
         }
         public static void WrapUpdate(BaseEntity origin, BaseEntity update)

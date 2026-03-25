@@ -32,16 +32,16 @@ namespace Frameset.Bigdata.RocketMq
         private async void DoInit(ClientConfig clientConfig)
         {
             Dictionary<string, FilterExpression> Subscription = new Dictionary<string, FilterExpression> { { Topics, new FilterExpression("*") } };
-            Consumer =await new SimpleConsumer.Builder().SetClientConfig(clientConfig)
+            Consumer = await new SimpleConsumer.Builder().SetClientConfig(clientConfig)
                 .SetConsumerGroup(ConsumerGroup)
                 .SetAwaitDuration(TimeSpan.FromSeconds(15))
                 .SetSubscriptionExpression(Subscription).Build();
 
         }
 
-        
+
         public override List<V> PoolMessage(Action<V> action)
-        {   
+        {
             return ReceiveAnsyc(action).Result;
         }
         private async Task<List<V>> ReceiveAnsyc(Action<V> action)
@@ -50,7 +50,7 @@ namespace Frameset.Bigdata.RocketMq
             List<V> retMsgs = new(maxReturnSize);
             while (!messages.IsNullOrEmpty())
             {
-                foreach(var message in messages)
+                foreach (var message in messages)
                 {
                     V entity = DSerailize(message.Body);
                     if (action != null)

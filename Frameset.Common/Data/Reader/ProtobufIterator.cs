@@ -8,8 +8,8 @@ namespace Frameset.Common.Data.Reader
 {
     public class ProtobufIterator<T> : AbstractDataIterator<T>
     {
-        private MessageDefinition definition=null!;
-        private DynamicMessage message=null!;
+        private MessageDefinition definition = null!;
+        private DynamicMessage message = null!;
 
         public ProtobufIterator(DataCollectionDefine define) : base(define)
         {

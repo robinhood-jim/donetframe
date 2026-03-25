@@ -39,5 +39,12 @@ namespace Frameset.Bigdata.Hbase
         {
             throw new NotImplementedException();
         }
+        protected override void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+                client.Dispose();
+            }
+        }
     }
 }

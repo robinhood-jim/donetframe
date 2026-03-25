@@ -95,6 +95,12 @@ namespace Frameset.Core.Common
         //Redis
         public static readonly string REDISURL = "redis.url";
         public static readonly string REDISDBID = "redis.db";
+        //JanusGraph
+        public static readonly string JANUSHOST = "janus.host";
+        public static readonly string JANUSPORT = "janus.port";
+        public static readonly string JANUSENABLESSL = "janus.enablessl";
+        public static readonly string JANUSUSER = "janus.username";
+        public static readonly string JANUSPASSWD = "janus.passwd";
 
         public enum SerializeType
         {

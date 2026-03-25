@@ -12,8 +12,8 @@ namespace Frameset.Bigdata.CouchDb
     public class CouchDbRepository<V> : NoSqlRepository<V, string> where V : BaseEntity
     {
         private readonly string dbUrl;
-        private readonly string dbName=null!;
-        private readonly string dbCredential=null!;
+        private readonly string dbName = null!;
+        private readonly string dbCredential = null!;
         private readonly IHttpClientFactory clientFactory;
         public CouchDbRepository(DataCollectionDefine define, IHttpClientFactory clientFactory) : base(define)
         {
@@ -122,6 +122,13 @@ namespace Frameset.Bigdata.CouchDb
                 httpClient.DefaultRequestHeaders.Add("Authorization", "Basic " + Convert.ToBase64String(credentialBytes));
             }
             return httpClient;
+        }
+        protected override void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+
+            }
         }
     }
 }

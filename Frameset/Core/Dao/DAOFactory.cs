@@ -127,6 +127,11 @@ namespace Frameset.Core.Dao
 
             return dao;
         }
+        public static JdbcDao Construct(string dbType, string schema, string connectionString)
+        {
+            JdbcDao dao = new JdbcDao(dbType, schema, connectionString);
+            return dao;
+        }
         public static void Register(string dsName, Dictionary<object, object> configMap, bool autoConstructDbContext = false)
         {
             if (containner.ContainsKey(dsName))

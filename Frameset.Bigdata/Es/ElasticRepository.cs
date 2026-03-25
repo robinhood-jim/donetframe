@@ -38,6 +38,7 @@ namespace Frameset.Bigdata.Es
         public override bool SaveEntity(V entity)
         {
             object? id = pkColumn.GetMethod.Invoke(entity, []);
+
             IndexResponse response = client.IndexAsync(entity, idx =>
             {
                 idx.Index(content.TableName);
@@ -95,6 +96,7 @@ namespace Frameset.Bigdata.Es
         }
         private Number GetNumber(object input)
         {
+            Trace.Assert(!string.IsNullOrWhiteSpace(input.ToString()), "");
             return Type.GetTypeCode(input.GetType()) switch
             {
                 TypeCode.Int32 => new Number(int.Parse(input.ToString())),
@@ -262,6 +264,13 @@ namespace Frameset.Bigdata.Es
                 default:
                     descriptor.Term(t => t.Field(fieldContent.PropertyName).Value(GetFieldValue(values[0])));
                     break;
+            }
+        }
+        protected override void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+
             }
         }
 

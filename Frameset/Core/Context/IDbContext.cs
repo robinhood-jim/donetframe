@@ -46,7 +46,8 @@ namespace Frameset.Core.Context
 
         void RestoreDs();
         string GetDsName();
-        List<O> QueryByCondtion<V, O>(FilterCondition condition) where V : BaseEntity;
+        List<V> QueryByCondition<V>(FilterCondition condition) where V : BaseEntity;
+        List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
         List<O> QueryByFields<V, O>(QueryParameter queryParams) where V : BaseEntity;
         bool ExecuteOperation(Action<IJdbcDao, DbCommand> action);

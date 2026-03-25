@@ -8,7 +8,7 @@ using Spring.Util;
 
 namespace Frameset.Bigdata.NoSql
 {
-    public abstract class NoSqlRepository<V, P> : INoSqlRepository<V, P> where V : BaseEntity
+    public abstract class NoSqlRepository<V, P> : IDisposable, INoSqlRepository<V, P> where V : BaseEntity
     {
         protected EntityContent content;
         protected FieldContent pkColumn;
@@ -54,6 +54,10 @@ namespace Frameset.Bigdata.NoSql
 
         public abstract bool UpdateEntity(V entity);
 
-
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        protected abstract void Dispose(bool disposable);
     }
 }

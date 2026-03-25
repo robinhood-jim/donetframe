@@ -207,8 +207,21 @@ namespace Frameset.Core.Context
                 }
             }
         }
+        public override List<V> QueryByCondition<V>(FilterCondition condition)
+        {
+            Type entityType = typeof(V);
+            CheckTypeExists(entityType);
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
+                {
+                    return GetDao().QueryByConditon<V>(command, condition);
+                }
+            }
+        }
 
-        public override List<O> QueryByCondtion<V, O>(FilterCondition condition)
+        public override List<O> QueryByCondition<V, O>(FilterCondition condition)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
@@ -526,7 +539,7 @@ namespace Frameset.Core.Context
                     {
                         Type subType = list.GetType().GetGenericArguments()[0];
                         //remove origin
-                        Tuple<string, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao,subType, content.RealtionColumn, Constants.SqlOperator.EQ, [id]);
+                        Tuple<string, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao, subType, content.RealtionColumn, Constants.SqlOperator.EQ, [id]);
                         GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
 
                         Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);

@@ -139,5 +139,12 @@ namespace Frameset.Bigdata.MongoDb
                 throw new OperationFailedException("collection" + content.TableName + " does not exists!");
             }
         }
+        protected override void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+                client.Dispose();
+            }
+        }
     }
 }

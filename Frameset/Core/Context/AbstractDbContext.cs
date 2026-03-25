@@ -349,7 +349,9 @@ namespace Frameset.Core.Context
 
         public abstract long InsertBatch<V>(IEnumerable<V> models, CancellationToken token) where V : BaseEntity;
 
-        public abstract List<O> QueryByCondtion<V, O>(FilterCondition condition) where V : BaseEntity;
+        public abstract List<V> QueryByCondition<V>(FilterCondition condition) where V : BaseEntity;
+
+        public abstract List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
         public abstract List<O> QueryByFields<V, O>(QueryParameter queryParams) where V : BaseEntity;
 

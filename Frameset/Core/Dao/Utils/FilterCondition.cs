@@ -86,18 +86,19 @@ namespace Frameset.Core.Dao.Utils
         public string GeneratePreparedSql(Dictionary<string, object> valueMap, Dictionary<string, int> duplicatedMap, Dictionary<Type, string> entityAliasMap)
         {
             StringBuilder builder = new StringBuilder(0);
-
+            bool containParenthesis = false;
             if (!Conditions.IsNullOrEmpty())
             {
                 for (int i = 0; i < Conditions.Count; i++)
                 {
                     FilterCondition condition = Conditions[i];
-                    if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase) && containParenthesis)
                     {
                         builder.Append("(");
+                        containParenthesis = true;
                     }
                     builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap, entityAliasMap));
-                    if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase))
+                    if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase) && containParenthesis)
                     {
                         builder.Append(")");
                     }

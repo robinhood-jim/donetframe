@@ -26,7 +26,7 @@ namespace Frameset.Bigdata.Cassandra
         public CassandraRepository(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.CASSANDRAURL, out string? connectUrl);
-            Trace.Assert(!connectUrl.IsNullOrEmpty(), "connect url must not null!");
+            Trace.Assert(connectUrl == null || !connectUrl.IsNullOrEmpty(), "connect url must not null!");
             define.ResourceConfig.TryGetValue(ResourceConstants.CASSANDRAKEYSAPCE, out keySpace);
             Trace.Assert(!keySpace.IsNullOrEmpty(), "connect url must not null!");
             define.ResourceConfig.TryGetValue(ResourceConstants.CASSANDRAUSERNAME, out string? userName);
@@ -127,7 +127,7 @@ namespace Frameset.Bigdata.Cassandra
         public override bool UpdateEntity(V entity)
         {
             FieldContent content = EntityReflectUtils.GetPrimaryKey(modelType);
-            object pkId = content.GetMethod.Invoke(entity, null);
+            object? pkId = content.GetMethod.Invoke(entity, null);
             V origin = GetById((P)pkId);
             UpdateSegment updateSegment = SqlGenUtils.GetUpdateSegment(origin, entity);
             PreparedStatement statement = session.Prepare(updateSegment.UpdateSql);
@@ -239,6 +239,14 @@ namespace Frameset.Bigdata.Cassandra
                     return false;
                 }
                 return true;
+            }
+        }
+        protected override void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+                session.Dispose();
+                cluster.Dispose();
             }
         }
     }
