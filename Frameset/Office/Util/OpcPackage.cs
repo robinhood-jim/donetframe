@@ -185,7 +185,7 @@ namespace Frameset.Office.Util
             CellType type = CellType.STRING;
             switch (prop.ColumnType)
             {
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                 case Constants.MetaType.FLOAT:
                 case Constants.MetaType.DOUBLE:
                 case Constants.MetaType.INTEGER:

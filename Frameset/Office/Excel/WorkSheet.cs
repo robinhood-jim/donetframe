@@ -290,7 +290,7 @@ namespace Frameset.Office.Excel
                         cell.SetValue(dVal);
                     }
                     break;
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                     long lVal = 0;
                     if (long.TryParse(value.ToString(), out lVal))
                     {
@@ -423,7 +423,7 @@ namespace Frameset.Office.Excel
             string numFmtStr = null;
             switch (columnProp.ColumnType)
             {
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                 case Constants.MetaType.INTEGER:
                 case Constants.MetaType.BOOLEAN:
                     numFmtStr = columnProp.Format.IsNullOrEmpty() ? OpcPackage.IMPLICIT_NUM_FMTS["1"] : columnProp.Format;

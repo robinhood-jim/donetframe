@@ -322,7 +322,7 @@ namespace Frameset.Office.Excel.Util
                         }
                         retObj = Convert.ToInt32(tmpVal);
                         break;
-                    case Constants.MetaType.BIGINT:
+                    case Constants.MetaType.LONG:
                         if (tmpVal.Contains('.'))
                         {
                             int pos = tmpVal.IndexOf('.');
