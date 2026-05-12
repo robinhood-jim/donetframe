@@ -112,7 +112,10 @@ namespace Frameset.Common.Data.Reader
 
         public override bool MoveNext()
         {
-            base.MoveNext();
+            if (!base.MoveNext())
+            {
+                return false;
+            }
             CachedValue.Clear();
             bool hasNext = false;
             while (xmlReader.Read())
@@ -166,13 +169,17 @@ namespace Frameset.Common.Data.Reader
         }
         internal void ParseObject(DataSetColumnMeta meta)
         {
-            if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
+            if (!projectionColumns.IsNullOrEmpty() && !projectionColumns.Contains(meta.ColumnCode))
             {
-                CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, dateFormatter));
-            }
-            else
-            {
-                CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, timestampFormatter));
+
+                if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
+                {
+                    CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, dateFormatter));
+                }
+                else
+                {
+                    CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(xmlReader.Value, meta, timestampFormatter));
+                }
             }
         }
 

@@ -24,7 +24,10 @@ namespace Frameset.Common.Data.Reader
         }
         public override bool MoveNext()
         {
-            base.MoveNext();
+            if (!base.MoveNext())
+            {
+                return false;
+            }
             if (message.MergeDelimitedFromNew(inputStream))
             {
                 CachedValue.Clear();

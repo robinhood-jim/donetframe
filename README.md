@@ -1,10 +1,10 @@
 # Generic DotNet framework
-
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
+[![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
 
 =========
 #### Introduction
-Based on Net Frame 8.Now including basic ORM frame support (including EF Core).This may be most simplify code to intergrate ORM ability
+Based on Net Frame 8.Now including basic ORM frame support (including EF Core and Data Annotation Support).This may be most simplify code to intergrate ORM ability，
+Support Logic Delete Attribute and dao datasource Aspect defined
 Stream Reader/Writer for Excel and word. Customer Ioc Support to support AutoWire Service and support recursive AutoWired.
 United FileSystem and Data File Reader and Write,Support CSV/XML/JSON/AVRO/PARQUET/ORC File Format
 Add Serverless Function for dynamic load and unload DLL at runtime

@@ -10,12 +10,18 @@ namespace Frameset.Common.Data.Writer
     {
         private List<string> contents;
         private string sepearotr = ResourceConstants.CSVDEFAULTSPILTTER;
+        bool containHeader = false;
+        bool writeHeader = false;
         public CsvDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
             Identifier = Constants.FileFormatType.CSV;
             useWriter = true;
             contents = new List<string>(define.ColumnList.Count);
             define.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out string? separatorStr);
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.CSVCONTAINHEADER, out string? containHeaderStr))
+            {
+                containHeader = Constants.VALID.Equals(containHeaderStr.Trim());
+            }
             sepearotr = separatorStr ?? sepearotr;
             Initalize();
         }
@@ -38,6 +44,16 @@ namespace Frameset.Common.Data.Writer
         public override void WriteRecord(T value)
         {
             contents.Clear();
+            if (!writeHeader && containHeader)
+            {
+                foreach (DataSetColumnMeta meta in MetaDefine.ColumnList)
+                {
+                    contents.Add(meta.ColumnName);
+                }
+                writer.WriteLine(string.Join(sepearotr[0], contents));
+                contents.Clear();
+                writeHeader = true;
+            }
             foreach (DataSetColumnMeta meta in MetaDefine.ColumnList)
             {
                 if (useDictOutput)

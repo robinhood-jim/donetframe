@@ -83,6 +83,10 @@ namespace Frameset.Core.Dao.Utils
         {
             get; internal set;
         } = false;
+        public bool IfComputed
+        {
+            get; internal set;
+        } = false;
         public bool IfSequence
         {
             get; internal set;
@@ -123,6 +127,22 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         }
+        public bool IfLogicColumn
+        {
+            get; internal set;
+        } = false;
+        public int ValidValue
+        {
+            get; internal set;
+        } = Constants.INVALID_INT;
+        public int InvalidValue
+        {
+            get; internal set;
+        } = Constants.INVALID_INT;
+        public string Formula
+        {
+            get; set;
+        } = string.Empty;
     }
     public class FieldBuilder
     {
@@ -217,6 +237,11 @@ namespace Frameset.Core.Dao.Utils
             content.Exist = false;
             return this;
         }
+        public FieldBuilder Computed()
+        {
+            content.IfComputed = true;
+            return this;
+        }
         public FieldBuilder ManyToOne(ManyToOneAttribute attribute)
         {
             content.IsManyToOne = true;
@@ -239,6 +264,22 @@ namespace Frameset.Core.Dao.Utils
             content.Cascade = attribute.Cascade;
             return this;
         }
+        public FieldBuilder LogicColumn(LogicColumnAttribute attribute)
+        {
+            content.IfLogicColumn = true;
+            content.ValidValue = attribute.ValidValue;
+            content.InvalidValue = attribute.InvalidValue;
+            return this;
+        }
+        public FieldBuilder Formula(string formula)
+        {
+            if (content.IfComputed)
+            {
+                content.Formula = formula;
+            }
+            return this;
+        }
+
         public bool Acceptable()
         {
             return content.Exist && !string.IsNullOrEmpty(content.FieldName) && !string.IsNullOrEmpty(content.PropertyName) && content.GetMethod != null;

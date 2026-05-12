@@ -21,7 +21,16 @@ namespace Frameset.Common.Data.Reader
         int currentGroup = 0;
         long rowCount = 0;
         long readLines = 0;
+        internal ParquetOptions parquetOptions;
+        internal bool leaveStreamOpen = true;
+
         public ParquetIterator(DataCollectionDefine define) : base(define)
+        {
+            Identifier = Constants.FileFormatType.PARQUET;
+            useRawStream = true;
+            Initalize(define.Path);
+        }
+        public ParquetIterator(DataCollectionDefine define, Action<AbstractDataIterator<T>> initFunc) : base(define, initFunc)
         {
             Identifier = Constants.FileFormatType.PARQUET;
             useRawStream = true;
@@ -34,8 +43,19 @@ namespace Frameset.Common.Data.Reader
             useRawStream = true;
             Initalize(define.Path);
         }
-
+        public ParquetIterator(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataIterator<T>>? initFunc) : base(define, fileSystem, initFunc)
+        {
+            Identifier = Constants.FileFormatType.PARQUET;
+            useRawStream = true;
+            Initalize(define.Path);
+        }
         public ParquetIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.AVRO;
+            useRawStream = true;
+            Initalize(processPath);
+        }
+        public ParquetIterator(IFileSystem fileSystem, string processPath, Action<AbstractDataIterator<T>>? initFunc) : base(fileSystem, processPath, initFunc)
         {
             Identifier = Constants.FileFormatType.AVRO;
             useRawStream = true;
@@ -45,7 +65,7 @@ namespace Frameset.Common.Data.Reader
         public override sealed void Initalize(string? filePath = null)
         {
             base.Initalize(filePath);
-            preader = ParquetReader.CreateAsync(inputStream).Result;
+            preader = ParquetReader.CreateAsync(inputStream, parquetOptions, leaveStreamOpen).Result;
             if (MetaDefine.ColumnList.IsNullOrEmpty())
             {
                 schema = preader.Schema;
@@ -58,12 +78,16 @@ namespace Frameset.Common.Data.Reader
             {
                 schema = ParquetUtils.GetSchema(MetaDefine, fields);
             }
+
             groupCount = preader.RowGroupCount;
             groupReaders = preader.RowGroups;
         }
         public override bool MoveNext()
         {
-            base.MoveNext();
+            if (!base.MoveNext())
+            {
+                return false;
+            }
             if (currentReader == null || readLines >= rowCount)
             {
                 if (currentGroup >= groupCount)
@@ -77,6 +101,10 @@ namespace Frameset.Common.Data.Reader
 
                 for (int i = 0; i < fields.Count; i++)
                 {
+                    if (!projectionColumns.IsNullOrEmpty() && !projectionColumns.Contains(fields[i].Name))
+                    {
+                        continue;
+                    }
                     groupMap.TryAdd(fields[i], currentReader.ReadColumnAsync(fields[i]).Result);
                 }
             }

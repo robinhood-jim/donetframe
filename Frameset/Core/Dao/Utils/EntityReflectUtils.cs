@@ -19,6 +19,7 @@ namespace Frameset.Core.Dao.Utils
         private static readonly Dictionary<Type, IList<FieldContent>> fieldsListMap = [];
         private static readonly Dictionary<Type, Dictionary<Type, string>> relationMap = [];
         private static readonly Dictionary<Type, FieldContent> pkFieldMap = [];
+        private static readonly Dictionary<Type, TableLogicColumn> logicMap = [];
 
         public static EntityContent GetEntityInfo(Type entityType)
         {
@@ -70,6 +71,7 @@ namespace Frameset.Core.Dao.Utils
                 {
                     object[] attributes = prop.GetCustomAttributes(false);
                     string propName = prop.Name;
+                    string fieldName = Core.Utils.StringUtils.CamelCaseLowConvert(propName);
 
                     if (attributes.Length > 0)
                     {
@@ -105,7 +107,8 @@ namespace Frameset.Core.Dao.Utils
                             else if (attributes[i].GetType().Equals(typeof(ColumnAttribute)))
                             {
                                 ColumnAttribute a = attributes[i] as ColumnAttribute;
-                                builder.PropertyName(propName).FieldName(!string.IsNullOrWhiteSpace(a.Name) ? a.Name : Frameset.Core.Utils.StringUtils.CamelCaseLowConvert(propName)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                                fieldName = !string.IsNullOrWhiteSpace(a.Name) ? a.Name : Core.Utils.StringUtils.CamelCaseLowConvert(propName);
+                                builder.PropertyName(propName).FieldName(fieldName).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                             }
                             else if (attributes[i].GetType().Equals(typeof(DatabaseGeneratedAttribute)))
@@ -117,7 +120,7 @@ namespace Frameset.Core.Dao.Utils
                                 }
                                 else if (a.DatabaseGeneratedOption.Equals(DatabaseGeneratedOption.Computed))
                                 {
-
+                                    builder.Computed();
                                 }
                             }
                             else if (attributes[i].GetType().Equals(typeof(RequiredAttribute)))
@@ -143,6 +146,17 @@ namespace Frameset.Core.Dao.Utils
                                 OneToManyAttribute attr = (OneToManyAttribute)attributes[i];
                                 builder.OneToMany(attr);
                             }
+                            else if (attributes[i].GetType().Equals(typeof(LogicColumnAttribute)))
+                            {
+                                //support Custom Logic column defined
+                                LogicColumnAttribute attr = (LogicColumnAttribute)attributes[i];
+                                builder.LogicColumn(attr);
+                            }
+                            else if (attributes[i].GetType().Equals(typeof(ColumnFormulaAttribute)))
+                            {
+                                ColumnFormulaAttribute attr = (ColumnFormulaAttribute)attributes[i];
+                                builder.Formula(attr.Value);
+                            }
                         }
                         if (builder.Acceptable())
                         {
@@ -158,10 +172,8 @@ namespace Frameset.Core.Dao.Utils
                     {
                         FieldBuilder builder = new(entityType);
                         builder.PropertyName(propName).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
-
                         fields.Add(builder.Build());
                     }
-
                 }
 
                 if (!CollectionUtils.IsEmpty(fields))
@@ -203,7 +215,43 @@ namespace Frameset.Core.Dao.Utils
             }
             return content;
         }
-
+        /// <summary>
+        /// Get LogicColumn config from JdbcDao config and LogicColumnAttribute both
+        /// </summary>
+        /// <param name="dao"></param>
+        /// <param name="entityType"></param>
+        /// <returns> if not null,return LogicColumn config</returns>
+        public static TableLogicColumn GetLogicColumnAndValue(IJdbcDao dao, Type entityType)
+        {
+            if (!logicMap.TryGetValue(entityType, out TableLogicColumn tableLogicColumn))
+            {
+                IList<FieldContent> fields = GetFieldsContent(entityType);
+                FieldContent logicContent = ((List<FieldContent>)fields).Find(x => x.IfLogicColumn);
+                if (logicContent != null)
+                {
+                    tableLogicColumn = new TableLogicColumn()
+                    {
+                        FieldName = logicContent.FieldName,
+                        ValidValue = logicContent.ValidValue,
+                        InvalidValue = logicContent.InvalidValue
+                    };
+                }
+                else if (!string.IsNullOrEmpty(dao.GetLogicColumn()))
+                {
+                    tableLogicColumn = new TableLogicColumn()
+                    {
+                        FieldName = dao.GetLogicColumn(),
+                        ValidValue = dao.GetValidValue(),
+                        InvalidValue = dao.GetInvalidValue()
+                    };
+                }
+                if (tableLogicColumn != null)
+                {
+                    logicMap.TryAdd(entityType, tableLogicColumn);
+                }
+            }
+            return tableLogicColumn;
+        }
 
         public static Constants.MetaType AdjustType(Type type)
         {

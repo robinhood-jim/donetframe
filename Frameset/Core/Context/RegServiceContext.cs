@@ -155,21 +155,28 @@ namespace Frameset.Core.Context
                 Type[] interfaces = impl.GetInterfaces();
                 //获取该类注入的生命周期
                 Attribute attribute = impl.GetCustomAttribute(type, false);
-                interfaces.ToList().ForEach(i =>
+                if (interfaces.Count() > 0)
                 {
-                    if (type.Equals(typeof(ServiceAttribute)))
+                    interfaces.ToList().ForEach(i =>
                     {
-                        ScanService(attribute, i, impl);
-                    }
-                    else if (action != null)
-                    {
-                        action.Invoke(i, impl);
-                    }
-                    else
-                    {
-                        GetServiceRequired(i, impl, ServiceLifetime.Singleton, []);
-                    }
-                });
+                        if (type.Equals(typeof(ServiceAttribute)))
+                        {
+                            ScanService(attribute, i, impl);
+                        }
+                        else if (action != null)
+                        {
+                            action.Invoke(i, impl);
+                        }
+                        else
+                        {
+                            GetServiceRequired(i, impl, ServiceLifetime.Singleton, []);
+                        }
+                    });
+                }
+                else
+                {
+                    ScanService(attribute, impl, impl);
+                }
             });
             Log.Information("successful load IOC Frame with {Num} Beans", targetTypeMap.Count);
         }

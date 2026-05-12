@@ -33,6 +33,13 @@ namespace Frameset.Core.Dao
         /// <param name="segment"></param>
         /// <returns></returns>
         bool UpdateEntity(DbCommand command, UpdateSegment segment);
+        /// <summary>
+        /// Execute sepcify Sql
+        /// </summary>
+        /// <param name="command"></param>
+        /// <param name="sql"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         int Execute(DbCommand command, string sql, DbParameter[] parameters);
 
         AbstractSqlDialect GetDialect();
@@ -73,5 +80,16 @@ namespace Frameset.Core.Dao
         /// <returns></returns>
         List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams);
         List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter);
+        /// <summary>
+        /// Logic Delete Column support
+        /// </summary>
+        /// <param name="logicColumn"></param>
+        void SetLogicColumn(string logicColumn);
+        string GetLogicColumn();
+        void SetValidValue(int value);
+        int GetValidValue();
+        void SetInvalidValue(int value);
+        int GetInvalidValue();
+
     }
 }

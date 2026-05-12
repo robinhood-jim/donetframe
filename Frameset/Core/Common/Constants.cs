@@ -20,7 +20,7 @@ namespace Frameset.Core.Common
         {
             SHORT = 1,
             INTEGER,
-            BIGINT,
+            LONG,
             FLOAT,
             DOUBLE,
             DATE,
@@ -106,12 +106,26 @@ namespace Frameset.Core.Common
             YEAR
         }
         public static readonly List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
+        public static MetaType MetaTypeof(string columnType)
+        {
+            MetaType metaType = MetaType.STRING;
+            foreach (MetaType type in Enum.GetValues(typeof(MetaType)))
+            {
+                if (string.Equals(type.ToString(), columnType, StringComparison.OrdinalIgnoreCase))
+                {
+                    metaType = type;
+                    break;
+                }
+            }
+            return metaType;
+        }
+
         public static DbType DbTypeOf(string dbType)
         {
             DbType retType = DbType.Unknow;
             foreach (DbType type in Enum.GetValues(typeof(DbType)))
             {
-                if (type.ToString().ToUpper().Equals(dbType.ToUpper()))
+                if (string.Equals(type.ToString(), dbType, StringComparison.OrdinalIgnoreCase))
                 {
                     retType = type;
                     break;
@@ -138,7 +152,7 @@ namespace Frameset.Core.Common
             ResourceType resType = ResourceType.NONE;
             foreach (ResourceType rtype in Enum.GetValues(typeof(ResourceType)))
             {
-                if (rtype.ToString().ToUpper().Equals(resourceType.ToUpper()))
+                if (string.Equals(rtype.ToString(), resourceType, StringComparison.OrdinalIgnoreCase))
                 {
                     resType = rtype;
                     break;
@@ -245,6 +259,8 @@ namespace Frameset.Core.Common
         }
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";
+        public static readonly int VALID_INT = 1;
+        public static readonly int INVALID_INT = 0;
         public static readonly string TRUEVALUE = "true";
         public static readonly string FALSEVALUE = "false";
         public static readonly string LINK_AND = "AND";

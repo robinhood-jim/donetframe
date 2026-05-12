@@ -1,5 +1,6 @@
 ﻿
 using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 
 namespace Frameset.Core.Model
 {
@@ -13,7 +14,11 @@ namespace Frameset.Core.Model
         public long Creator { get; set; }
         [MappingField(field: "modifier", IfRequired = true)]
         public long Modifier { get; set; }
-
+        [MappingField(field: "status")]
+        public string Status
+        {
+            get; set;
+        } = Constants.VALID;
 
     }
 }

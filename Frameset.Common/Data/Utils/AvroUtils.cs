@@ -33,7 +33,7 @@ namespace Frameset.Common.Data.Utils
                         case Constants.MetaType.INTEGER:
                             baseSchema = PrimitiveSchema.Create(Schema.Type.Int, new PropertyMap());
                             break;
-                        case Constants.MetaType.BIGINT:
+                        case Constants.MetaType.LONG:
                             baseSchema = PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap());
                             break;
                         case Constants.MetaType.SHORT:

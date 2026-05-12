@@ -93,7 +93,7 @@ namespace Frameset.Core.Dao.Meta
             MySqlDbType type = MySqlDbType.VarChar;
             switch (content.DataType)
             {
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                     type = MySqlDbType.Int64;
                     break;
                 case Constants.MetaType.INTEGER:

@@ -157,6 +157,7 @@ namespace Frameset.Core.Repo
         }
         public static Tuple<StringBuilder, IList<DbParameter>> QueryModelByFieldBefore(Type entityType, IJdbcDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
             FieldContent fielContent = fields.First(x => string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
             if (fielContent == null)
             {
@@ -169,6 +170,14 @@ namespace Frameset.Core.Repo
             StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
 
             IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
+            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
+            //add logicColumn in query
+            if (logicColumn != null)
+            {
+                builder.Append(" and ").Append(logicColumn.FieldName).Append("=@").Append(parameters.Count);
+                parameters.Add(dao.GetDialect().WrapParameter(parameters.Count, logicColumn.ValidValue));
+            }
+
             if (!orderByStr.IsNullOrEmpty())
             {
                 builder.Append(" order by ").Append(orderByStr);

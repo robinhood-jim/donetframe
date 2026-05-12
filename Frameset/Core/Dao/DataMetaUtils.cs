@@ -103,7 +103,7 @@ namespace Frameset.Core.Dao
                 case Constants.MetaType.INTEGER:
                     retType = typeof(int);
                     break;
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                     retType = typeof(long);
                     break;
                 case Constants.MetaType.DOUBLE:
@@ -143,7 +143,7 @@ namespace Frameset.Core.Dao
                     metaType = Constants.MetaType.SHORT;
                     break;
                 case TypeCode.Int64:
-                    metaType = Constants.MetaType.BIGINT;
+                    metaType = Constants.MetaType.LONG;
                     break;
                 case TypeCode.Decimal:
                     metaType = Constants.MetaType.FLOAT;

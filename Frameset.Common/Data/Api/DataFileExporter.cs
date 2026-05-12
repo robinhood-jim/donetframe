@@ -11,7 +11,7 @@ namespace Frameset.Common.Data.Api
 {
     public static partial class DataFileExporter
     {
-        public static AbstractDataWriter<T> GetDataWriter<T>(this IFileSystem fileSystem, string processPath)
+        public static AbstractDataWriter<T> GetDataWriter<T>(this IFileSystem fileSystem, string processPath, Action<AbstractDataWriter<T>>? initFunc = null)
         {
             Trace.Assert(!processPath.IsNullOrEmpty());
             FileMeta meta = FileUtil.Parse(processPath);
@@ -22,7 +22,7 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.XML => new XmlDataWriter<T>(fileSystem, processPath),
                 Constants.FileFormatType.JSON => new JsonDataWriter<T>(fileSystem, processPath),
                 Constants.FileFormatType.AVRO => new AvroDataWriter<T>(fileSystem, processPath),
-                Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(fileSystem, processPath, initFunc),
                 Constants.FileFormatType.ORC => new OrcDataWriter<T>(fileSystem, processPath),
                 Constants.FileFormatType.XLSX => throw new NotImplementedException(),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
@@ -31,17 +31,17 @@ namespace Frameset.Common.Data.Api
             };
 
         }
-        public static AbstractDataWriter<T> GetDataWriter<T>(this DataCollectionDefine collectionDefine, string? processPath = null)
+        public static AbstractDataWriter<T> GetDataWriter<T>(this DataCollectionDefine collectionDefine, Action<AbstractDataWriter<T>>? initFunc = null, string? processPath = null)
         {
             string processFile = processPath ?? collectionDefine.Path;
             FileMeta meta = FileUtil.Parse(processFile);
             Trace.Assert(meta != null);
             collectionDefine.Path = processFile;
             IFileSystem fileSystem = FileSystemFactory.GetFileSystem(collectionDefine);
-            return GetWriterByFormat<T>(collectionDefine, meta, fileSystem);
+            return GetWriterByFormat<T>(collectionDefine, meta, fileSystem, initFunc);
         }
 
-        private static AbstractDataWriter<T> GetWriterByFormat<T>(DataCollectionDefine collectionDefine, FileMeta meta, IFileSystem fileSystem)
+        private static AbstractDataWriter<T> GetWriterByFormat<T>(DataCollectionDefine collectionDefine, FileMeta meta, IFileSystem fileSystem, Action<AbstractDataWriter<T>>? initFunc = null)
         {
             return Constants.FileFormatTypeOf(meta.FileFormat) switch
             {
@@ -49,7 +49,7 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.XML => new XmlDataWriter<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.JSON => new JsonDataWriter<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.AVRO => new AvroDataWriter<T>(collectionDefine, fileSystem),
-                Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(collectionDefine, fileSystem, initFunc),
                 Constants.FileFormatType.ORC => new OrcDataWriter<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.XLSX => throw new NotImplementedException(),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),

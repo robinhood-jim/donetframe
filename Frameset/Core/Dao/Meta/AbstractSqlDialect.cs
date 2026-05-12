@@ -138,7 +138,7 @@ namespace Frameset.Core.Dao.Meta
                 case Constants.MetaType.INTEGER:
                     builder.Append(GetIntegerFormat(content));
                     break;
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                     builder.Append(GetLongFormat(content));
                     break;
                 case Constants.MetaType.CHAR:
@@ -249,7 +249,7 @@ namespace Frameset.Core.Dao.Meta
                 case Constants.MetaType.SHORT:
                     builder.Append(fieldContent.FieldName).Append(" ").Append(GetShortFormat(fieldContent));
                     break;
-                case Constants.MetaType.BIGINT:
+                case Constants.MetaType.LONG:
                     builder.Append(fieldContent.FieldName).Append(" ").Append(GetLongFormat(fieldContent));
                     break;
                 case Constants.MetaType.INTEGER:

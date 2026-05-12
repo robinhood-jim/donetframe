@@ -4,6 +4,7 @@ using Avro.Generic;
 using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
+using Parquet;
 
 namespace Frameset.Common.Data.Reader
 {
@@ -11,6 +12,7 @@ namespace Frameset.Common.Data.Reader
     {
         private RecordSchema schema = null!;
         private IFileReader<GenericRecord> fileReader = null!;
+        protected ParquetOptions options;
 
 
         public AvroIterator(DataCollectionDefine define) : base(define)

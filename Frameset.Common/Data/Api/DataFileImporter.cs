@@ -12,16 +12,16 @@ namespace Frameset.Common.Data.Api
 {
     public static partial class DataFileImporter
     {
-        public static AbstractDataIterator<T> GetDataReader<T>(this DataCollectionDefine collectionDefine, string? processPath = null)
+        public static AbstractDataIterator<T> GetDataReader<T>(this DataCollectionDefine collectionDefine, string? processPath = null, Action<AbstractDataIterator<T>>? initFunc = null)
         {
             string processFile = processPath ?? collectionDefine.Path;
             FileMeta meta = FileUtil.Parse(processFile);
             Trace.Assert(meta != null);
             collectionDefine.Path = processFile;
             IFileSystem fileSystem = FileSystemFactory.GetFileSystem(collectionDefine);
-            return GetEnumerator<T>(collectionDefine, meta, fileSystem);
+            return GetEnumerator<T>(collectionDefine, meta, fileSystem, initFunc);
         }
-        public static AbstractDataIterator<T> GetReaderByType<T>(this IFileSystem fileSystem, string processPath)
+        public static AbstractDataIterator<T> GetReaderByType<T>(this IFileSystem fileSystem, string processPath, Action<AbstractDataIterator<T>>? initFunc = null)
         {
             Trace.Assert(!processPath.IsNullOrEmpty());
             FileMeta meta = FileUtil.Parse(processPath);
@@ -32,7 +32,7 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.XML => new XmlIterator<T>(fileSystem, processPath),
                 Constants.FileFormatType.JSON => new JsonIterator<T>(fileSystem, processPath),
                 Constants.FileFormatType.AVRO => new AvroIterator<T>(fileSystem, processPath),
-                Constants.FileFormatType.PARQUET => new ParquetIterator<T>(fileSystem, processPath),
+                Constants.FileFormatType.PARQUET => new ParquetIterator<T>(fileSystem, processPath, initFunc),
                 Constants.FileFormatType.ORC => new OrcIterator<T>(fileSystem, processPath),
                 Constants.FileFormatType.XLSX => throw new NotImplementedException(),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
@@ -42,7 +42,7 @@ namespace Frameset.Common.Data.Api
 
 
         }
-        private static AbstractDataIterator<T> GetEnumerator<T>(DataCollectionDefine collectionDefine, FileMeta meta, IFileSystem fileSystem)
+        private static AbstractDataIterator<T> GetEnumerator<T>(DataCollectionDefine collectionDefine, FileMeta meta, IFileSystem fileSystem, Action<AbstractDataIterator<T>>? initFunc)
         {
             return Constants.FileFormatTypeOf(meta.FileFormat) switch
             {
@@ -50,7 +50,7 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.XML => new XmlIterator<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.JSON => new JsonIterator<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.AVRO => new AvroIterator<T>(collectionDefine, fileSystem),
-                Constants.FileFormatType.PARQUET => new ParquetIterator<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.PARQUET => new ParquetIterator<T>(collectionDefine, fileSystem, initFunc),
                 Constants.FileFormatType.ORC => new OrcIterator<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.XLSX => throw new NotImplementedException(),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
@@ -58,9 +58,9 @@ namespace Frameset.Common.Data.Api
                 _ => throw new NotImplementedException()
             };
         }
-        public static IEnumerable<T> GetEnumerable<T>(this DataCollectionDefine define, string? processPath = null)
+        public static IEnumerable<T> GetEnumerable<T>(this DataCollectionDefine define, string? processPath = null, Action<AbstractDataIterator<T>>? initFunc = null)
         {
-            return new ObjectEnumerable<T>(define, processPath);
+            return new ObjectEnumerable<T>(define, processPath, initFunc);
 
         }
         public class ObjectEnumerable<T> : IEnumerable<T>
@@ -68,12 +68,14 @@ namespace Frameset.Common.Data.Api
             private DataCollectionDefine define;
             private IFileSystem fileSystem;
             private FileMeta meta;
-            public ObjectEnumerable(DataCollectionDefine define, string processPath)
+            private Action<AbstractDataIterator<T>>? initFunc;
+            public ObjectEnumerable(DataCollectionDefine define, string processPath, Action<AbstractDataIterator<T>>? initFunc)
             {
                 this.define = define;
                 string processFile = processPath ?? define.Path;
                 meta = FileUtil.Parse(processFile);
                 fileSystem = FileSystemFactory.GetFileSystem(define);
+                this.initFunc = initFunc;
                 if (meta == null)
                 {
                     throw new OperationFailedException("file path " + processFile + " parse failed");
@@ -83,7 +85,7 @@ namespace Frameset.Common.Data.Api
             }
             public IEnumerator<T> GetEnumerator()
             {
-                return GetEnumerator<T>(define, meta, fileSystem);
+                return GetEnumerator<T>(define, meta, fileSystem, initFunc);
             }
 
             IEnumerator IEnumerable.GetEnumerator()

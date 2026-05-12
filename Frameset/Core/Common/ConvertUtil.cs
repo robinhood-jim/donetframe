@@ -206,7 +206,7 @@ namespace Frameset.Core.Common
                     }
                     retObj = Convert.ToInt32(value);
                 }
-                else if (columnType.Equals(Constants.MetaType.BIGINT))
+                else if (columnType.Equals(Constants.MetaType.LONG))
                 {
                     if (value.Contains('.'))
                     {

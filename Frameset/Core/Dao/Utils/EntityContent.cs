@@ -50,6 +50,8 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = false;
+
+
         public EntityContent(Type className, string tableName, string schema, string dsName)
         {
             this.EntityType = className;

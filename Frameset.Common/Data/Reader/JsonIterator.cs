@@ -2,6 +2,7 @@
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using Microsoft.IdentityModel.Tokens;
 using Newtonsoft.Json;
 using Serilog;
 using System.Diagnostics;
@@ -74,7 +75,10 @@ namespace Frameset.Common.Data.Reader
         }
         public override bool MoveNext()
         {
-            base.MoveNext();
+            if (!base.MoveNext())
+            {
+                return false;
+            }
             bool hasNext = false;
             try
             {
@@ -99,6 +103,11 @@ namespace Frameset.Common.Data.Reader
                         metaMap.TryGetValue(propName, out meta);
                         if (meta != null && value != null)
                         {
+                            if (!projectionColumns.IsNullOrEmpty() && !projectionColumns.Contains(propName))
+                            {
+                                continue;
+                            }
+
                             if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
                             {
                                 CachedValue.TryAdd(propName, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormatter));

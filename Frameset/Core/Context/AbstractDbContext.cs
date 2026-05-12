@@ -159,8 +159,8 @@ namespace Frameset.Core.Context
                 throw new BaseSqlException("pk column not found in Model " + entityType.Name);
             }
             entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
-            string selectSql = SqlUtils.GetSelectByIdSql(entityType, pkColumn);
-            IList<Dictionary<string, object>> list = QueryBySql(selectSql, new object[] { pk });
+            Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk);
+            IList<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
             object entity = Activator.CreateInstance(entityType);
             ConstructEntity(list, tuple, entity);
             return entity as BaseEntity;
@@ -176,8 +176,8 @@ namespace Frameset.Core.Context
                 throw new BaseSqlException("pk column not found in Model " + entityType.Name);
             }
             entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
-            string selectSql = SqlUtils.GetSelectByIdSql(entityType, pkColumn);
-            IList<Dictionary<string, object>> list = QueryBySql(selectSql, new object[] { pk });
+            Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk);
+            IList<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
             V entity = Activator.CreateInstance<V>();
             ConstructEntity(list, tuple, entity);
             return entity;

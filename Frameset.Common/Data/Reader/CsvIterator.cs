@@ -14,6 +14,7 @@ namespace Frameset.Common.Data.Reader
             get; set;
         } = ResourceConstants.CSVDEFAULTSPILTTER;
         internal long pos;
+        bool containHeader = false;
 
         public CsvIterator(DataCollectionDefine define) : base(define)
         {
@@ -41,6 +42,10 @@ namespace Frameset.Common.Data.Reader
             base.Initalize(filePath);
             string? splitterStr;
             MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVSPLITTER, out splitterStr);
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.CSVCONTAINHEADER, out string? containHeaderStr))
+            {
+                containHeader = Constants.VALID.Equals(containHeaderStr.Trim());
+            }
             if (!splitterStr.IsNullOrEmpty())
             {
                 Splitter = splitterStr;
@@ -48,7 +53,14 @@ namespace Frameset.Common.Data.Reader
         }
         public override bool MoveNext()
         {
-            base.MoveNext();
+            if (!base.MoveNext())
+            {
+                return false;
+            }
+            if (containHeader)
+            {
+                reader?.ReadLine();
+            }
             CachedValue.Clear();
             bool hasNext = false;
             try
@@ -81,6 +93,10 @@ namespace Frameset.Common.Data.Reader
                     for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
                     {
                         DataSetColumnMeta meta = MetaDefine.ColumnList[i];
+                        if (!projectionColumns.IsNullOrEmpty() && !projectionColumns.Contains(meta.ColumnCode))
+                        {
+                            continue;
+                        }
                         if (meta.ColumnType != Constants.MetaType.TIMESTAMP)
                         {
                             CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(arr[i], meta, dateFormatter));

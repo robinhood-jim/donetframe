@@ -5,6 +5,7 @@ namespace Frameset.Core.Common
     public static class ResourceConstants
     {
         public static readonly string CSVSPLITTER = "csv.splitter";
+        public static readonly string CSVCONTAINHEADER = "csv.containHeader";
         public static readonly string CSVDEFAULTSPILTTER = ",";
         //Ftp Configuration
         public static readonly string DEFAULTHOST = "localhost";
@@ -26,6 +27,10 @@ namespace Frameset.Core.Common
         public static readonly string HDFSAUTHTYPE = "dfs.authType";
         public static readonly string REUSECURRENT = "fs.reUseCurrent";
         public static readonly string STRINGENCODING = "fs.encoding";
+        public static readonly string HDFSLIBHDFSHOST = "dfs.hostname";
+        public static readonly string HDFSLIBHDFSPORT = "dfs.port";
+        public static readonly string HDFSUSEWEBHDFS = "dfs.useWebHdfs";
+
         //dateformatter
         public static readonly string INPUTDATEFORMATTER = "intput.dateFormat";
         public static readonly string INPUTTIMESTAMPFORMATTER = "input.timestampFormat";

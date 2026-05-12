@@ -45,7 +45,7 @@ namespace Frameset.Core.FileSystem
         } = "";
         public Dictionary<string, int> ColumnNameMap
         {
-            get; internal set;
+            get; set;
         } = [];
         internal string defaultTimestampFormat = "yyyy-MM-dd HH:mm:ss";
         public string ResType

@@ -69,6 +69,13 @@ namespace Frameset.Core.Repo
         /// <param name="queryObject"></param>
         /// <returns></returns>
         object QueryMapper(string nameSpace, string queryId, object queryObject);
+        /// <summary>
+        /// Execute Sql in mybatis config file
+        /// </summary>
+        /// <param name="nameSpace"></param>
+        /// <param name="exeId"></param>
+        /// <param name="input"></param>
+        /// <returns></returns>
         int ExecuteMapper(string nameSpace, string exeId, object input);
         /// <summary>
         /// Query Page
@@ -77,6 +84,12 @@ namespace Frameset.Core.Repo
         /// <param name="query"></param>
         /// <returns>DTO or dictionary </returns>
         PageDTO<O> QueryPage<O>(PageQuery query);
+        /// <summary>
+        /// Insert batch 
+        /// </summary>
+        /// <param name="models"></param>
+        /// <param name="token"></param>
+        /// <returns></returns>
         long InsertBatch(IEnumerable<V> models, CancellationToken token);
         /// <summary>
         /// Query Page return List models
@@ -93,8 +106,18 @@ namespace Frameset.Core.Repo
         /// Restore Temporary DataSource Swith
         /// </summary>
         void RestoreDs();
+        /// <summary>
+        /// Get current DataSource Name
+        /// </summary>
+        /// <returns></returns>
         string GetDsName();
-        List<O> QueryByCondtion<O>(FilterCondition condition);
+        /// <summary>
+        /// Query by complex Conditions
+        /// </summary>
+        /// <typeparam name="O"></typeparam>
+        /// <param name="condition"></param>
+        /// <returns></returns>
+        List<O> QueryByCondition<O>(FilterCondition condition);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
         /// </summary>

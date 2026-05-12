@@ -23,6 +23,10 @@ namespace Frameset.Common.Data.Reader
         internal bool readAsDict = true;
         internal DateTimeFormatter? dateFormatter = null;
         internal DateTimeFormatter? timestampFormatter = null;
+        protected Action<AbstractDataIterator<T>>? initFunction;
+        protected bool cancelTag = false;
+        //Projection Columns,Ignore unused Columns
+        protected List<string> projectionColumns = [];
         public DataCollectionDefine MetaDefine
         {
             get; internal set;
@@ -55,6 +59,10 @@ namespace Frameset.Common.Data.Reader
         {
             MetaDefine = define;
             string? reuseCurrentStr = null;
+            if (MetaDefine.ColumnNameMap.IsNullOrEmpty())
+            {
+                MetaDefine.ColumnNameMap = MetaDefine.ColumnList.ToDictionary(x => x.ColumnCode, x => 1);
+            }
             MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
@@ -74,6 +82,10 @@ namespace Frameset.Common.Data.Reader
             }
             current = System.Activator.CreateInstance<T>();
         }
+        protected AbstractDataIterator(DataCollectionDefine define, Action<AbstractDataIterator<T>>? initFunc) : this(define)
+        {
+            this.initFunction = initFunc;
+        }
         protected AbstractDataIterator(IFileSystem fileSystem, string processPath)
         {
             Trace.Assert(fileSystem != null);
@@ -86,6 +98,10 @@ namespace Frameset.Common.Data.Reader
             MethodMap = AnnotationUtils.ReflectObject(typeof(T));
             current = System.Activator.CreateInstance<T>();
         }
+        protected AbstractDataIterator(IFileSystem fileSystem, string processPath, Action<AbstractDataIterator<T>>? initFunc) : this(fileSystem, processPath)
+        {
+            this.initFunction = initFunc;
+        }
         protected AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem)
         {
             Trace.Assert(fileSystem != null);
@@ -93,6 +109,10 @@ namespace Frameset.Common.Data.Reader
             FileSystem = fileSystem;
             string? reuseCurrentStr = null;
             MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.REUSECURRENT, out reuseCurrentStr);
+            if (MetaDefine.ColumnNameMap.IsNullOrEmpty())
+            {
+                MetaDefine.ColumnNameMap = MetaDefine.ColumnList.ToDictionary(x => x.ColumnCode, x => 1);
+            }
             if (!reuseCurrentStr.IsNullOrEmpty())
             {
                 reUseCurrent = string.Equals(bool.TrueString, reuseCurrentStr, StringComparison.OrdinalIgnoreCase);
@@ -108,6 +128,10 @@ namespace Frameset.Common.Data.Reader
                 MethodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
             current = System.Activator.CreateInstance<T>();
+        }
+        protected AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataIterator<T>>? initFunc) : this(define, fileSystem)
+        {
+            this.initFunction = initFunc;
         }
 
         public virtual void Initalize(string? filePath = null)
@@ -150,6 +174,10 @@ namespace Frameset.Common.Data.Reader
                     inputStream = FileSystem.GetInputStream(processPath);
                 }
             }
+            if (initFunction != null)
+            {
+                initFunction.Invoke(this);
+            }
         }
         public void Dispose()
         {
@@ -169,12 +197,16 @@ namespace Frameset.Common.Data.Reader
 
         public virtual bool MoveNext()
         {
+            if (cancelTag)
+            {
+                return false;
+            }
             if (current == null || !reUseCurrent)
             {
                 current = System.Activator.CreateInstance<T>();
             }
 
-            return false;
+            return true;
         }
         public bool IsReturnDictionary()
         {
@@ -217,11 +249,29 @@ namespace Frameset.Common.Data.Reader
         }
         public abstract IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null);
 
-
+        public virtual void Stop()
+        {
+            cancelTag = true;
+        }
         public void Reset()
         {
             throw new OperationNotAllowedException("reset not supported!");
         }
+        public void SelectColumns(string[] columns)
+        {
+            if (!columns.IsNullOrEmpty())
+            {
+                foreach (string column in columns)
+                {
+                    if (MetaDefine.ColumnNameMap.TryGetValue(column, out _))
+                    {
+                        projectionColumns.Add(column);
+                    }
+                }
+            }
+        }
+
+
     }
 
 }

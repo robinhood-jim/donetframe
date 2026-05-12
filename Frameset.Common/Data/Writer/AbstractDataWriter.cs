@@ -41,6 +41,7 @@ namespace Frameset.Common.Data.Writer
 
         internal DateTimeFormatter dateFormatter = null!;
         internal DateTimeFormatter timestampFormatter = null!;
+        protected Action<AbstractDataWriter<T>>? initFunction = null!;
         public void Dispose()
         {
             Dispose(true);
@@ -92,6 +93,10 @@ namespace Frameset.Common.Data.Writer
             }
             ConstructDateFormatter();
         }
+        protected AbstractDataWriter(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataWriter<T>>? initFunc) : this(define, fileSystem)
+        {
+            this.initFunction = initFunc;
+        }
         protected AbstractDataWriter(IFileSystem fileSystem, string processPath)
         {
             useDictOutput = false;
@@ -102,6 +107,10 @@ namespace Frameset.Common.Data.Writer
             MetaDefine = builder.Build();
             methodMap = AnnotationUtils.ReflectObject(typeof(T));
             ConstructDateFormatter();
+        }
+        protected AbstractDataWriter(IFileSystem fileSystem, string processPath, Action<AbstractDataWriter<T>>? initFunc) : this(fileSystem, processPath)
+        {
+            initFunction = initFunc;
         }
 
         private void ConstructDateFormatter()
@@ -143,6 +152,10 @@ namespace Frameset.Common.Data.Writer
                     Tuple<Stream, StreamWriter>? tuple = FileSystem.GetWriter(MetaDefine.Path);
                     outputStream = tuple?.Item1;
                     writer = tuple?.Item2;
+                }
+                if (initFunction != null)
+                {
+                    initFunction.Invoke(this);
                 }
             }
         }

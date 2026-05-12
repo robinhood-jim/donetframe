@@ -59,7 +59,10 @@ namespace Frameset.Common.Data.Reader
         }
         public override bool MoveNext()
         {
-            base.MoveNext();
+            if (!base.MoveNext())
+            {
+                return false;
+            }
             bool hasNext = values.MoveNext();
             if (hasNext)
             {
@@ -67,6 +70,10 @@ namespace Frameset.Common.Data.Reader
                 object obj = values.Current;
                 foreach (DataSetColumnMeta column in MetaDefine.ColumnList)
                 {
+                    if (!projectionColumns.IsNullOrEmpty() && !projectionColumns.Contains(column.ColumnCode))
+                    {
+                        continue;
+                    }
                     PropertyInfo? info;
                     propMap.TryGetValue(column.ColumnCode, out info);
                     object? value = info?.GetGetMethod()?.Invoke(obj, null);

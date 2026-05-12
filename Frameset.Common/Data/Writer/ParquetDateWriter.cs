@@ -19,6 +19,8 @@ namespace Frameset.Common.Data.Writer
         private Dictionary<int, ArrayList> chunckMap = new();
         private int chunckCapcity = 20000;
         private long totalRow = 0;
+        internal ParquetOptions parquetOptions;
+        internal bool appendMode = false;
 
         public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
@@ -26,8 +28,20 @@ namespace Frameset.Common.Data.Writer
             useRawOutputStream = true;
             Initalize();
         }
+        public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataWriter<T>> initFunc) : base(define, fileSystem, initFunc)
+        {
+            Identifier = Constants.FileFormatType.PARQUET;
+            useRawOutputStream = true;
+            Initalize();
+        }
 
         public ParquetDateWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
+        {
+            Identifier = Constants.FileFormatType.PARQUET;
+            useRawOutputStream = true;
+            Initalize();
+        }
+        public ParquetDateWriter(IFileSystem fileSystem, string processPath, Action<AbstractDataWriter<T>>? initFunc) : base(fileSystem, processPath, initFunc)
         {
             Identifier = Constants.FileFormatType.PARQUET;
             useRawOutputStream = true;
@@ -49,7 +63,7 @@ namespace Frameset.Common.Data.Writer
             {
                 chunckMap.TryAdd(pos, new ArrayList(chunckCapcity));
             }
-            pwriter = ParquetWriter.CreateAsync(schema, outputStream).Result;
+            pwriter = ParquetWriter.CreateAsync(schema, outputStream, parquetOptions, appendMode).Result;
             CompressType compressType = GetCompressType();
             CompressionMethod method = compressType switch
             {

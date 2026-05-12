@@ -35,7 +35,7 @@ namespace Frameset.Core.Dao
                     {
                         processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath.Substring(4, yamlPath.Length - 4);
                     }
-                    StreamReader reader = File.OpenText(processPath);
+                    using StreamReader reader = File.OpenText(processPath);
                     keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
                     Dictionary<object, object> keyDict = (Dictionary<object, object>)GetKeyValues()["dataSource"];
                     foreach (var entry in keyDict)
@@ -70,6 +70,9 @@ namespace Frameset.Core.Dao
             StringBuilder builder = new StringBuilder();
             dict.TryGetValue("schema", out object schemaStr);
             string schema = IsNull(schemaStr) ? null : schemaStr.ToString();
+            string logicColumnStr = string.Empty;
+            object validValue = null;
+            object invalidValue = null;
             if (IsNull(connStr))
             {
                 dict.TryGetValue("userName", out object userName);
@@ -78,6 +81,9 @@ namespace Frameset.Core.Dao
                 dict.TryGetValue("port", out object portObj);
                 dict.TryGetValue("maxSize", out object maxSizeStr);
                 dict.TryGetValue("minSize", out object minSizeStr);
+                dict.TryGetValue("logicColumn", out object logicColumn);
+                dict.TryGetValue("validValue", out validValue);
+                dict.TryGetValue("invalidValue", out invalidValue);
                 string host = IsNull(hostObj) ? "localhost" : dict["host"].ToString();
                 int port = IsNull(portObj) ? AbstractSqlDialect.GetDefaultPort(dbType) : Int32.Parse(portObj.ToString());
                 int maxSize = IsNull(maxSizeStr) ? 0 : Int32.Parse(dict["maxSize"].ToString());
@@ -91,6 +97,10 @@ namespace Frameset.Core.Dao
                 if (schema != null)
                 {
                     builder.Append("Initial Catalog=").Append(schema).Append(";");
+                }
+                if (logicColumn != null)
+                {
+                    logicColumnStr = logicColumn.ToString();
                 }
                 if (maxSize > 0 || minSize > 0)
                 {
@@ -113,7 +123,15 @@ namespace Frameset.Core.Dao
             {
                 builder.Append(connStr).Append(";");
             }
-            IJdbcDao dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
+            IJdbcDao dao = null;
+            if (string.IsNullOrEmpty(logicColumnStr))
+            {
+                dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
+            }
+            else
+            {
+                dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1), logicColumnStr, validValue, invalidValue);
+            }
             return dao;
 
         }

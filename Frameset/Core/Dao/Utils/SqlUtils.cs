@@ -32,6 +32,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append(entityContent.TableName);
             InsertSegment segment = new InsertSegment();
             FieldContent appdenField = null;
+            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, vo.GetType());
             foreach (FieldContent content in fields)
             {
                 object realVal = content.GetMethod.Invoke(vo, null);
@@ -53,13 +54,23 @@ namespace Frameset.Core.Dao.Utils
                         segment.GenKeyMethod = content.SetMethod;
                         appdenField = content;
                     }
-                    else
+                    else if (content.IfIncrement)
                     {
                         segment.Increment = true;
                         segment.GenKeyMethod = content.SetMethod;
                     }
-
                 }
+                else
+                {
+                    if (logicColumn != null && content.FieldName.Equals(logicColumn.FieldName))
+                    {
+                        string paramName = "@val" + pos++;
+                        columnsBuilder.Append(content.FieldName).Append(",");
+                        valuesBuilder.Append(paramName).Append(",");
+                        parameters.Add(dao.GetDialect().WrapParameter(paramName, logicColumn.ValidValue));
+                    }
+                }
+
 
             }
             builder.Append("(").Append(columnsBuilder.ToString().Substring(0, columnsBuilder.Length - 1)).Append(") values (")
@@ -109,7 +120,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append("update ");
             StringBuilder columnsBuilder = new StringBuilder();
             IList<DbParameter> parameters = new List<DbParameter>();
-            string whereSegment = " where 1=0";
+            StringBuilder whereSegment = new StringBuilder();
             UpdateSegment segment = new UpdateSegment();
 
             builder.Append(entityContent.GetTableName()).Append(" set ");
@@ -131,14 +142,22 @@ namespace Frameset.Core.Dao.Utils
                     }
                     else
                     {
-                        whereSegment = " where " + content.FieldName + "=@id";
+                        whereSegment.Append(" where " + content.FieldName + "=@id");
                         parameters.Add(dao.GetDialect().WrapParameter("@id", realVal));
                     }
+
+
                 }
                 else if (update.GetDirties().Contains(content.PropertyName))
                 {
                     columnsBuilder.Append(content.FieldName).Append("=null,");
                 }
+            }
+            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, update.GetType());
+            if (logicColumn != null)
+            {
+                whereSegment.Append(" and ").Append(logicColumn.FieldName).Append("=@valid");
+                parameters.Add(dao.GetDialect().WrapParameter("@valid", logicColumn.ValidValue));
             }
             if (columnsBuilder.Length > 0)
             {
@@ -202,13 +221,19 @@ namespace Frameset.Core.Dao.Utils
         }
 
 
-        public static string GetSelectByIdSql(Type modelType, FieldContent content)
+        public static Tuple<string, List<object>> GetSelectByIdSql(IJdbcDao dao, Type modelType, FieldContent content, object pk)
         {
-
+            List<object> listObjects = [pk];
             StringBuilder selectBuilder = new StringBuilder(GetSelectSql(modelType));
             selectBuilder.Append(" where ").Append(content.FieldName).Append("=@0");
-
-            return selectBuilder.ToString();
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
+            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
+            if (logicColumn != null)
+            {
+                selectBuilder.Append(" and ").Append(logicColumn.FieldName).Append("=@1");
+                listObjects.Add(logicColumn.ValidValue);
+            }
+            return Tuple.Create(selectBuilder.ToString(), listObjects);
         }
         public static string GetTableWithSchema(EntityContent entityContent)
         {

@@ -14,7 +14,7 @@ namespace Frameset.Common.Data.Utils
         {
             return columnType switch
             {
-                Constants.MetaType.BIGINT => "int64",
+                Constants.MetaType.LONG => "int64",
                 Constants.MetaType.SHORT => "int32",
                 Constants.MetaType.INTEGER => "int32",
                 Constants.MetaType.FLOAT => "float",

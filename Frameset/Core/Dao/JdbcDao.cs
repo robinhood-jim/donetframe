@@ -8,6 +8,7 @@ using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System;
@@ -25,11 +26,14 @@ namespace Frameset.Core.Dao
 {
     public class JdbcDao : IJdbcDao
     {
-        private readonly string connectionStr;
-        private readonly string dbTypeStr = "Mysql";
-        private readonly AbstractSqlDialect dataMeta;
-        private readonly Constants.DbType dbType;
-        private readonly string schema;
+        protected readonly string connectionStr;
+        protected readonly string dbTypeStr = "Mysql";
+        protected readonly AbstractSqlDialect dataMeta;
+        protected readonly Constants.DbType dbType;
+        protected readonly string schema;
+        protected string logicColumn = string.Empty;
+        protected int validValue = Constants.VALID_INT;
+        protected int invalidValue = Constants.INVALID_INT;
 
         internal JdbcDao(string connectionStr)
         {
@@ -51,6 +55,44 @@ namespace Frameset.Core.Dao
             this.dataMeta = DbDialectFactory.GetInstance(dbType);
             this.schema = schema;
         }
+        internal JdbcDao(string dbTypeStr, string schema, string connectionStr, string logicColumn, object validValue, object invalidValue) : this(dbTypeStr, schema, connectionStr)
+        {
+            this.logicColumn = logicColumn;
+            if (validValue != null)
+            {
+                this.validValue = Convert.ToInt32(validValue);
+            }
+            if (invalidValue != null)
+            {
+                this.invalidValue = Convert.ToInt32(invalidValue);
+            }
+        }
+        public void SetLogicColumn(string logicColumn)
+        {
+            this.logicColumn = logicColumn;
+
+        }
+        public string GetLogicColumn()
+        {
+            return logicColumn;
+        }
+        public void SetValidValue(int value)
+        {
+            validValue = value;
+        }
+        public int GetValidValue()
+        {
+            return validValue;
+        }
+        public void SetInvalidValue(int value)
+        {
+            invalidValue = value;
+        }
+        public int GetInvalidValue()
+        {
+            return invalidValue;
+        }
+
         public int QueryByInt(DbCommand command, List<DbParameter> parameters = null)
         {
             try
@@ -424,7 +466,7 @@ namespace Frameset.Core.Dao
             string orderByStr;
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             Dictionary<string, string> propFieldMap = [];
-
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
             Dictionary<string, int> duplicatedMap = [];
             StringBuilder whereBuilder = new();
             Dictionary<string, object> preparedMap = [];
@@ -524,7 +566,6 @@ namespace Frameset.Core.Dao
             }
             else
             {
-                EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
                 builder.Append(selectPart);
                 if (newColumnsBuilder.Length > 0)
                 {
@@ -548,10 +589,8 @@ namespace Frameset.Core.Dao
             {
                 builder.Append(Constants.SQL_ORDERBY).Append(orderByStr);
             }
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-            {
-                Log.Debug("query Sql={Builder}", builder.ToString());
-            }
+            LogUtils.Debug($"query Sql={builder}");
+
             command.CommandText = builder.ToString();
             bool ifRetMap = false;
             var retList = new List<O>();

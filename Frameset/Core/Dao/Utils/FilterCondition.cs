@@ -348,6 +348,18 @@ namespace Frameset.Core.Dao.Utils
             _orderBy = orderBy;
             return this;
         }
+        public SingleFilterConditionBuilder OrderBy(string propName, bool ascTag)
+        {
+            fieldMap.TryGetValue(propName, out FieldContent content);
+            Trace.Assert(content != null, "field " + propName + " not found in entity");
+            StringBuilder builder = new StringBuilder(content.FieldName);
+            if (!ascTag)
+            {
+                builder.Append(" desc");
+            }
+            _orderBy = builder.ToString();
+            return this;
+        }
         public FilterCondition Build()
         {
             if (filterConditions.Count == 1)
