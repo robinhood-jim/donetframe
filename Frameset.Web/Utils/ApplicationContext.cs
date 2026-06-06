@@ -75,7 +75,7 @@ namespace Frameset.Web.Utils
         public static void Register(Type type, object obj)
         {
             Trace.Assert((obj.GetType().GetInterfaces().Length > 0 && obj.GetType().GetInterfaces()[0] == type) || obj.GetType() == type || obj.GetType().IsSubclassOf(type));
-            RegServiceContext.Register(type, obj);
+            RegServiceContext.RegisterObject(type, obj);
 
         }
     }

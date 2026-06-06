@@ -56,7 +56,7 @@ namespace Frameset.Core.Context
         /// <param name="baseInterface"></param>
         /// <param name="valueObj"></param>
         /// <param name="lifetime"></param>
-        public static void Register(Type baseInterface, object valueObj, ServiceLifetime lifetime = ServiceLifetime.Singleton)
+        public static void RegisterObject(Type baseInterface, object valueObj, ServiceLifetime lifetime = ServiceLifetime.Singleton)
         {
             if (!registerMap.TryGetValue(baseInterface, out object _) && lifetime == ServiceLifetime.Singleton)
             {
@@ -190,7 +190,7 @@ namespace Frameset.Core.Context
                     break;
                 case ServiceLifetime.Transient:
                 case ServiceLifetime.Scoped:
-                    Register(interfaceType, impl, lifetime);
+                    RegisterObject(interfaceType, impl, lifetime);
                     break;
                 default:
                     break;
@@ -224,7 +224,7 @@ namespace Frameset.Core.Context
             }
             if (retObj != null)
             {
-                Register(baseType, retObj, lifeTime);
+                RegisterObject(baseType, retObj, lifeTime);
             }
             return retObj;
         }
