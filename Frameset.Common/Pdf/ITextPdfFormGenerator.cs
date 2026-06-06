@@ -37,6 +37,7 @@ namespace Frameset.Common.Pdf
             if (!formFields.IsNullOrEmpty())
             {
                 IEnumerator<KeyValuePair<string, PdfFormField>> enumerator = formFields.GetEnumerator();
+
                 while (enumerator.MoveNext())
                 {
                     KeyValuePair<string, PdfFormField> keyValuePair = enumerator.Current;

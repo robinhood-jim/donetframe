@@ -115,7 +115,7 @@ namespace Frameset.Core.Utils
                             {
                                 builder.Append("\n");
                             }
-                            builder.Append(readLine);
+                            builder.Append(readLine.TrimStart());
                         }
                     }
                 }

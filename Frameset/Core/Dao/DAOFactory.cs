@@ -57,12 +57,22 @@ namespace Frameset.Core.Dao
                 }
             }
         }
+        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<object, object> dict, bool autoConstructDbContext = true)
+        {
+            IJdbcDao dao = ConstructWithDict(dict);
+            containner.Add(key, dao);
+            if (autoConstructDbContext)
+            {
+                DbContextFactory.Register(new DbContext(key));
+            }
+            return dao;
+        }
 
         public static Dictionary<string, object> GetKeyValues()
         {
             return keyValues;
         }
-        private static IJdbcDao ConstructWithDict(Dictionary<object, object> dict)
+        internal static IJdbcDao ConstructWithDict(Dictionary<object, object> dict)
         {
             dict.TryGetValue("dbType", out object dbTypeObj);
             string dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();

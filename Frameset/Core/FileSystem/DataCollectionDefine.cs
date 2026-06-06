@@ -169,6 +169,12 @@ namespace Frameset.Core.FileSystem
         {
             if (!config.IsNullOrEmpty())
             {
+                config.TryGetValue(Constants.FSTYPECOLUMN, out string fsTypeObj);
+                if (!string.IsNullOrWhiteSpace(fsTypeObj))
+                {
+                    define.FsType = Constants.FsTypeOf(fsTypeObj);
+                }
+
                 foreach (var item in config)
                 {
                     define.ResourceConfig.TryAdd(item.Key, item.Value);

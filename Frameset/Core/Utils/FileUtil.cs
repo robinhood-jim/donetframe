@@ -38,7 +38,11 @@ namespace Frameset.Core.Utils
                 compressTypes.Add(compressType);
 
             }
-
+        }
+        public static Stream ReadStreamInPackage(string resourceName)
+        {
+            Assembly _assembly = Assembly.GetExecutingAssembly();
+            return _assembly.GetManifestResourceStream(resourceName);
         }
         public static FileMeta Parse(string resourcePath, char separator = '\\')
         {

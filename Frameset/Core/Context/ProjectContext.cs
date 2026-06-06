@@ -8,7 +8,7 @@ using YamlDotNet.Serialization.NamingConventions;
 
 namespace Frameset.Core.Context
 {
-    public static class ProjectConfiguration
+    public static class ProjectContext
     {
         private static Dictionary<string, object> keyValues = [];
         public static void DoInit(string configFile)

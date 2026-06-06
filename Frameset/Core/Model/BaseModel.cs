@@ -1,24 +1,25 @@
 ﻿
 using Frameset.Core.Annotation;
-using Frameset.Core.Common;
+using System;
 
 namespace Frameset.Core.Model
 {
     public class BaseModel : BaseEntity
     {
         [MappingField(field: "create_time", IfRequired = true)]
-        public string CreateTime { get; set; }
+        public DateTime CreateTime { get; set; }
         [MappingField(field: "modify_time", IfRequired = true)]
-        public string ModifyTime { get; set; }
+        public DateTime ModifyTime { get; set; }
         [MappingField(field: "creator", IfRequired = true)]
         public long Creator { get; set; }
         [MappingField(field: "modifier", IfRequired = true)]
         public long Modifier { get; set; }
         [MappingField(field: "status")]
-        public string Status
+        [LogicColumn]
+        public int? Status
         {
             get; set;
-        } = Constants.VALID;
+        }
 
     }
 }

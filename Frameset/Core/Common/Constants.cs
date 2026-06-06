@@ -257,6 +257,7 @@ namespace Frameset.Core.Common
             };
 
         }
+        public static readonly string FSTYPECOLUMN = "fsType";
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";
         public static readonly int VALID_INT = 1;
