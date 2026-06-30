@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Context;
+﻿using Frameset.Core.Common;
+using Frameset.Core.Context;
 using Frameset.Core.Dao.Meta;
 using Frameset.Core.Exceptions;
 using Microsoft.IdentityModel.Tokens;
@@ -83,6 +84,7 @@ namespace Frameset.Core.Dao
             string logicColumnStr = string.Empty;
             object validValue = null;
             object invalidValue = null;
+            Constants.DbType dbType1 = Constants.DbTypeOf(dbType);
             if (IsNull(connStr))
             {
                 dict.TryGetValue("userName", out object userName);
@@ -98,15 +100,42 @@ namespace Frameset.Core.Dao
                 int port = IsNull(portObj) ? AbstractSqlDialect.GetDefaultPort(dbType) : Int32.Parse(portObj.ToString());
                 int maxSize = IsNull(maxSizeStr) ? 0 : Int32.Parse(dict["maxSize"].ToString());
                 int minSize = IsNull(minSizeStr) ? 0 : Int32.Parse(dict["minSize"].ToString());
-                builder.Append("Server=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
-                builder.Append("User ID=").Append(userName).Append(";");
-                if (password != null)
+                switch (dbType1)
                 {
-                    builder.Append("Password=").Append(password).Append(";");
+                    case Constants.DbType.Mysql:
+                    case Constants.DbType.SqlServer:
+                        builder.Append("Server=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
+                        builder.Append("User ID=").Append(userName).Append(";");
+                        builder.Append("Password=").Append(password).Append(";");
+                        break;
+                    case Constants.DbType.Postgres:
+                        builder.Append("Host=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
+                        builder.Append("Username=").Append(userName).Append(";");
+                        builder.Append("Password=").Append(password).Append(";");
+                        break;
+                    case Constants.DbType.Oracle:
+                        builder.Append("DataSource=").Append(host).Append(":").Append(port.ToString()).Append("/").Append(schema).Append(";");
+                        builder.Append("User ID=").Append(userName).Append(";");
+                        builder.Append("Password=").Append(password).Append(";");
+                        break;
+                    case Constants.DbType.DB2:
+                        builder.Append("Server=").Append(host).Append(":").Append(port.ToString()).Append(";");
+                        builder.Append("UID=").Append(userName).Append(";");
+                        builder.Append("PWD=").Append(password).Append(";");
+                        break;
                 }
+
                 if (schema != null)
                 {
-                    builder.Append("Initial Catalog=").Append(schema).Append(";");
+                    if (Constants.DbType.SqlServer.Equals(dbType1))
+                    {
+                        builder.Append("Initial Catalog=").Append(schema).Append(";");
+                    }
+                    else if (Constants.DbType.Mysql.Equals(dbType1) || Constants.DbType.Postgres.Equals(dbType1) || Constants.DbType.DB2.Equals(dbType1))
+                    {
+                        builder.Append("Database=").Append(schema).Append(";");
+                    }
+
                 }
                 if (logicColumn != null)
                 {
@@ -117,14 +146,29 @@ namespace Frameset.Core.Dao
                     builder.Append("Pooling=true;");
                     if (maxSize > 0)
                     {
-                        builder.Append("Max Pool Size=").Append(maxSize).Append(";");
+                        if (!Constants.DbType.Postgres.Equals(dbType1))
+                        {
+                            builder.Append("Max Pool Size=").Append(maxSize).Append(";");
+                        }
+                        else
+                        {
+                            builder.Append("MaxPoolSize=").Append(maxSize).Append(";");
+                        }
                     }
                     if (minSize > 0)
                     {
-                        builder.Append("Min Pool Size=").Append(maxSize).Append(";");
+                        if (!Constants.DbType.Postgres.Equals(dbType1))
+                        {
+                            builder.Append("Min Pool Size=").Append(maxSize).Append(";");
+                        }
+                        else
+                        {
+                            builder.Append("MinPoolSize=").Append(maxSize).Append(";");
+                        }
+
                     }
                 }
-                if (string.Equals(dbType, "Mysql", StringComparison.OrdinalIgnoreCase))
+                if (Constants.DbType.Mysql.Equals(dbType1))
                 {
                     builder.Append("AllowLoadLocalInfile=true;");
                 }

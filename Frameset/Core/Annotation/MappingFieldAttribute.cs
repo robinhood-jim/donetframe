@@ -45,7 +45,7 @@ namespace Frameset.Core.Annotation
         {
             get;
             set;
-        }
+        } = Constants.MetaType.NONE;
 
         public int Precise
         {

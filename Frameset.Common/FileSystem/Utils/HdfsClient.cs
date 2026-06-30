@@ -24,7 +24,7 @@ namespace Frameset.Common.FileSystem.utils
             Debug.Assert(!baseUrl.IsNullOrEmpty());
 
             define.ResourceConfig.TryGetValue(ResourceConstants.HDFSAUTHTYPE, out string? authType);
-            Trace.Assert(!authType.IsNullOrEmpty());
+            Trace.Assert(!string.IsNullOrWhiteSpace(authType),"");
             type = AuthTypeOf(authType);
             switch (type)
             {
@@ -98,9 +98,9 @@ namespace Frameset.Common.FileSystem.utils
         }
         private void SetParameter(Dictionary<string, string> paramMap, string name, object? value, object? defaultValue = null)
         {
-            if (value != null && !value.ToString().IsNullOrEmpty())
+            if (value != null && !string.IsNullOrWhiteSpace(value.ToString()))
             {
-                paramMap.TryAdd(name, value.ToString());
+                paramMap.TryAdd(name, value?.ToString());
             }
             else if (defaultValue != null)
             {

@@ -224,29 +224,33 @@ namespace Frameset.Core.FileSystem
         }
         public object DefaultValue
         {
-            get; internal set;
+            get; set;
         }
         public string DateFormat
         {
-            get; internal set;
+            get; set;
         }
         public bool Required
         {
-            get; internal set;
+            get; set;
         } = false;
         public bool AlgrithColumn
         {
-            get; internal set;
+            get; set;
         } = false;
         public bool Primary
         {
-            get; internal set;
+            get; set;
         }
-        public string AlgrithOper { get; internal set; }
-        public int Preciseg { get; internal set; }
-        public int Scale { get; internal set; }
-        public bool Increment { get; internal set; }
-        public int Length { get; internal set; }
+        public string AlgrithOper { get; set; }
+        public int Preciseg { get; set; }
+        public int Scale { get; set; }
+        public bool Increment { get; set; }
+        public int Length { get; set; }
+        public string SequenceName
+        {
+            get; set;
+        }
         public IList<string> nominalValues
         {
             get; internal set;

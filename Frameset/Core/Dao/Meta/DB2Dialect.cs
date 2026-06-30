@@ -1,5 +1,4 @@
-﻿using FastMember;
-using Frameset.Core.Dao.Utils;
+﻿using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
 using IBM.Data.Db2;
 using Microsoft.IdentityModel.Tokens;
@@ -13,13 +12,25 @@ namespace Frameset.Core.Dao.Meta
 {
     public class DB2Dialect : AbstractSqlDialect
     {
-        public override string GenerateSequenceScript(string sequenceName)
+        public override string GenerateSequenceFunc(string sequenceName)
         {
             return "NEXT VALUE FOR " + sequenceName;
         }
         public override string AppendSequence(string sequenceName)
         {
-            return ";SELECT PREVIOUS FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+            return ";SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+        }
+        public override string GenerateSequenceQuery(string sequenceName)
+        {
+            return "SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+        }
+        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        {
+            string executeSql = GenerateSequenceQuery(sequenceName);
+            using (DB2Command command = new DB2Command(executeSql, (DB2Connection)connection))
+            {
+                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+            }
         }
         internal DB2Dialect()
         {
@@ -29,19 +40,11 @@ namespace Frameset.Core.Dao.Meta
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
             long count = 0;
-            using (DB2BulkCopy copy = new DB2BulkCopy((DB2Connection)connection))
+            using (DB2BulkCopy copy = new DB2BulkCopy((DB2Connection)connection, DB2BulkCopyOptions.Default))
             {
                 copy.DestinationTableName = entityContent.TableName;
-                List<string> columnNames = new();
-                foreach (FieldContent content in fields)
-                {
-                    if (!content.IfIncrement)
-                    {
-                        columnNames.Add(content.PropertyName);
-                    }
-                }
-                var reader = ObjectReader.Create(models, columnNames.ToArray());
-                copy.WriteToServer(reader);
+                var dataReader = new EnumerableDataReader<V>(dao, connection, entityContent, fields, models);
+                copy.WriteToServer(dataReader);
                 return count;
             }
         }

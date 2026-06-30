@@ -9,8 +9,8 @@ namespace Frameset.Common.Data.Writer
 {
     public class ProtoBufWriter<T> : AbstractDataWriter<T>
     {
-        private DynamicMessage message;
-        private MessageDefinition definition;
+        private DynamicMessage message=null!;
+        private MessageDefinition definition=null!;
 
         public ProtoBufWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {

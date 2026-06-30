@@ -18,7 +18,7 @@ namespace Frametest.FileSystem
                 .Path("e:/testlocal.csv.brotil").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.orc.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY, "jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME, "test")
                 //.Path("testftp.json.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.FTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.BIGINT).AddColumnDefine("name", Constants.MetaType.STRING)
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING)
                 .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
             Dictionary<string, object> cachedMap = new Dictionary<string, object>();
             Random random = new Random(1231313);
@@ -72,7 +72,7 @@ namespace Frametest.FileSystem
                 .Path("e:/testlocal.csv.brotil").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.csv.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY,"jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME,"test")
                 //.Path("testftp.csv.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.SFTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.BIGINT).AddColumnDefine("name", Constants.MetaType.STRING)
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING)
                 .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
             DataCollectionDefine define = builder.Build();
             using (AbstractDataIterator<Dictionary<string, object>> iterator = define.GetDataReader<Dictionary<string, object>>())
@@ -95,7 +95,7 @@ namespace Frametest.FileSystem
                 .Path("e:/testlocal1.json.gz").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.csv.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY,"jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME,"test")
                 //.Path("testftp.csv.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.SFTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.BIGINT).AddColumnDefine("name", Constants.MetaType.STRING)
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING)
                 .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
             DataCollectionDefine define = builder.Build();
             IEnumerable<TestDataModel> dataModels = define.GetEnumerable<TestDataModel>();

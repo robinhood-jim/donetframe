@@ -2,6 +2,7 @@
 using Frameset.Core.Dao.Meta;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Mapper;
 using Frameset.Core.Mapper.Segment;
 using Frameset.Core.Model;
@@ -19,6 +20,7 @@ using System.Diagnostics;
 using System.Linq;
 using System.Text;
 using System.Text.Json;
+using System.Threading;
 
 
 
@@ -766,6 +768,11 @@ namespace Frameset.Core.Dao
             return command.ExecuteNonQuery();
 
         }
+        public long InsertBatch(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
+        {
+            return GetDialect().BatchInsert(dao, connection, schema, tableName, metas, models, token);
+        }
+
         public void DoWithQuery(string sql, object[] obj, Action<IDataReader> action)
         {
             using (DbConnection connection = dataMeta.GetDbConnection(connectionStr))

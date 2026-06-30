@@ -1,6 +1,8 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Common;
+using Frameset.Core.Context;
 using Frameset.Core.Dao;
+using Frameset.Core.Dao.Handler;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
 using Frameset.Core.Mapper;
@@ -41,6 +43,7 @@ namespace Frameset.Core.Repo
         protected readonly Type pkType;
         protected IList<FieldContent> fieldContents;
         protected ThreadLocal<string> temporaryDsName;
+        protected MetaObjectHandler metaObjectHandler;
 
         public BaseRepository()
         {
@@ -65,6 +68,12 @@ namespace Frameset.Core.Repo
         }
         public bool SaveEntity(V entity, Action<V> insertBeforeAction = null, Func<DbCommand, V, bool> insertAfterAction = null)
         {
+            MetaObjectHandler handler = GetObjectHandler();
+            if (handler != null)
+            {
+                Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(entityType);
+                handler.InsertFill(new MetaObject(entity, fieldDict));
+            }
             InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entity);
             if (saveFunc != null)
             {
@@ -89,6 +98,12 @@ namespace Frameset.Core.Repo
         {
             V origin = GetById((P)pkColumn.GetMethod.Invoke(entity, null));
             Trace.Assert(origin != null, "id not found in entity");
+            MetaObjectHandler handler = GetObjectHandler();
+            if (handler != null)
+            {
+                Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(entityType);
+                handler.UpdateFill(new MetaObject(entity, fieldDict));
+            }
             UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), origin, entity);
             if (updateFunc != null)
             {
@@ -480,6 +495,14 @@ namespace Frameset.Core.Repo
                 return tempDao == null ? throw new BaseSqlException("dsName " + dsName + " not registered!") : tempDao;
             }
             return dao;
+        }
+        private MetaObjectHandler GetObjectHandler()
+        {
+            if (metaObjectHandler == null)
+            {
+                metaObjectHandler = RegServiceContext.GetBean<MetaObjectHandler>();
+            }
+            return metaObjectHandler;
         }
 
     }

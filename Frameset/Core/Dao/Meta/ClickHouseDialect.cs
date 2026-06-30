@@ -8,9 +8,7 @@ using Serilog;
 using Serilog.Events;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -45,28 +43,13 @@ namespace Frameset.Core.Dao.Meta
         public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
             long flushRow = 0;
             using (var bulkCopy = new ClickHouseBulkCopy((ClickHouseConnection)connection))
             {
-
-                var enumObjs = models.Select(x =>
-                {
-                    List<object> columns = new();
-                    foreach (FieldContent content in fields)
-                    {
-                        if (!content.IfIncrement)
-                        {
-                            columns.Add(content.GetMethod.Invoke(x, null));
-                        }
-                        else
-                        {
-                            columns.Add(null);
-                        }
-                    }
-                    return columns.ToArray();
-                });
                 bulkCopy.BatchSize = batchSize;
-                bulkCopy.WriteToServerAsync(enumObjs, token).RunSynchronously();
+                var dataReader = new EnumerableDataReader<V>(dao, connection, entityContent, fields, models);
+                bulkCopy.WriteToServerAsync(dataReader, token).RunSynchronously();
                 flushRow = bulkCopy.RowsWritten;
             }
             return flushRow;
@@ -105,6 +88,14 @@ namespace Frameset.Core.Dao.Meta
             parameter.ParameterName = column;
             parameter.Value = value;
             return parameter;
+        }
+        public override bool SupportAutoIncrement()
+        {
+            return false;
+        }
+        public override bool SupportSequence()
+        {
+            return false;
         }
     }
 }

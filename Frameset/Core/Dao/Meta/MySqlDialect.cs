@@ -1,8 +1,8 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Query;
-using Microsoft.IdentityModel.Tokens;
 using MySqlConnector;
 using Serilog;
 using Serilog.Events;
@@ -10,7 +10,6 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
-using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -33,50 +32,20 @@ namespace Frameset.Core.Dao.Meta
         }
         public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
+            Type sourceType = typeof(V);
+            bool isMap = sourceType.Equals(typeof(Dictionary<string, object>));
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
-
-            DataTable table = new DataTable();
-
-            MySqlTransaction transaction = ((MySqlConnection)connection).BeginTransaction();
+            using MySqlTransaction transaction = ((MySqlConnection)connection).BeginTransaction();
             try
             {
-
                 MySqlBulkCopy copy = new MySqlBulkCopy((MySqlConnection)connection, transaction);
+
                 copy.DestinationTableName = entityContent.TableName;
-                int columns = 0;
-                foreach (FieldContent content in fields)
-                {
-                    if (!content.IfIncrement)
-                    {
-                        table.Columns.Add(content.FieldName, content.ParamType);
-                        columns++;
-                    }
-                    else
-                    {
-                        DataColumn column = table.Columns.Add(content.FieldName, content.ParamType);
-                        column.AutoIncrement = true;
-                        column.AllowDBNull = true;
-                        column.AutoIncrementSeed = QueryIdentityByTable(dao, connection, transaction, entityContent);
-                    }
-                }
-                var enumRows = models.Select(model =>
-                {
-                    DataRow row = table.NewRow();
-                    foreach (FieldContent content in fields)
-                    {
-                        if (!content.IfIncrement)
-                        {
-                            row[content.FieldName] = content.GetMethod.Invoke(model, null);
-                        }
-                        else
-                        {
-                            row[content.FieldName] = DBNull.Value;
-                        }
-                    }
-                    return row;
-                });
-                MySqlBulkCopyResult rs = copy.WriteToServerAsync(enumRows, columns, token).Result;
+
+                IDataReader dataReader = new EnumerableDataReader<V>(dao, connection, entityContent, fields, models);
+
+                MySqlBulkCopyResult rs = copy.WriteToServerAsync(dataReader, token).Result;
                 transaction.Commit();
                 return rs.RowsInserted;
 
@@ -86,8 +55,28 @@ namespace Frameset.Core.Dao.Meta
                 transaction.Rollback();
                 throw new BaseSqlException(ex.Message);
             }
-
         }
+        public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
+        {
+
+            using MySqlTransaction transaction = ((MySqlConnection)connection).BeginTransaction();
+            try
+            {
+                MySqlBulkCopy copy = new MySqlBulkCopy((MySqlConnection)connection, transaction);
+                copy.DestinationTableName = tableName;
+
+                IDataReader dataReader = new EnumerableDataReader<Dictionary<string, object>>(dao, connection, metas, schema, tableName, models);
+                MySqlBulkCopyResult rs = copy.WriteToServerAsync(dataReader, token).Result;
+                transaction.Commit();
+                return rs.RowsInserted;
+            }
+            catch (Exception ex)
+            {
+                transaction.Rollback();
+                throw new BaseSqlException(ex.Message);
+            }
+        }
+
         internal MySqlDbType GetDbType(FieldContent content)
         {
             MySqlDbType type = MySqlDbType.VarChar;
@@ -147,13 +136,11 @@ namespace Frameset.Core.Dao.Meta
         {
             return new MySqlParameter(column, value);
         }
-        public override long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, DbTransaction transaction, EntityContent entityContent)
+        public override long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, string schema, string tableName)
         {
-            string schema = entityContent.Schema.IsNullOrEmpty() ? dao.GetCurrentSchema() : entityContent.Schema;
-            StringBuilder builder = new StringBuilder("SELECT auto_increment FROM information_schema.TABLES WHERE TABLE_SCHEMA ='").Append(schema).Append("' and TABLE_NAME='").Append(entityContent.TableName).Append("'");
+            StringBuilder builder = new StringBuilder("SELECT auto_increment FROM information_schema.TABLES WHERE TABLE_SCHEMA ='").Append(schema).Append("' and TABLE_NAME='").Append(tableName).Append("'");
             using (MySqlCommand command = new MySqlCommand(builder.ToString(), (MySqlConnection)connection))
             {
-                command.Transaction = (MySqlTransaction)transaction;
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
             }
 
@@ -178,6 +165,12 @@ namespace Frameset.Core.Dao.Meta
             {
                 return GetNoPageSql(baseSql, query);
             }
+        }
+        public Tuple<DbBatch, DbBatchCommand> WrapBatch(DbConnection connection, string batchSql)
+        {
+            DbBatch batch = new MySqlBatch((MySqlConnection)connection);
+            DbBatchCommand command = new MySqlBatchCommand(batchSql);
+            return Tuple.Create(batch, command);
         }
     }
 }

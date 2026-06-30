@@ -1,4 +1,5 @@
-﻿using System;
+﻿using Serilog;
+using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.IO;
@@ -75,17 +76,15 @@ namespace Frameset.Core.Security
                     throw new NotSupportedException($"Unsupported public key algorithm: {keyType}");
 
                 // 2. Decode the raw wire format byte payload
-                byte[] binaryData = Convert.FromBase64String(base64Data);
-                bool parseOk = false;
+                byte[] binaryData = Convert.FromBase64String(base64Data);   
                 try
                 {
                     RSAParameters parameters = ParseFromOpenSSHPublic(binaryData);
                     provider.ImportParameters(parameters);
-                    parseOk = true;
                 }
                 catch (Exception ex)
                 {
-
+                    Log.Error(ex.Message);
                 }
 
                 return provider;
@@ -142,7 +141,7 @@ namespace Frameset.Core.Security
             }
             catch (Exception ex)
             {
-
+                Log.Error(ex.Message);
             }
             return null;
         }
@@ -158,7 +157,7 @@ namespace Frameset.Core.Security
             }
             catch (Exception ex)
             {
-
+                Log.Error(ex.Message);
             }
             return null;
         }

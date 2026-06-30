@@ -1,4 +1,5 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Exceptions;
 using Serilog;
 using System.Collections.Generic;
 
@@ -25,6 +26,7 @@ namespace Frameset.Core.Dao.Meta
             if (dialect == null)
             {
                 Log.Error("unRegister " + dbType + "!");
+                throw new ConfigMissingException("unknow dbType");
             }
             return dialect;
         }

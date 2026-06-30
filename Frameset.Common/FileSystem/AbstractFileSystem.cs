@@ -96,7 +96,7 @@ namespace Frameset.Common.FileSystem
             if (define.Encode.IsNullOrEmpty())
             {
                 define.ResourceConfig.TryGetValue(ResourceConstants.STRINGENCODING, out encodingStr);
-                if (!encodingStr.IsNullOrEmpty())
+                if (!string.IsNullOrWhiteSpace(encodingStr))
                 {
                     encoding = Encoding.GetEncoding(encodingStr);
                 }

@@ -29,7 +29,7 @@ namespace Frameset.Web.Utils
             ScanPackage(assembly, assemblyName);
 
         }
-        public static void DRegisterFunction(string assemblyName)
+        public static void UnRegisterFunction(string assemblyName)
         {
             if (loadContentMap.TryGetValue(assemblyName, out AssemblyLoadContext? context) && context != null)
             {

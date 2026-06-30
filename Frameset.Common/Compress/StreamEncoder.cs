@@ -26,7 +26,7 @@ namespace Frameset.Common.Compress
                 CompressType.BZ2 => new BZip2OutputStream(rawstream),
                 CompressType.ZSTD => new ZstdSharp.CompressionStream(rawstream),
                 CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Compress),
-                CompressType.LZMA => new LzmaStream(LzmaEncoderProperties.Default, false, rawstream),
+                CompressType.LZMA => LzmaStream.Create(LzmaEncoderProperties.Default, false, rawstream),
                 CompressType.XZ => new XZStream(rawstream),
                 CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Compress),
                 _ => rawstream

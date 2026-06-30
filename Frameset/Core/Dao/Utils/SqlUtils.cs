@@ -49,7 +49,7 @@ namespace Frameset.Core.Dao.Utils
                     else if (content.IfSequence)
                     {
                         columnsBuilder.Append(content.FieldName).Append(",");
-                        valuesBuilder.Append(dao.GetDialect().GenerateSequenceScript(content.SequenceName)).Append(",");
+                        valuesBuilder.Append(dao.GetDialect().GenerateSequenceFunc(content.SequenceName)).Append(",");
                         segment.Sequence = true;
                         segment.GenKeyMethod = content.SetMethod;
                         appdenField = content;
@@ -103,7 +103,7 @@ namespace Frameset.Core.Dao.Utils
                 if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsPrimitive)
                 {
                     columnsBuilder.Append(content.FieldName).Append(",");
-                    valuesBuilder.Append("?" + content.FieldName).Append(",");
+                    valuesBuilder.Append("@" + content.FieldName).Append(",");
                 }
             }
             builder.Append("(").Append(columnsBuilder.ToString().Substring(0, columnsBuilder.Length - 1)).Append(") values (")

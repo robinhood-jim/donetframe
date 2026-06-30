@@ -163,7 +163,7 @@ public class DynamicMessage : IMessage
         TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
         foreach (var entry in methodMap)
         {
-            object value = entry.Value.GetMethod.Invoke(model, []);
+            object? value = entry.Value.GetMethod.Invoke(model, []);
             if (value != null)
             {
                 if (entry.Value.ParamType != typeof(DateTime) && entry.Value.ParamType != typeof(DateTimeOffset))

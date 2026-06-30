@@ -2,6 +2,7 @@
 using Etcdserverpb;
 using Google.Protobuf;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,7 +24,7 @@ namespace Frameset.Core.Raft
         public async Task<bool> Campaign(string nodePath, string nodeValue)
         {
             var leaseResponse = etcdClient.LeaseGrant(new LeaseGrantRequest { TTL = 10 });
-            etcdClient.LeaseKeepAlive(leaseResponse.ID, CancellationToken.None).ConfigureAwait(false);
+            etcdClient.LeaseKeepAlive(leaseResponse.ID, CancellationToken.None).RunSynchronously();
             var campaignRequest = new CampaignRequest
             {
                 Lease = leaseResponse.ID,
@@ -69,7 +70,7 @@ namespace Frameset.Core.Raft
             }
             catch (Exception ex)
             {
-
+                Log.Error(ex.Message);
             }
             return false;
         }

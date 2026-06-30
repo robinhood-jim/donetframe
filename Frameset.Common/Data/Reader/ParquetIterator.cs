@@ -21,7 +21,7 @@ namespace Frameset.Common.Data.Reader
         int currentGroup = 0;
         long rowCount = 0;
         long readLines = 0;
-        internal ParquetOptions parquetOptions;
+        internal ParquetOptions parquetOptions=null!;
         internal bool leaveStreamOpen = true;
 
         public ParquetIterator(DataCollectionDefine define) : base(define)

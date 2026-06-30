@@ -2,20 +2,20 @@
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Model;
-using Microsoft.HBase.Client;
+
 
 namespace Frameset.Bigdata.Hbase
 {
     public class HbaseRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity
     {
-        private HBaseClient client;
+        //private HBaseClient client;
         public HbaseRepository(DataCollectionDefine define) : base(define)
         {
             define.ResourceConfig.TryGetValue(ResourceConstants.HBASEPROTOBUFURL, out string? url);
             define.ResourceConfig.TryGetValue(ResourceConstants.HBASEUSERNAME, out string? userName);
             define.ResourceConfig.TryGetValue(ResourceConstants.HBASEPASSWD, out string? passwd);
-            var credentials = new ClusterCredentials(new Uri(url), userName, passwd);
-            client = new(credentials);
+            //var credentials = new ClusterCredentials(new Uri(url), userName, passwd);
+            //client = new(credentials);
 
         }
 
@@ -43,7 +43,7 @@ namespace Frameset.Bigdata.Hbase
         {
             if (disposable)
             {
-                client.Dispose();
+                //client.Dispose();
             }
         }
     }

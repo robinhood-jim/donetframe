@@ -70,11 +70,11 @@ namespace Frameset.Core.Dao.Utils
         public int Precise
         {
             get; set;
-        }
+        } = 0;
         public int Scale
         {
             get; set;
-        }
+        } = 0;
         public bool IfPrimary
         {
             get; internal set;
@@ -102,7 +102,7 @@ namespace Frameset.Core.Dao.Utils
         public int Length
         {
             get; set;
-        }
+        } = 0;
         public Type ParentEntity
         {
             get; set;

@@ -8,8 +8,8 @@ namespace Frameset.Common.Data.Writer
 {
     public class XmlDataWriter<T> : AbstractDataWriter<T>
     {
-        private readonly string? collectionNodeName;
-        private readonly string? entityName;
+        private readonly string collectionNodeName;
+        private readonly string entityName;
         private readonly XmlWriter xmlwriter;
         public XmlDataWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
@@ -17,15 +17,23 @@ namespace Frameset.Common.Data.Writer
             Initalize();
             if (IsReturnDictionary())
             {
-                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLCOLLECTIONNAME, out collectionNodeName);
-                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLENTITYIONNAME, out entityName);
-                if (collectionNodeName.IsNullOrEmpty())
+                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLCOLLECTIONNAME, out string? collectionNodeNameStr);
+                MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.XMLENTITYIONNAME, out string? entityNameStr);
+                if (string.IsNullOrWhiteSpace(collectionNodeNameStr))
                 {
                     collectionNodeName = ResourceConstants.XMLDEFUALTCOLLECTIONAME;
                 }
-                if (entityName.IsNullOrEmpty())
+                else
+                {
+                    collectionNodeName = collectionNodeNameStr;
+                }
+                if (string.IsNullOrWhiteSpace(entityNameStr))
                 {
                     entityName = ResourceConstants.XMLDEFAULTENTITYNAME;
+                }
+                else
+                {
+                    entityName = entityNameStr;
                 }
             }
             else

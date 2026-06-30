@@ -72,7 +72,7 @@ namespace Frameset.Core.Dao.Utils
                     object[] attributes = prop.GetCustomAttributes(false);
                     string propName = prop.Name;
                     string fieldName = Core.Utils.StringUtils.CamelCaseLowConvert(propName);
-
+                    Constants.MetaType dataType = AdjustType(prop.PropertyType);
                     if (attributes.Length > 0)
                     {
                         FieldBuilder builder = new(entityType);
@@ -85,7 +85,10 @@ namespace Frameset.Core.Dao.Utils
                                 MappingFieldAttribute mappingField = attributes[i] as MappingFieldAttribute;
                                 if (mappingField.Exist)
                                 {
-                                    Constants.MetaType dataType = AdjustType(prop.PropertyType);
+                                    if (!Constants.MetaType.NONE.Equals(mappingField.DataType))
+                                    {
+                                        dataType = mappingField.DataType;
+                                    }
                                     builder.PropertyName(propName).FieldName(!string.IsNullOrWhiteSpace(mappingField.Field) ? mappingField.Field : Frameset.Core.Utils.StringUtils.CamelCaseLowConvert(propName));
                                     if (mappingField.IfPrimary)
                                     {
@@ -99,7 +102,7 @@ namespace Frameset.Core.Dao.Utils
                                     {
                                         builder.Increment(true);
                                     }
-                                    builder.Required(mappingField.IfRequired).DataType(mappingField.DataType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                                    builder.Required(mappingField.IfRequired).DataType(dataType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                                 }
                                 break;
@@ -108,7 +111,7 @@ namespace Frameset.Core.Dao.Utils
                             {
                                 ColumnAttribute a = attributes[i] as ColumnAttribute;
                                 fieldName = !string.IsNullOrWhiteSpace(a.Name) ? a.Name : Core.Utils.StringUtils.CamelCaseLowConvert(propName);
-                                builder.PropertyName(propName).FieldName(fieldName).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                                builder.PropertyName(propName).FieldName(fieldName).DataType(AdjustType(prop.DeclaringType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                             }
                             else if (attributes[i].GetType().Equals(typeof(DatabaseGeneratedAttribute)))
@@ -157,6 +160,7 @@ namespace Frameset.Core.Dao.Utils
                                 ColumnFormulaAttribute attr = (ColumnFormulaAttribute)attributes[i];
                                 builder.Formula(attr.Value);
                             }
+                            builder.DataType(dataType);
                         }
                         if (builder.Acceptable())
                         {
@@ -171,7 +175,7 @@ namespace Frameset.Core.Dao.Utils
                     else if (!entityContent.IfExplicit)
                     {
                         FieldBuilder builder = new(entityType);
-                        builder.PropertyName(propName).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                        builder.PropertyName(propName).DataType(dataType).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                         fields.Add(builder.Build());
                     }
                 }
@@ -256,7 +260,11 @@ namespace Frameset.Core.Dao.Utils
         public static Constants.MetaType AdjustType(Type type)
         {
             Constants.MetaType dataType = Constants.MetaType.INTEGER;
-            if (type.Equals(typeof(int)))
+            if (type.Equals(typeof(long)))
+            {
+                dataType = Constants.MetaType.LONG;
+            }
+            else if (type.Equals(typeof(int)))
             {
                 dataType = Constants.MetaType.INTEGER;
             }

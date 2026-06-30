@@ -20,6 +20,8 @@ namespace Frameset.Office.Excel
     public class WorkSheet
     {
         public static readonly int MAX_ROWS = 1_048_576;
+        public static readonly int MAX_COLS = 16_384;
+
         public string Id
         {
             get; internal set;
@@ -99,6 +101,7 @@ namespace Frameset.Office.Excel
         Fill defaultFill;
         Border defaultBorder;
         Alignment defaultAlignment;
+
         internal XmlBufferWriter w;
         internal Dictionary<string, List<CellFormula>> formualMap = [];
         internal WorkSheet(WorkBook workBook, ExcelSheetProp prop, int index, string id, string sheetId, string name, SheetVisibility visibility) : this(workBook, index, id, sheetId, name, visibility)

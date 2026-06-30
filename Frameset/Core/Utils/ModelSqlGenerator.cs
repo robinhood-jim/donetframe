@@ -38,7 +38,7 @@ namespace Frameset.Core.Utils
             builder.Append("CREATE TABLE ").Append(entityContent.GetTableName()).Append("(\n");
             foreach (FieldContent field in fields)
             {
-                builder.Append(dialect.GetColumnDefine(field)).Append(",\n");
+                builder.Append(dialect.GetFieldDefineScript(field)).Append(",\n");
             }
             builder.Remove(builder.Length - 1, builder.Length).Append(")\n");
             if (!additionalCfgMap.IsNullOrEmpty())

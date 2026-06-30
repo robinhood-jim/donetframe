@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Dao.Meta;
 using Frameset.Core.Dao.Utils;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Mapper.Segment;
 using Frameset.Core.Model;
 using Frameset.Core.Query;
@@ -8,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Threading;
 
 
 namespace Frameset.Core.Dao
@@ -90,6 +92,6 @@ namespace Frameset.Core.Dao
         int GetValidValue();
         void SetInvalidValue(int value);
         int GetInvalidValue();
-
+        long InsertBatch(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000);
     }
 }

@@ -5,12 +5,13 @@ namespace Frameset.Common.FileSystem
 {
     public class LocalFileSystem : AbstractFileSystem
     {
-        static LocalFileSystem fileSystem = new LocalFileSystem(null);
+        static LocalFileSystem fileSystem = new LocalFileSystem(DataCollectionBuilder.NewBuilder().Build());
 
         private LocalFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.LOCAL;
         }
+
         public static LocalFileSystem GetInstance()
         {
             return fileSystem;

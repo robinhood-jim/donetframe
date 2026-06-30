@@ -45,7 +45,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         protected void doInit()
         {
             define.ResourceConfig.TryGetValue("fs.UploadPartSize", out string? configPartSizeStr);
-            if (!configPartSizeStr.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(configPartSizeStr))
             {
                 partSize = int.Parse(configPartSizeStr);
             }

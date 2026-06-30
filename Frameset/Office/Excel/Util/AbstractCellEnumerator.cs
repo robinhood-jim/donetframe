@@ -6,6 +6,7 @@ using Frameset.Office.Excel.Element;
 using Frameset.Office.Excel.Meta;
 using Frameset.Office.Meta;
 using Microsoft.IdentityModel.Tokens;
+using Serilog;
 using Spring.Util;
 using System;
 using System.Collections;
@@ -185,9 +186,10 @@ namespace Frameset.Office.Excel.Util
                     {
                         processor.Value = "".Equals(processor.RawValue) ? null : parser.Invoke(processor.RawValue, addr);
                     }
-                    catch (ExcelException _)
+                    catch (ExcelException ex)
                     {
                         definedType = CellType.ERROR;
+                        Log.Error(ex.Message);
                     }
                 }
                 else if ("f".Equals(r.GetLocalName()))

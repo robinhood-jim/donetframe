@@ -7,8 +7,8 @@ namespace Frameset.Common.Protobuf.Utils
     {
         private DescriptorProto fileDescriptor;
         private MessageDefinition messageDefinition;
-        private ProtoWriter protoWriter;
-        private ProtoReader protoReader;
+        private ProtoWriter protoWriter=null!;
+        private ProtoReader protoReader=null!;
         private DynamicSchema(MessageDefinition definition)
         {
             messageDefinition = definition;
@@ -73,8 +73,8 @@ namespace Frameset.Common.Protobuf.Utils
             private FileDescriptorSet fileDescriptor;
             internal readonly string protoName;
             internal readonly string packageName;
-            internal MessageDefinition messageDefinition;
-            internal DescriptorProto descriptor;
+            internal MessageDefinition messageDefinition=null!;
+            internal DescriptorProto descriptor=null!;
 
 
             public static Builder NewBuilder(string protoName, string packageName)
@@ -89,7 +89,7 @@ namespace Frameset.Common.Protobuf.Utils
             }
             public Builder AddMessageDefinition(MessageDefinition definition)
             {
-                this.messageDefinition = messageDefinition;
+                this.messageDefinition = definition;
                 this.descriptor = messageDefinition.descriptor;
 
                 return this;

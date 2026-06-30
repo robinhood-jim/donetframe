@@ -13,7 +13,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         private Mac client;
         private string? zoneStr;
         private BucketManager bucketManager;
-        private string domain;
+        private string domain=null!;
         private UploadManager uploadManager;
         private Config config;
         private bool useHttps = false;
@@ -23,7 +23,11 @@ namespace Frameset.Common.FileSystem.CloudStorage
             identifier = Constants.FileSystemType.QINIU;
             client = new Mac(accessKey, secretKey);
             define.ResourceConfig.TryGetValue(StorageConstants.QINIUZONECONFIG, out zoneStr);
-            define.ResourceConfig.TryGetValue(StorageConstants.QINIUDOWNDOAMIN, out domain);
+            define.ResourceConfig.TryGetValue(StorageConstants.QINIUDOWNDOAMIN, out string? domainStr);
+            if (!string.IsNullOrWhiteSpace(domainStr))
+            {
+                domain = domainStr;
+            }
             if (define.ResourceConfig.TryGetValue(StorageConstants.QINNIUDOWNUSEHTTPS, out string? useHttpsStr) && string.Equals(Constants.TRUEVALUE, useHttpsStr, StringComparison.OrdinalIgnoreCase))
             {
                 useHttps = true;

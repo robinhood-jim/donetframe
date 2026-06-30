@@ -1,5 +1,4 @@
-﻿using FastMember;
-using Frameset.Core.Dao.Utils;
+﻿using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
 using Microsoft.IdentityModel.Tokens;
 using Oracle.ManagedDataAccess.Client;
@@ -26,7 +25,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "VARCHAR2(" + content.Length + ")";
         }
-        public override string GenerateSequenceScript(string sequenceName)
+        public override string GenerateSequenceFunc(string sequenceName)
         {
             return sequenceName + ".nexval";
         }
@@ -34,31 +33,35 @@ namespace Frameset.Core.Dao.Meta
         {
             return ";selece " + sequenceName + ".CURRVAL from dual";
         }
+        public override string GenerateSequenceQuery(string sequenceName)
+        {
+            return "selece " + sequenceName + ".CURRVAL from dual";
+        }
+        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        {
+            string executeSql = GenerateSequenceQuery(sequenceName);
+            using (OracleCommand command = new OracleCommand(executeSql, (OracleConnection)connection))
+            {
+                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+            }
+        }
         public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
 
-            using (OracleBulkCopy copy = new OracleBulkCopy((OracleConnection)connection))
+            using (OracleBulkCopy copy = new OracleBulkCopy((OracleConnection)connection, OracleBulkCopyOptions.UseInternalTransaction))
             {
                 copy.DestinationSchemaName = entityContent.Schema;
                 copy.DestinationTableName = entityContent.TableName;
-                List<string> columnNames = new();
-                foreach (FieldContent content in fields)
-                {
-                    if (!content.IfIncrement)
-                    {
-                        columnNames.Add(content.PropertyName);
-                    }
 
-                }
-                var reader = ObjectReader.Create(models, columnNames.ToArray());
+                var reader = new EnumerableDataReader<V>(dao, connection, entityContent, fields, models);
                 copy.BatchSize = batchSize;
                 copy.WriteToServer(reader);
                 return 0;
             }
-
         }
+
         public override DbConnection GetDbConnection(string connectStr)
         {
             return new OracleConnection(connectStr);
@@ -149,6 +152,15 @@ namespace Frameset.Core.Dao.Meta
                 }
             }
         }
+        public override bool SupportAutoIncrement()
+        {
+            return false;
+        }
+        public override bool SupportSequence()
+        {
+            return true;
+        }
+
     }
 
 }

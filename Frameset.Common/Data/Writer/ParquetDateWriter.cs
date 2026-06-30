@@ -19,7 +19,7 @@ namespace Frameset.Common.Data.Writer
         private Dictionary<int, ArrayList> chunckMap = new();
         private int chunckCapcity = 20000;
         private long totalRow = 0;
-        internal ParquetOptions parquetOptions;
+        internal ParquetOptions parquetOptions=null!;
         internal bool appendMode = false;
 
         public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)

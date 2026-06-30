@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Query;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
@@ -7,6 +8,7 @@ using Serilog;
 using Serilog.Events;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
@@ -31,14 +33,26 @@ namespace Frameset.Core.Dao.Meta
 
             return new StringBuilder("DECIMAL(").Append(content.Scale).Append(",").Append(content.Precise).Append(")").ToString();
         }
-        public virtual string GenerateSequenceScript(string sequenceName)
+        public virtual string GenerateSequenceFunc(string sequenceName)
         {
             throw new NotSupportedException();
         }
-        public virtual string getAutoIncrementScript()
+        public virtual string GenerateSequenceQuery(string sequenceName)
         {
-            return "AUTO INCREMENT";
+            throw new NotSupportedException();
         }
+        
+        public virtual string GenerateFieldDefine(FieldContent content)
+        {
+            StringBuilder builder = new();
+            builder.Append(content.FieldName).Append(" ").Append(GetFieldDefineScript(content));
+            if (content.IfIncrement)
+            {
+                builder.Append(AppendAutoIncrement());
+            }
+            return builder.ToString();
+        }
+
         public virtual string GenerateCountSql(string inputSql)
         {
             string plainSql = inputSql.Replace("\\n", "").Replace("\\r", "").Trim().ToLower();
@@ -61,9 +75,9 @@ namespace Frameset.Core.Dao.Meta
         {
             return new StringBuilder("VARCHAR(").Append(content.Length).Append(")").ToString();
         }
-        public virtual string GetCharFormat(FieldContent content)
+        public virtual string GetCharFormat(int length)
         {
-            return "CHAR(1)";
+            return "CHAR(" + length + ")";
         }
         public virtual string GetTimestampFormat(FieldContent content)
         {
@@ -73,10 +87,11 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        public virtual string GetTimeStampFormat(FieldContent content)
+        public virtual long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
         {
-            return "DATETIME";
+            throw new NotSupportedException();
         }
+
 
         public virtual string GetIntegerFormat(FieldContent content)
         {
@@ -95,6 +110,10 @@ namespace Frameset.Core.Dao.Meta
         public virtual string GetFloatFormat(FieldContent content)
         {
             return "FLOAT";
+        }
+        public virtual string GetDoubleFormat(FieldContent content)
+        {
+            return "DOUBLE";
         }
         public virtual string GetDateFormat(FieldContent content)
         {
@@ -142,13 +161,16 @@ namespace Frameset.Core.Dao.Meta
                     builder.Append(GetLongFormat(content));
                     break;
                 case Constants.MetaType.CHAR:
-                    builder.Append(GetCharFormat(content));
+                    builder.Append(GetCharFormat(content.Length));
                     break;
                 case Constants.MetaType.FLOAT:
                     builder.Append(GetFloatFormat(content));
                     break;
                 case Constants.MetaType.DOUBLE:
                     builder.Append(GetDecimalScript(content));
+                    break;
+                case Constants.MetaType.NUMERIC:
+                    builder.Append(GetNumericFormat(content));
                     break;
                 case Constants.MetaType.DATE:
                     builder.Append(GetDateFormat(content));
@@ -170,10 +192,15 @@ namespace Frameset.Core.Dao.Meta
             {
                 builder.Append(" ").Append(AppendAutoIncrement());
             }
+            if (content.Required)
+            {
+                builder.Append(" NOT NULL");
+            }
             if (content.IfPrimary)
             {
                 builder.Append(" ").Append(" PRIMARY KEY");
             }
+
             builder.Append(",");
             return builder.ToString();
         }
@@ -183,7 +210,21 @@ namespace Frameset.Core.Dao.Meta
         public abstract DbCommand GetDbCommand(DbConnection connection);
         public abstract DbParameter WrapParameter(int pos, object value);
         public abstract DbParameter WrapParameter(string column, object value);
-        public virtual long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, DbTransaction transaction, EntityContent entityContent)
+        public virtual bool SupportAutoIncrement()
+        {
+            return true;
+        }
+        public virtual bool SupportSequence()
+        {
+            return false;
+        }
+
+
+        public virtual long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, string schema, string tableName)
+        {
+            throw new NotSupportedException();
+        }
+        public virtual long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
             throw new NotSupportedException();
         }
@@ -241,39 +282,7 @@ namespace Frameset.Core.Dao.Meta
             }
             return pagingSelect;
         }
-        public String GetColumnDefine(FieldContent fieldContent)
-        {
-            StringBuilder builder = new StringBuilder();
-            switch (fieldContent.DataType)
-            {
-                case Constants.MetaType.SHORT:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetShortFormat(fieldContent));
-                    break;
-                case Constants.MetaType.LONG:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetLongFormat(fieldContent));
-                    break;
-                case Constants.MetaType.INTEGER:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetIntegerFormat(fieldContent));
-                    break;
-                case Constants.MetaType.FLOAT:
-                case Constants.MetaType.DOUBLE:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetNumericFormat(fieldContent));
-                    if (fieldContent.Scale != 0 && fieldContent.Precise != 0)
-                    {
-                        builder.Append("(").Append(fieldContent.Scale).Append(",").Append(fieldContent.Precise).Append(")");
-                    }
-                    break;
-                case Constants.MetaType.DATE:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetDateFormat(fieldContent));
-                    break;
-                case Constants.MetaType.TIMESTAMP:
-                    builder.Append(fieldContent.FieldName).Append(" ").Append(GetTimestampFormat(fieldContent));
-                    break;
-
-            }
-            return builder.ToString();
-
-        }
+       
         public static int GetDefaultPort(string dbType)
         {
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
@@ -298,6 +307,9 @@ namespace Frameset.Core.Dao.Meta
                 case Constants.DbType.Sybase:
                     defaultPort = 5007;
                     break;
+                case Constants.DbType.ClickHouse:
+                    defaultPort = 8123;
+                    break;
 
             }
             return defaultPort;
@@ -305,6 +317,49 @@ namespace Frameset.Core.Dao.Meta
         }
         public virtual void AppendAdditionalScript(StringBuilder buidler, Dictionary<string, object> paramMap)
         {
+
+        }
+        public virtual void ExecuteNoQuery(DbConnection connection, string sql)
+        {
+            using DbCommand command = connection.CreateCommand();
+            command.CommandText = sql;
+            command.ExecuteNonQuery();
+        }
+        protected void ParseDataColumnMap(IJdbcDao dao, DataTable table, List<DataSetColumnMeta> metas)
+        {
+            foreach (DataSetColumnMeta meta in metas)
+            {
+                table.Columns.Add(meta.ColumnName, GetTypeByMeta(meta.ColumnType));
+            }
+        }
+        protected Type GetTypeByMeta(Constants.MetaType columnType)
+        {
+            return columnType switch
+            {
+                Constants.MetaType.INTEGER => typeof(Int32),
+                Constants.MetaType.LONG => typeof(Int64),
+                Constants.MetaType.DOUBLE => typeof(double),
+                Constants.MetaType.FLOAT => typeof(float),
+                Constants.MetaType.SHORT => typeof(short),
+                Constants.MetaType.TIMESTAMP => typeof(DateTime),
+                Constants.MetaType.BOOLEAN => typeof(Boolean),
+                Constants.MetaType.DATE => typeof(DateTime),
+                _ => typeof(string)
+            };
+        }
+        protected void WrapRowsModel(List<FieldContent> fields, DataRow row, object model)
+        {
+            foreach (FieldContent content in fields)
+            {
+                if (!content.IfIncrement)
+                {
+                    row[content.FieldName] = content.GetMethod.Invoke(model, null);
+                }
+                else
+                {
+                    row[content.FieldName] = DBNull.Value;
+                }
+            }
 
         }
     }

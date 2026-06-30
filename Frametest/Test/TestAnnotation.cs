@@ -7,7 +7,6 @@ using Frameset.Core.Hardware;
 using Frameset.Core.Mapper;
 using Frameset.Core.Repo;
 using Frameset.Core.Sql;
-using Frameset.Core.Utils;
 using Frameset.Office.Excel.Util;
 using Frametest.Dto;
 using Frametest.Models;
@@ -52,8 +51,6 @@ namespace Frametest.Test
             //TestReadModel();
             //TestJdbc.TestQueryCondition();
             //TestJdbc.TestQueryByFields();
-            Func<TestModel> func = ExpressionUtils.GetExpressionFunction<TestModel>();
-            TestModel m1 = func();
 
 
             TestJdbcOper();
@@ -64,7 +61,7 @@ namespace Frametest.Test
         private void TestMachineOper()
         {
             string guid = MachineUtils.GetMachineId();
-            string cpuSerial = MachineUtils.GetCpuSerial();
+            string cpuSerial = MachineUtils.GetCPUSerial();
             string systemSerial = MachineUtils.GetSystemSerial();
             Console.WriteLine(guid);
             Console.WriteLine(cpuSerial);

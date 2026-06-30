@@ -42,10 +42,10 @@ namespace Frameset.Common.Compress
         }
         private static Stream GetLzmaStream(Stream rawstream, long compressLength)
         {
-            var lzmaEncodingStream = new LzmaStream(LzmaEncoderProperties.Default, false, rawstream);
+            var lzmaEncodingStream = LzmaStream.Create(LzmaEncoderProperties.Default, false, rawstream);
             var properties = lzmaEncodingStream.Properties;
             lzmaEncodingStream.Close();
-            return new LzmaStream(properties, rawstream, compressLength);
+            return LzmaStream.Create(properties, rawstream, compressLength);
         }
         private static Stream GetZipStream(Stream rawstream)
         {

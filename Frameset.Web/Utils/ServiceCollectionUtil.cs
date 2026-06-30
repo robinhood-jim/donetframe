@@ -1,4 +1,5 @@
 ﻿using Frameset.Core.Annotation;
+using Frameset.Core.Configuration;
 using Frameset.Core.Context;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
@@ -8,8 +9,6 @@ namespace Frameset.Web.Utils
 {
     public static class ServiceCollectionUtil
     {
-
-
 
         public static void AddBussiness(this IServiceCollection services)
         {
@@ -39,8 +38,18 @@ namespace Frameset.Web.Utils
 
                     }
                 });
-
             });
+        }
+        /// <summary>
+        /// Using yaml as System Configuration file  auto scan dataSource FileSystem
+        /// </summary>
+        /// <param name="services"></param>
+        /// <param name="configYaml"></param>
+        public static ProjectConfiguration UsingConfiguration(this IServiceCollection services, string configYaml = null)
+        {
+            ProjectConfiguration configuration = new(configYaml);
+            services.AddSingleton(typeof(ProjectConfiguration), configuration);
+            return configuration;
         }
         private static List<Type> ScanType()
         {

@@ -120,7 +120,7 @@ namespace Frameset.Bigdata.Es
             }
         }
 
-        public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
+        public override IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
             throw new NotImplementedException();
         }

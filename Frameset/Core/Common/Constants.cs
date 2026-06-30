@@ -18,6 +18,7 @@ namespace Frameset.Core.Common
         }
         public enum MetaType
         {
+            NONE = -1,
             SHORT = 1,
             INTEGER,
             LONG,
@@ -30,6 +31,7 @@ namespace Frameset.Core.Common
             CHAR,
             CLOB,
             BLOB,
+            NUMERIC,
             FORMULA
         }
         public enum SqlOperator
@@ -236,7 +238,8 @@ namespace Frameset.Core.Common
                 JoinType.INNER => " INNER ",
                 JoinType.LEFT => " LEFT ",
                 JoinType.RIGHT => " RIGHT ",
-                JoinType.FULLOUTTER => " OUTTER "
+                JoinType.FULLOUTTER => " OUTTER ",
+                _ =>" INNER "
             };
         }
         public static string GetMetaTypeProtoBufType(Type targetType)

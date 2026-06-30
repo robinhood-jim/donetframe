@@ -17,18 +17,33 @@ namespace Frameset.Core.Dao.Meta
         {
 
         }
-
-        public override string GenerateSequenceScript(string sequenceName)
-        {
-            throw new NotSupportedException();
-        }
-        public override string getAutoIncrementScript()
+        public override string AppendAutoIncrement()
         {
             return " IDENTITY";
         }
         public override string AppendKeyHolder()
         {
             return ";SELECT CAST(scope_identity() AS int)";
+        }
+        public override string AppendSequence(string sequenceName)
+        {
+            return ";SELECT CURRENT_VALUE from sys.sequence where name='" + sequenceName + "'";
+        }
+        public override string GenerateSequenceFunc(string sequenceName)
+        {
+            return "NEXT VALUE for " + sequenceName;
+        }
+        public override string GenerateSequenceQuery(string sequenceName)
+        {
+            return "SELECT NEXT VALUE for " + sequenceName + " as seqValue";
+        }
+        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        {
+            string executeSql = GenerateSequenceQuery(sequenceName);
+            using (SqlCommand command = new SqlCommand(executeSql, (SqlConnection)connection))
+            {
+                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+            }
         }
         public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {

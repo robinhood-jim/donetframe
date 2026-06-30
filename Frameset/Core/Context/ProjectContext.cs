@@ -21,7 +21,7 @@ namespace Frameset.Core.Context
             }
             catch (FileNotFoundException ex)
             {
-                Log.Error("config file not found!");
+                Log.Error(ex.Message);
             }
             catch (Exception ex)
             {

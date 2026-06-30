@@ -24,9 +24,9 @@ namespace Frameset.Common.Streaming.Consumer
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQPORT, out string? portStr);
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQUSER, out userName);
             define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQPASSWD, out passwd);
-            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQEXCHANGE, out exchange);
-            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQROUTINGKEY, out routingKey);
-            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQQUEUENAE, out queueName);
+            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQEXCHANGE, out string? exchangeStr);
+            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQROUTINGKEY, out string? routingKeyStr);
+            define.ResourceConfig.TryGetValue(ResourceConstants.RABBITMQQUEUENAE, out string? queueNameStr);
             Trace.Assert(!string.IsNullOrWhiteSpace(queueName), "must provide queueName");
             host = host ?? ResourceConstants.RABBITMQDEFAULTHOST;
             port = portStr.IsNullOrEmpty() ? ResourceConstants.RABBITMQDEFAULTPORT : Convert.ToInt32(portStr);
@@ -44,8 +44,10 @@ namespace Frameset.Common.Streaming.Consumer
             connection = factory.CreateConnectionAsync().Result;
             channel = connection.CreateChannelAsync().Result;
             channel.BasicQosAsync(10000, 64, false).RunSynchronously();
-            exchange = exchange ?? string.Empty;
-            routingKey = routingKey ?? string.Empty;
+            exchange = exchangeStr ?? string.Empty;
+            routingKey = routingKeyStr ?? string.Empty;
+            Trace.Assert(!string.IsNullOrWhiteSpace(queueNameStr), "");
+            queueName = queueNameStr;
             channel.QueueBindAsync(queueName, exchange, routingKey).RunSynchronously();
         }
 
