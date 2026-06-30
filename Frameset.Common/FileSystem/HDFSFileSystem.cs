@@ -8,34 +8,14 @@ namespace Frameset.Common.FileSystem
 {
     public class HDFSFileSystem : AbstractFileSystem
     {
-        private HdfsClient? client = null!;
-        private bool useLibhdfs = true;
-        private string libhdfsHost;
-        private int libhdfsPort;
-        private IntPtr fileSystem;
-        private IntPtr hFile;
+        private HdfsClient client;
+
 
         public HDFSFileSystem(DataCollectionDefine define) : base(define)
         {
             identifier = Constants.FileSystemType.HDFS;
             define.ResourceConfig.TryGetValue(ResourceConstants.HDFSBASEURL, out string? apiUrl);
-            if (define.ResourceConfig.TryGetValue(ResourceConstants.HDFSUSEWEBHDFS, out string? useWebHdfsStr))
-            {
-                useLibhdfs = !string.Equals(Constants.VALID, useWebHdfsStr, StringComparison.OrdinalIgnoreCase);
-            }
-            if (!useLibhdfs)
-            {
-                client = new HdfsClient(define);
-            }
-            else
-            {
-                define.ResourceConfig.TryGetValue(ResourceConstants.HDFSLIBHDFSHOST, out libhdfsHost);
-                if (define.ResourceConfig.TryGetValue(ResourceConstants.HDFSLIBHDFSPORT, out string? portStr))
-                {
-                    libhdfsPort = Convert.ToInt32(portStr);
-                }
-                fileSystem = LibHdfsWrapper.hdfsConnect(libhdfsHost, libhdfsPort);
-            }
+            client = new HdfsClient(define);
             Init(define);
         }
 
@@ -44,13 +24,6 @@ namespace Frameset.Common.FileSystem
             if (client != null)
             {
                 client.Dispose();
-            }
-            else
-            {
-                if (fileSystem != null)
-                {
-                    LibHdfsWrapper.hdfsDisconnect(fileSystem);
-                }
             }
         }
 
