@@ -89,7 +89,8 @@ namespace Frameset.Core.Common
             AVRO,
             ORC,
             PARQUET,
-            PROTOBUF
+            PROTO,
+            ARROW
         }
         public enum JoinType
         {
@@ -118,6 +119,48 @@ namespace Frameset.Core.Common
                     metaType = type;
                     break;
                 }
+            }
+            return metaType;
+        }
+
+        public static MetaType MetaTypeOfType(Type targetType)
+        {
+            MetaType metaType = MetaType.STRING;
+            switch (Type.GetTypeCode(targetType))
+            {
+                case TypeCode.Int32:
+                    metaType = MetaType.INTEGER;
+                    break;
+                case TypeCode.Int16:
+                    metaType = MetaType.SHORT;
+                    break;
+                case TypeCode.Int64:
+                    metaType = MetaType.LONG;
+                    break;
+                case TypeCode.DateTime:
+                    metaType = MetaType.DATE;
+                    break;
+                case TypeCode.Boolean:
+                    metaType = MetaType.BOOLEAN;
+                    break;
+                case TypeCode.Double:
+                    metaType = MetaType.DOUBLE;
+                    break;
+                case TypeCode.Single:
+                    metaType = MetaType.FLOAT;
+                    break;
+                default:
+                    if (targetType.Equals(typeof(DateTimeOffset)))
+                    {
+                        metaType = MetaType.TIMESTAMP;
+                    }
+                    else
+                    {
+                        metaType = MetaType.STRING;
+                    }
+
+                    break;
+
             }
             return metaType;
         }
@@ -239,7 +282,7 @@ namespace Frameset.Core.Common
                 JoinType.LEFT => " LEFT ",
                 JoinType.RIGHT => " RIGHT ",
                 JoinType.FULLOUTTER => " OUTTER ",
-                _ =>" INNER "
+                _ => " INNER "
             };
         }
         public static string GetMetaTypeProtoBufType(Type targetType)
@@ -296,6 +339,10 @@ namespace Frameset.Core.Common
         public static readonly string MIN = "MIN";
         public static readonly string CONCAT = "CONCAT";
         public static readonly string CASE = "CASE";
+        public static readonly string CONFIG_TYPE_YAML = "yaml";
+        public static readonly string CONFIG_TYPE_JSON = "json";
+        public static readonly string DISCOVERY_TYPE_CONSUL = "consul";
+        public static readonly string DISCOVERY_TYPE_NACOS = "nacos";
 
         public static readonly List<string> IGNOREPARAMS = [WHERECAUSE, HAVING, GROUPBY, ORDERBY, SELECTCOLUMS, NEWCOLUMN];
         public static readonly List<string> SQLFUNCTIONS = [SUM, AVG, MAX, MIN, CASE, CONCAT, "UPPER", "LOWER", "LEN", "ROUND", "SUBSTR", "NOW", "SYSDATE", "FORMAT", "EXP", "TRIM", "LTRIM", "RTIME", "DATE", "MONTH", "DAY", "TO_DATE", "COALESCE", "CAST"];

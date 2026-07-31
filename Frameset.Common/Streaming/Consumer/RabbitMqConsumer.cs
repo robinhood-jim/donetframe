@@ -36,7 +36,7 @@ namespace Frameset.Common.Streaming.Consumer
                 HostName = host,
                 Port = port ?? ResourceConstants.RABBITMQDEFAULTPORT
             };
-            if (!userName.IsNullOrEmpty() && !passwd.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(userName) && !string.IsNullOrWhiteSpace(passwd))
             {
                 factory.UserName = userName;
                 factory.Password = passwd;

@@ -216,7 +216,7 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                    return GetDao().QueryByConditon<V>(command, condition);
+                    return GetDao().QueryByCondition<V>(command, condition);
                 }
             }
         }
@@ -230,7 +230,7 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                    return GetDao().QueryByConditon<O>(command, condition);
+                    return GetDao().QueryByCondition<O>(command, condition);
                 }
             }
         }

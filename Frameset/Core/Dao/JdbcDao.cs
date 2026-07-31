@@ -399,7 +399,7 @@ namespace Frameset.Core.Dao
             command.CommandText = sql;
             return command.ExecuteNonQuery();
         }
-        public List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition)
+        public List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition)
         {
             Dictionary<string, object> queryParamter = [];
             StringBuilder builder = new();
@@ -768,9 +768,9 @@ namespace Frameset.Core.Dao
             return command.ExecuteNonQuery();
 
         }
-        public long InsertBatch(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
+        public long InsertBatch(DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
         {
-            return GetDialect().BatchInsert(dao, connection, schema, tableName, metas, models, token);
+            return GetDialect().BatchInsert(this, connection, schema, tableName, metas, models, token);
         }
 
         public void DoWithQuery(string sql, object[] obj, Action<IDataReader> action)

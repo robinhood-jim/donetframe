@@ -10,6 +10,7 @@ using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Frameset.Core.Repo;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Spring.Util;
@@ -408,8 +409,13 @@ namespace Frameset.Core.Context
                     EntityContent content = EntityReflectUtils.GetEntityInfo(type);
                     IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(type);
                     Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(type);
-
-                    FieldContent pkColumn = fields.First(x => x.IfPrimary);
+                    IEnumerable<FieldContent> pkList = fields.Where(x => x.IfPrimary);
+                    FieldContent pkColumn = !pkList.IsNullOrEmpty() ? pkList.First() : null;
+                    if (pkColumn == null)
+                    {
+                        LogUtils.Error($"Entity {type.Name} does not have primary key,Skipped");
+                        continue;
+                    }
                     IEnumerator<FieldContent> enumerator = fields.Where(x => x.IsManyToOne).GetEnumerator();
                     while (enumerator.MoveNext())
                     {

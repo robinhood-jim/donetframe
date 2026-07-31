@@ -41,7 +41,7 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        
+
         public virtual string GenerateFieldDefine(FieldContent content)
         {
             StringBuilder builder = new();
@@ -73,7 +73,8 @@ namespace Frameset.Core.Dao.Meta
         }
         public virtual string getVarcharFormat(FieldContent content)
         {
-            return new StringBuilder("VARCHAR(").Append(content.Length).Append(")").ToString();
+            int length = content.Length == 0 ? 32 : content.Length;
+            return new StringBuilder("VARCHAR(").Append(length).Append(")").ToString();
         }
         public virtual string GetCharFormat(int length)
         {
@@ -200,8 +201,7 @@ namespace Frameset.Core.Dao.Meta
             {
                 builder.Append(" ").Append(" PRIMARY KEY");
             }
-
-            builder.Append(",");
+            //builder.Append(",");
             return builder.ToString();
         }
         public abstract DbConnection GetDbConnection(string connectStr);
@@ -282,7 +282,7 @@ namespace Frameset.Core.Dao.Meta
             }
             return pagingSelect;
         }
-       
+
         public static int GetDefaultPort(string dbType)
         {
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);

@@ -43,7 +43,12 @@ namespace Frameset.Core.Dao
                     {
                         string key = entry.Key.ToString();
                         Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
-                        IJdbcDao dao = ConstructWithDict(dict1);
+                        Dictionary<string, object> tmpDict = [];
+                        foreach (KeyValuePair<object,object> pair in dict1)
+                        {
+                            tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
+                        }
+                        IJdbcDao dao = ConstructWithDict(tmpDict);
                         containner.Add(key, dao);
                         if (autoConstructDbContext)
                         {
@@ -58,7 +63,7 @@ namespace Frameset.Core.Dao
                 }
             }
         }
-        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<object, object> dict, bool autoConstructDbContext = true)
+        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict, bool autoConstructDbContext = true)
         {
             IJdbcDao dao = ConstructWithDict(dict);
             containner.Add(key, dao);
@@ -73,7 +78,7 @@ namespace Frameset.Core.Dao
         {
             return keyValues;
         }
-        internal static IJdbcDao ConstructWithDict(Dictionary<object, object> dict)
+        internal static IJdbcDao ConstructWithDict(Dictionary<string, object> dict)
         {
             dict.TryGetValue("dbType", out object dbTypeObj);
             string dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
@@ -204,7 +209,12 @@ namespace Frameset.Core.Dao
             JdbcDao dao = new JdbcDao(dbType, schema, connectionString);
             return dao;
         }
-        public static void Register(string dsName, Dictionary<object, object> configMap, bool autoConstructDbContext = false)
+
+        public static IJdbcDao Construct(Dictionary<string, object> dictParameter)
+        {
+            return ConstructWithDict(dictParameter);
+        }
+        public static void Register(string dsName, Dictionary<string, object> configMap, bool autoConstructDbContext = false)
         {
             if (containner.ContainsKey(dsName))
             {

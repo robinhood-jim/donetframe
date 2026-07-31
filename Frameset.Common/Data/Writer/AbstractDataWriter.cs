@@ -4,7 +4,6 @@ using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
-using Spring.Globalization.Formatters;
 using System.Diagnostics;
 
 namespace Frameset.Common.Data.Writer
@@ -39,8 +38,8 @@ namespace Frameset.Common.Data.Writer
         internal bool useDictOutput = true;
         internal Dictionary<string, MethodParam> methodMap = [];
 
-        internal DateTimeFormatter dateFormatter = null!;
-        internal DateTimeFormatter timestampFormatter = null!;
+        internal string dateFormatter = null!;
+        internal string timestampFormatter = null!;
         protected Action<AbstractDataWriter<T>>? initFunction = null!;
         public void Dispose()
         {
@@ -127,8 +126,8 @@ namespace Frameset.Common.Data.Writer
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
             }
-            dateFormatter = new DateTimeFormatter(dateFormatStr);
-            timestampFormatter = new DateTimeFormatter(timestampFormatStr);
+            dateFormatter = dateFormatStr;
+            timestampFormatter = timestampFormatStr;
         }
 
         internal virtual void Initalize()
@@ -150,6 +149,7 @@ namespace Frameset.Common.Data.Writer
                 else
                 {
                     Tuple<Stream, StreamWriter>? tuple = FileSystem.GetWriter(MetaDefine.Path);
+                    Trace.Assert(tuple!=null,"");
                     outputStream = tuple?.Item1;
                     writer = tuple?.Item2;
                 }
@@ -199,11 +199,11 @@ namespace Frameset.Common.Data.Writer
                     {
                         if (meta.ColumnType == Constants.MetaType.DATE)
                         {
-                            return dateFormatter.Format(value);
+                            return ConvertUtil.DatetimeToString(value, dateFormatter);
                         }
                         else
                         {
-                            return timestampFormatter.Format(value);
+                            return ConvertUtil.DatetimeToString(value, timestampFormatter);
                         }
                     }
                     else
@@ -253,7 +253,7 @@ namespace Frameset.Common.Data.Writer
                 {
                     if (input is DateTime || input is DateTimeOffset)
                     {
-                        return dateFormatter.Format(input);
+                        return ConvertUtil.DatetimeToString(input, dateFormatter);
                     }
                     return input;
                 }
@@ -261,7 +261,7 @@ namespace Frameset.Common.Data.Writer
                 {
                     if (input is DateTime || input is DateTimeOffset)
                     {
-                        return timestampFormatter.Format(input);
+                        return ConvertUtil.DatetimeToString(input, timestampFormatter);
                     }
                     return input;
                 }

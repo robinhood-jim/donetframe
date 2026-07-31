@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using Microsoft.IdentityModel.Tokens;
 using Renci.SshNet;
 using Renci.SshNet.Sftp;
 
@@ -34,10 +35,16 @@ namespace Frameset.Common.FileSystem
                 {
                     port = Convert.ToInt32(portStr);
                 }
-                define.ResourceConfig.TryGetValue(ResourceConstants.SFTPUSERNAME, out userName);
-                define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPASSWD, out password);
 
-                client = new SftpClient(host, port, userName, password);
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.SFTPUSERNAME, out userName) &&
+                    define.ResourceConfig.TryGetValue(ResourceConstants.SFTPPASSWD, out password))
+                {
+                    client = new SftpClient(host, port, userName, password);
+                }
+                else
+                {
+                    throw new ConfigMissingException("userName or password required!");
+                }
 
                 busyTag = false;
             }
@@ -57,7 +64,7 @@ namespace Frameset.Common.FileSystem
                 }
                 client.Dispose();
             }
-            GC.SuppressFinalize(this);
+            
         }
 
         public override bool Exist(string resourcePath)
@@ -277,6 +284,92 @@ namespace Frameset.Common.FileSystem
             outputStream.Flush();
             outputStream.Close();
             FinishOperator();
+        }
+        public override List<string> List(string resourcePath)
+        {
+            BeginOperator();
+            bool isDir = false;
+            try
+            {
+                client.Connect();
+                if (client.Exists(resourcePath))
+                {
+                    ISftpFile file = client.Get(resourcePath);
+                    if (file != null)
+                    {
+                        isDir = file.IsDirectory;
+                    }
+                    else
+                    {
+                        return [];
+                    }
+                }
+                if (isDir)
+                {
+                    IEnumerable<ISftpFile> filesEnum = client.ListDirectory(resourcePath);
+                    if (!filesEnum.IsNullOrEmpty())
+                    {
+                        return filesEnum.Select(x => x.FullName).ToList();
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
+            }
+            return [];
+        }
+        public override bool Remove(string resourcePath)
+        {
+            BeginOperator();
+            bool isDir = false;
+            bool canDelete = false;
+            try
+            {
+                client.Connect();
+                if (client.Exists(resourcePath))
+                {
+                    ISftpFile file = client.Get(resourcePath);
+                    if (file != null)
+                    {
+                        isDir = file.IsDirectory;
+                    }
+                    else
+                    {
+                        return false;
+                    }
+                }
+                if (isDir)
+                {
+                    IEnumerable<ISftpFile> filesEnum = client.ListDirectory(resourcePath);
+                    if (!filesEnum.IsNullOrEmpty())
+                    {
+                        canDelete = false;
+                    }
+                }
+                else
+                {
+                    canDelete = true;
+                }
+                if (isDir)
+                {
+                    client.DeleteDirectory(resourcePath);
+                }
+                else
+                {
+                    client.Delete(resourcePath);
+                }
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
+            }
+            return false;
         }
     }
 }

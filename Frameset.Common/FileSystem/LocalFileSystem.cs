@@ -78,5 +78,54 @@ namespace Frameset.Common.FileSystem
         {
             return Directory.Exists(resourcePath);
         }
+        public override bool Remove(string resourcePath)
+        {
+            bool canDelete = false;
+            bool isDir = false;
+            if (Directory.Exists(resourcePath))
+            {
+                isDir = true;
+                string[] paths = Directory.GetFileSystemEntries(resourcePath);
+                if (paths != null)
+                {
+                    if (paths.Length == 0)
+                    {
+                        canDelete = true;
+                    }
+                }
+            }
+            else
+            {
+                if (File.Exists(resourcePath))
+                {
+                    canDelete = true;
+                }
+            }
+            if (canDelete)
+            {
+                if (isDir)
+                {
+                    Directory.Delete(resourcePath);
+                }
+                else
+                {
+                    File.Delete(resourcePath);
+                }
+                return true;
+            }
+            return false;
+        }
+        public override List<string> List(string resourcePath)
+        {
+            if (Directory.Exists(resourcePath))
+            {
+                string[] lists = Directory.GetFileSystemEntries(resourcePath);
+                if (lists != null && lists.Length > 0)
+                {
+                    return new(lists);
+                }
+            }
+            return null;
+        }
     }
 }

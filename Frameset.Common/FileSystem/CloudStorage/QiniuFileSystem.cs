@@ -13,7 +13,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         private Mac client;
         private string? zoneStr;
         private BucketManager bucketManager;
-        private string domain=null!;
+        private string domain = null!;
         private UploadManager uploadManager;
         private Config config;
         private bool useHttps = false;

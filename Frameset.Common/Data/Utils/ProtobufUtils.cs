@@ -4,6 +4,7 @@ using Frameset.Core.Common;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
+using Frameset.Core.FileSystem;
 
 namespace Frameset.Common.Data.Utils
 {
@@ -31,6 +32,7 @@ namespace Frameset.Common.Data.Utils
         {
             var props = messageType.GetProperties();
             MessageDefinition.Builder builder = MessageDefinition.NewBuilder("test");
+            DataCollectionBuilder collectionBuilder = DataCollectionBuilder.NewBuilder();
             var annotationEnum = messageType.GetCustomAttributes(typeof(ProtoNumberAttribute));
             if (!annotationEnum.IsNullOrEmpty())
             {
@@ -42,6 +44,7 @@ namespace Frameset.Common.Data.Utils
                     {
                         ProtoNumberAttribute attribute = (ProtoNumberAttribute)sourceAttribute;
                         builder.AddField("required", Constants.GetMetaTypeProtoBufType(info.PropertyType), info.Name, attribute.Number);
+                        collectionBuilder.AddColumnDefine(info.Name, Constants.MetaTypeOfType(info.PropertyType));
                     }
                 }
             }
@@ -51,10 +54,13 @@ namespace Frameset.Common.Data.Utils
                 foreach (PropertyInfo info in props)
                 {
                     builder.AddField("required", Constants.GetMetaTypeProtoBufType(info.PropertyType), info.Name, rownum);
+                    collectionBuilder.AddColumnDefine(info.Name, Constants.MetaTypeOfType(info.PropertyType));
                     rownum++;
                 }
             }
-            return new DynamicMessage(builder.Build());
+
+            DataCollectionDefine define = collectionBuilder.Build();
+            return new DynamicMessage(builder.Build(),define.ColumnList);
         }
     }
 }

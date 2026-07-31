@@ -1,4 +1,5 @@
-﻿using Microsoft.ClearScript.V8;
+﻿using Frameset.Core.Reflect;
+using Microsoft.ClearScript.V8;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;
 
@@ -28,6 +29,19 @@ namespace Frameset.Core.Scripts
                 foreach (var item in map)
                 {
                     engine.Script[item.Key] = item.Value;
+                }
+            }
+            return engine.Evaluate(script);
+        }
+        public static object Eval(V8ScriptEngine engine, V8Script script, object input)
+        {
+            Dictionary<string, MethodParam> methodDict = AnnotationUtils.ReflectObject(input.GetType());
+            foreach (var item in methodDict)
+            {
+                object value = item.Value.GetMethod.Invoke(input, []);
+                if (value != null)
+                {
+                    engine.Script[item.Key] = value;
                 }
             }
             return engine.Evaluate(script);

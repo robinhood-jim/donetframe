@@ -53,9 +53,9 @@ namespace Frameset.Core.Configuration
             {
                 yamlPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "application.yml";
             }
-            else if (string.Equals(yamlPath.Take(10).ToString(), "classpath:", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(yamlPath.Substring(0,10), "classpath:", StringComparison.OrdinalIgnoreCase))
             {
-                yamlPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + yamlPath.Skip(10).ToString();
+                yamlPath = AppDomain.CurrentDomain.BaseDirectory  + yamlPath.Substring(10);
             }
             using StreamReader reader = File.OpenText(yamlPath);
             configDict = deserializer.Deserialize<Dictionary<string, object>>(reader);
@@ -91,7 +91,12 @@ namespace Frameset.Core.Configuration
                 {
                     string key = entry.Key.ToString();
                     Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
-                    DAOFactory.RegisterJdbcDao(key, dict1);
+                    Dictionary<string, object> tmpDict = [];
+                    foreach (KeyValuePair<object,object> pair in dict1)
+                    {
+                        tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
+                    }
+                    DAOFactory.RegisterJdbcDao(key, tmpDict);
                 }
             }
             //fileSystem 配置

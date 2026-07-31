@@ -28,7 +28,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string AppendAutoIncrement()
         {
-            return "AUTO INCREMENT";
+            return "AUTO_INCREMENT";
         }
         public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {

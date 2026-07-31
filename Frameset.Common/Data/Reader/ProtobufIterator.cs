@@ -50,7 +50,7 @@ namespace Frameset.Common.Data.Reader
                 builder.AddField("required", ProtobufUtils.GetTypeStr(columnMeta.ColumnType), columnMeta.ColumnCode, i + 1);
             }
             definition = builder.Build();
-            message = new DynamicMessage(definition);
+            message = new DynamicMessage(definition,MetaDefine.ColumnList);
         }
 
         public override IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)

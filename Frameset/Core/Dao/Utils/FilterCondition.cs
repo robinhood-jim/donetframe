@@ -94,17 +94,17 @@ namespace Frameset.Core.Dao.Utils
                     FilterCondition condition = Conditions[i];
                     if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase) && containParenthesis)
                     {
-                        builder.Append("(");
+                        builder.Append('(');
                         containParenthesis = true;
                     }
                     builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap, entityAliasMap));
                     if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase) && containParenthesis)
                     {
-                        builder.Append(")");
+                        builder.Append(')');
                     }
                     if (i < Conditions.Count - 1)
                     {
-                        builder.Append(" ").Append(LinkOper).Append(" ");
+                        builder.Append(' ').Append(LinkOper).Append(' ');
                     }
                 }
                 return builder.ToString();

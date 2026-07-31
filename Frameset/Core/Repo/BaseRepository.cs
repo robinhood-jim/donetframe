@@ -452,7 +452,7 @@ namespace Frameset.Core.Repo
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
 
-                    return GetDao().QueryByConditon<O>(command, condition);
+                    return GetDao().QueryByCondition<O>(command, condition);
                 }
             }
         }

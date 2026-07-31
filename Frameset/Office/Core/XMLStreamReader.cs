@@ -179,15 +179,23 @@ namespace Frameset.Office.Core
 
         public void Dispose()
         {
-            if (reader != null)
-            {
-                reader.Close();
-            }
-            if (stream != null)
-            {
-                stream.Close();
-            }
+            Dispose(true);
             GC.SuppressFinalize(this);
+        }
+
+        internal void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+                if (reader != null)
+                {
+                    reader.Close();
+                }
+                if (stream != null)
+                {
+                    stream.Close();
+                }
+            }
         }
     }
 }

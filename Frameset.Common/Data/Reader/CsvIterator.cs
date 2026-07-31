@@ -46,7 +46,7 @@ namespace Frameset.Common.Data.Reader
             {
                 containHeader = Constants.VALID.Equals(containHeaderStr.Trim());
             }
-            if (!splitterStr.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(splitterStr))
             {
                 Splitter = splitterStr;
             }

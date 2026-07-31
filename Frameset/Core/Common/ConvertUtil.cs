@@ -2,7 +2,6 @@
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Model;
-using Spring.Globalization.Formatters;
 using Spring.Util;
 using System;
 using System.Collections.Generic;
@@ -85,18 +84,25 @@ namespace Frameset.Core.Common
             return retVal;
 
         }
-        public static DateTime? ParseDateTime(string dateStr)
+        public static DateTime? ParseDateTime(object dateStr, string formatter = null)
         {
             DateTime? retTime = null;
-            if (NumberUtils.IsNumber(dateStr))
+            if (dateStr.GetType().Equals(typeof(long)))
             {
-                retTime = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(dateStr)).LocalDateTime;
+                retTime = DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(dateStr)).LocalDateTime;
             }
             else
             {
+                if (!string.IsNullOrWhiteSpace(formatter))
+                {
+                    if (DateTime.TryParseExact(dateStr.ToString(), formatter, null, DateTimeStyles.None, out DateTime parseDate))
+                    {
+                        return parseDate;
+                    }
+                }
                 foreach (string pattern in DEFAULTFORMATTER)
                 {
-                    Tuple<bool, DateTime> parseTuple = GuessTimeFormat(dateStr, pattern);
+                    Tuple<bool, DateTime> parseTuple = GuessTimeFormat(dateStr.ToString(), pattern);
                     if (parseTuple.Item1)
                     {
                         retTime = parseTuple.Item2;
@@ -106,6 +112,18 @@ namespace Frameset.Core.Common
 
             }
             return retTime;
+        }
+        public static string DatetimeToString(object dateTime, string formatter)
+        {
+            if (typeof(DateTime).Equals(dateTime.GetType()))
+            {
+                return ((DateTime)dateTime).ToString(formatter);
+            }
+            else if (typeof(DateTimeOffset).Equals(dateTime.GetType()))
+            {
+                return ((DateTimeOffset)dateTime).ToString(formatter);
+            }
+            return null;
         }
         public static Tuple<bool, DateTime> GuessTimeFormat(string dateStr, string pattern)
         {
@@ -177,18 +195,18 @@ namespace Frameset.Core.Common
             }
 
         }
-        public static object ConvertStringToTargetObject(object value, DataSetColumnMeta meta, DateTimeFormatter formatter)
+        public static object ConvertStringToTargetObject(object value, DataSetColumnMeta meta, string dateTimeFormatter = "yyyy-MM-dd HH:mm:ss")
         {
             object retObj;
 
-            retObj = TranslateValue(value, meta.ColumnType, meta.ColumnCode, formatter);
+            retObj = TranslateValue(value, meta.ColumnType, meta.ColumnCode, dateTimeFormatter);
             if (retObj == null && meta.DefaultValue != null)
             {
                 retObj = meta.DefaultValue;
             }
             return retObj;
         }
-        private static object TranslateValue(object valueObj, Constants.MetaType columnType, string columnName, DateTimeFormatter dateformat)
+        private static object TranslateValue(object valueObj, Constants.MetaType columnType, string columnName, string dateTimeFormatter)
         {
             object retObj;
             try
@@ -220,15 +238,26 @@ namespace Frameset.Core.Common
                     retObj = Convert.ToDouble(value);
                 }
 
-                else if (columnType.Equals(Constants.MetaType.TIMESTAMP) || columnType.Equals(Constants.MetaType.DATE))
+                else if (columnType.Equals(Constants.MetaType.TIMESTAMP))
                 {
-                    if (valueObj is DateTime || valueObj is DateTimeOffset)
+                    if (valueObj.GetType().Equals(typeof(DateTime)))
                     {
-                        retObj = valueObj;
+                        retObj = (DateTime)valueObj;
                     }
                     else
                     {
-                        retObj = dateformat.Parse(value);
+                        retObj = ParseDateTime(value, dateTimeFormatter);
+                    }
+                }
+                else if (columnType.Equals(Constants.MetaType.DATE))
+                {
+                    if (valueObj.GetType().Equals(typeof(DateTime)))
+                    {
+                        retObj = (DateTime)valueObj;
+                    }
+                    else
+                    {
+                        retObj = ParseDateTime(value, "yyyy-MM-dd");
                     }
                 }
                 else

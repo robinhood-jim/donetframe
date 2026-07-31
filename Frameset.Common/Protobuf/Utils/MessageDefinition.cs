@@ -7,7 +7,7 @@ namespace Frameset.Common.Protobuf.Utils
     {
         internal readonly Dictionary<int, FieldDescriptorProto> fieldIdMap = [];
         internal readonly Dictionary<string, FieldDescriptorProto> fieldNameMap = [];
-        internal DescriptorProto descriptor =null!;
+        internal DescriptorProto descriptor = null!;
         private MessageDefinition()
         {
 
@@ -18,8 +18,8 @@ namespace Frameset.Common.Protobuf.Utils
         }
         public class Builder
         {
-            private DescriptorProto proto;
-            private MessageDefinition definition;
+            private DescriptorProto proto=null!;
+            private MessageDefinition definition=null!;
 
             internal Builder(string msgTypeName)
             {

@@ -104,5 +104,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             return new AmazonS3OutputStream(client, define, bucketName, resourcePath);
         }
+
+        
     }
 }

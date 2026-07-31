@@ -1,7 +1,6 @@
 ﻿using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
-using Microsoft.IdentityModel.Tokens;
 using System.Xml;
 
 namespace Frameset.Common.Data.Writer

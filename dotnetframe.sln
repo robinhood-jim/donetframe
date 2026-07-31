@@ -18,6 +18,9 @@ Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Web", "Frameset.We
 EndProject
 Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Bigdata", "Frameset.Bigdata\Frameset.Bigdata.csproj", "{974899E5-39F0-40B6-98B3-EDCDCD63E83D}"
 EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "Frameset.Gateway", "Frameset.Gateway\Frameset.Gateway.csproj", "{48127D74-3CC1-4E68-BD97-896180A8141A}"
+EndProject
+
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU
@@ -44,6 +47,11 @@ Global
 		{57D73122-F08A-4ADE-B305-860FBEAFD1EE}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{57D73122-F08A-4ADE-B305-860FBEAFD1EE}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{57D73122-F08A-4ADE-B305-860FBEAFD1EE}.Release|Any CPU.Build.0 = Release|Any CPU
+		{48127D74-3CC1-4E68-BD97-896180A8141A}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{48127D74-3CC1-4E68-BD97-896180A8141A}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{48127D74-3CC1-4E68-BD97-896180A8141A}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{48127D74-3CC1-4E68-BD97-896180A8141A}.Release|Any CPU.Build.0 = Release|Any CPU
+
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

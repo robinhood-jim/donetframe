@@ -5,6 +5,7 @@ using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
@@ -61,9 +62,10 @@ namespace Frameset.Core.Dao.Meta
                     }
 
                 }
-                var reader = ObjectReader.Create(models, columnNames.ToArray());
+                IDataReader dataReader = new EnumerableDataReader<V>(dao, connection, entityContent, fields, models);
+
                 copy.BatchSize = batchSize;
-                copy.WriteToServerAsync(reader, token);
+                copy.WriteToServerAsync(dataReader, token);
                 return copy.RowsCopied;
             }
         }

@@ -40,7 +40,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         internal override Stream GetObject(string bucketName, string objectName)
         {
             OssObject obj = ossClient.GetObject(bucketName, objectName);
-            if (obj.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            if (obj.HttpStatusCode == HttpStatusCode.OK)
             {
                 return obj.ResponseStream;
             }
