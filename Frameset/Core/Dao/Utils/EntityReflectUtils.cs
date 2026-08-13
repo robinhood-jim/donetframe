@@ -257,31 +257,31 @@ namespace Frameset.Core.Dao.Utils
         public static Constants.MetaType AdjustType(Type type)
         {
             Constants.MetaType dataType = Constants.MetaType.INTEGER;
-            if (type.Equals(typeof(long)))
+            if (type.Equals(typeof(long)) || type.Equals(typeof(long?)))
             {
                 dataType = Constants.MetaType.LONG;
             }
-            else if (type.Equals(typeof(int)))
+            else if (type.Equals(typeof(int)) || type.Equals(typeof(int?)))
             {
                 dataType = Constants.MetaType.INTEGER;
             }
-            else if (type.Equals(typeof(short)))
+            else if (type.Equals(typeof(short)) || type.Equals(typeof(short?)))
             {
                 dataType = Constants.MetaType.SHORT;
             }
-            else if (type.Equals(typeof(float)))
+            else if (type.Equals(typeof(float)) || type.Equals(typeof(float?)))
             {
                 dataType = Constants.MetaType.FLOAT;
             }
-            else if (type.Equals(typeof(double)))
+            else if (type.Equals(typeof(double)) || type.Equals(typeof(double?)))
             {
                 dataType = Constants.MetaType.DOUBLE;
             }
-            else if (type.Equals(typeof(DateTime)))
+            else if (type.Equals(typeof(DateTime)) || type.Equals(typeof(DateTime?)))
             {
                 dataType = Constants.MetaType.DATE;
             }
-            else if (type.Equals(typeof(DateTimeOffset)))
+            else if (type.Equals(typeof(DateTimeOffset)) || type.Equals(typeof(DateTimeOffset?)))
             {
                 dataType = Constants.MetaType.TIMESTAMP;
             }

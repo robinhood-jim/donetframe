@@ -107,13 +107,9 @@ namespace Frameset.Core.Context
             {
                 AssertUtils.IsTrue(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
                 AssertUtils.IsTrue(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
-                Dictionary<string, object> paramMap = [];
-                bool returnInsert = false;
-                string generateKey = null;
-                bool retMap = false;
+                
                 Type retType = null;
-                Dictionary<string, MethodParam> methodMap = null;
-                RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out paramMap, out retMap, out returnInsert, out generateKey, out methodMap);
+                RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam> methodMap);
                 if (!retMap)
                 {
                     methodMap = AnnotationUtils.ReflectObject(retType);
@@ -245,17 +241,14 @@ namespace Frameset.Core.Context
         {
             temporaryDsName.Dispose();
         }
-        public void ChangeDs(string dsName)
+        public void ChangeDs(string _dsName)
         {
-            IJdbcDao selectDao = DAOFactory.GetJdbcDao(dsName);
+            IJdbcDao selectDao = DAOFactory.GetJdbcDao(_dsName);
             if (selectDao == null)
             {
-                throw new BaseSqlException("dsName " + dsName + " not registered!");
+                throw new BaseSqlException("dsName " + _dsName + " not registered!");
             }
-            else
-            {
-                temporaryDsName = new ThreadLocal<string>(() => dsName);
-            }
+            temporaryDsName = new ThreadLocal<string>(() => _dsName);
         }
 
         public string GetDsName()

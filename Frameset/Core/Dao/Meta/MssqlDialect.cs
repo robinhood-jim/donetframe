@@ -9,6 +9,7 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -34,13 +35,13 @@ namespace Frameset.Core.Dao.Meta
         {
             return "NEXT VALUE for " + sequenceName;
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
         {
             return "SELECT NEXT VALUE for " + sequenceName + " as seqValue";
         }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (SqlCommand command = new SqlCommand(executeSql, (SqlConnection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -116,6 +117,11 @@ namespace Frameset.Core.Dao.Meta
             {
                 return GetNoPageSql(baseSql, query);
             }
+        }
+
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.SqlServer;
         }
     }
 }

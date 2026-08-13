@@ -16,10 +16,10 @@ using System.Threading;
 
 namespace Frameset.Core.Dao.Meta
 {
-    public abstract class AbstractSqlDialect
+    public abstract class AbstractSqlDialect : ISqlDialect
     {
         internal static string ORDERSTR = "order by";
-        internal AbstractSqlDialect()
+        public AbstractSqlDialect()
         {
 
         }
@@ -37,7 +37,11 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        public virtual string GenerateSequenceQuery(string sequenceName)
+        public virtual string GetSqlCurrentSequenceValue(string sequenceName)
+        {
+            throw new NotSupportedException();
+        }
+        public virtual string GetSqlNextSequenceValue(string sequenceName)
         {
             throw new NotSupportedException();
         }
@@ -210,6 +214,7 @@ namespace Frameset.Core.Dao.Meta
         public abstract DbCommand GetDbCommand(DbConnection connection);
         public abstract DbParameter WrapParameter(int pos, object value);
         public abstract DbParameter WrapParameter(string column, object value);
+        public abstract Constants.DbType GetDbType();
         public virtual bool SupportAutoIncrement()
         {
             return true;
@@ -228,7 +233,7 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        internal String GetNoPageSql(string sql, PageQuery pageQuery)
+        internal string GetNoPageSql(string sql, PageQuery pageQuery)
         {
 
             StringBuilder builder = new StringBuilder(sql);
@@ -360,7 +365,7 @@ namespace Frameset.Core.Dao.Meta
                     row[content.FieldName] = DBNull.Value;
                 }
             }
-
         }
+        
     }
 }

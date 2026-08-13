@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
 
 
 namespace Frameset.Core.Dao.Meta
@@ -33,13 +34,17 @@ namespace Frameset.Core.Dao.Meta
         {
             return ";selece " + sequenceName + ".CURRVAL from dual";
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
         {
             return "selece " + sequenceName + ".CURRVAL from dual";
         }
+        public override string GetSqlNextSequenceValue(string sequenceName)
+        {
+            return "selece " + sequenceName + ".NEXTVAL from dual";
+        }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (OracleCommand command = new OracleCommand(executeSql, (OracleConnection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -161,6 +166,10 @@ namespace Frameset.Core.Dao.Meta
             return true;
         }
 
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.Oracle;
+        }
     }
 
 }

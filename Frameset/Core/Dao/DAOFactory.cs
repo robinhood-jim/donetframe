@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Frameset.Core.FileSystem;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -63,9 +64,10 @@ namespace Frameset.Core.Dao
                 }
             }
         }
-        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict, bool autoConstructDbContext = true)
+        
+        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict,ISqlDialect sqlDialect, bool autoConstructDbContext = true)
         {
-            IJdbcDao dao = ConstructWithDict(dict);
+            IJdbcDao dao = ConstructWithDict(dict,sqlDialect);
             containner.Add(key, dao);
             if (autoConstructDbContext)
             {
@@ -78,9 +80,10 @@ namespace Frameset.Core.Dao
         {
             return keyValues;
         }
-        internal static IJdbcDao ConstructWithDict(Dictionary<string, object> dict)
+
+        internal static IJdbcDao ConstructWithDict(Dictionary<string, object> dict, ISqlDialect sqlDialect = null)
         {
-            dict.TryGetValue("dbType", out object dbTypeObj);
+            dict.TryGetValue(Constants.DBTYPECOLUMN, out object dbTypeObj);
             string dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
             dict.TryGetValue("ConnectionString", out object connStr);
             StringBuilder builder = new StringBuilder();
@@ -183,14 +186,31 @@ namespace Frameset.Core.Dao
                 builder.Append(connStr).Append(";");
             }
             IJdbcDao dao = null;
-            if (string.IsNullOrEmpty(logicColumnStr))
+            if (sqlDialect == null)
             {
-                dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
+                if (string.IsNullOrEmpty(logicColumnStr))
+                {
+                    dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
+                }
+                else
+                {
+                    dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1),
+                        logicColumnStr, validValue, invalidValue);
+                }
             }
             else
             {
-                dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1), logicColumnStr, validValue, invalidValue);
+                if (string.IsNullOrEmpty(logicColumnStr))
+                {
+                    dao = new JdbcDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1));
+                }
+                else
+                {
+                    dao = new JdbcDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1),
+                        logicColumnStr, validValue, invalidValue);
+                }
             }
+
             return dao;
 
         }
@@ -214,6 +234,17 @@ namespace Frameset.Core.Dao
         {
             return ConstructWithDict(dictParameter);
         }
+
+        public static IJdbcDao ConstructWithMeta(DataCollectionDefine collectionDefine)
+        {
+            Dictionary<string, object> configDit = [];
+            foreach (KeyValuePair<string,string> pair in collectionDefine.ResourceConfig)
+            {
+                configDit.TryAdd(pair.Key, pair.Value);
+            }
+            return ConstructWithDict(configDit);
+        }
+        
         public static void Register(string dsName, Dictionary<string, object> configMap, bool autoConstructDbContext = false)
         {
             if (containner.ContainsKey(dsName))

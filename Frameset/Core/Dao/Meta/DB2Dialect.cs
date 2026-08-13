@@ -7,6 +7,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -18,15 +19,19 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string AppendSequence(string sequenceName)
         {
-            return ";SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+            return ";SELECT PREVIOUS VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
+        {
+            return "SELECT PREVIOUS VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+        }
+        public override string GetSqlNextSequenceValue(string sequenceName)
         {
             return "SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
         }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (DB2Command command = new DB2Command(executeSql, (DB2Connection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -90,6 +95,10 @@ namespace Frameset.Core.Dao.Meta
             {
                 return GetNoPageSql(baseSql, query);
             }
+        }
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.DB2;
         }
     }
 }

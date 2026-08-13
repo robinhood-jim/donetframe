@@ -23,6 +23,7 @@ namespace Frameset.Core.Hardware
             string machineGuid = null;
             if (IsRunningOnWindows())
             {
+#pragma warning disable CA1416
                 RegistryKey registry = Registry.LocalMachine;
                 RegistryKey software = registry.OpenSubKey("Software");
                 object machineGuidObj = software.OpenSubKey("Microsoft").OpenSubKey("Cryptography").GetValue("MachineGuid");
@@ -30,6 +31,7 @@ namespace Frameset.Core.Hardware
                 {
                     machineGuid = machineGuidObj.ToString();
                 }
+#pragma warning restore CA1416
             }
             else if (IsRunningOnLinux())
             {

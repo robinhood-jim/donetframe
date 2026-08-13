@@ -119,7 +119,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
-            return new MySqlCommand(sql, (MySqlConnection)connection);
+            return new MySqlCommand(sql, (MySqlConnection)connection);  
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {
@@ -171,6 +171,11 @@ namespace Frameset.Core.Dao.Meta
             DbBatch batch = new MySqlBatch((MySqlConnection)connection);
             DbBatchCommand command = new MySqlBatchCommand(batchSql);
             return Tuple.Create(batch, command);
+        }
+
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.Mysql;
         }
     }
 }

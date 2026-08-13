@@ -8,6 +8,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Globalization;
 using System.Reflection;
+using System.Text;
 
 
 namespace Frameset.Core.Common
@@ -19,13 +20,18 @@ namespace Frameset.Core.Common
         {
             object retVal = null;
             AssertUtils.ArgumentNotNull(input, "must not be null!");
-
+            
             if (targetType.Equals(input.GetType()))
             {
                 retVal = input;
             }
             else
             {
+                //adjust if is Nullable property
+                if (targetType.IsGenericType || targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                {
+                    targetType = targetType.GetGenericArguments()[0];
+                }
                 if (targetType.IsEnum)
                 {
                     retVal = Enum.Parse(targetType, input.ToString()!);
@@ -43,6 +49,9 @@ namespace Frameset.Core.Common
                         case TypeCode.Int64:
                             retVal = long.Parse(input.ToString());
                             break;
+                        case TypeCode.Single:
+                            retVal = Convert.ToSingle(input.ToString());
+                            break;
                         case TypeCode.Double:
                             retVal = double.Parse(input.ToString());
                             break;
@@ -50,14 +59,22 @@ namespace Frameset.Core.Common
                             retVal = double.Parse(input.ToString());
                             break;
                         case TypeCode.DateTime:
-                            DateTime? time = ParseDateTime(input.ToString());
+                            DateTime? time = ParseDateTime(input);
                             if (time.HasValue)
                             {
                                 retVal = time.Value;
                             }
                             break;
+                        case TypeCode.Boolean:
+                            retVal = string.Equals(input.ToString(), Constants.VALID,
+                                         StringComparison.OrdinalIgnoreCase) ||
+                                     string.Equals(input.ToString(), Constants.TRUEVALUE,StringComparison.OrdinalIgnoreCase);
+                            break;
                         default:
-                            if (targetType.Equals(typeof(DateTimeOffset)))
+                            if (targetType.Equals(typeof(byte[])))
+                            {
+                                retVal = Encoding.UTF8.GetBytes(input.ToString());
+                            } else if (targetType.Equals(typeof(DateTimeOffset)))
                             {
                                 TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
                                 if (input.GetType().Equals(typeof(DateTime)))
@@ -66,7 +83,7 @@ namespace Frameset.Core.Common
                                 }
                                 else
                                 {
-                                    DateTime? stime = ParseDateTime(input.ToString());
+                                    DateTime? stime = ParseDateTime(input);
                                     if (stime.HasValue)
                                     {
                                         retVal = new DateTimeOffset(stime.Value, timeZoneInfo.BaseUtcOffset);
@@ -87,6 +104,14 @@ namespace Frameset.Core.Common
         public static DateTime? ParseDateTime(object dateStr, string formatter = null)
         {
             DateTime? retTime = null;
+            if (dateStr.GetType().Equals(typeof(DateTime)))
+            {
+                return (DateTime)dateStr;
+            }
+            if (dateStr.GetType().Equals(typeof(DateTime?)))
+            {
+                return (DateTime?)dateStr;
+            }
             if (dateStr.GetType().Equals(typeof(long)))
             {
                 retTime = DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(dateStr)).LocalDateTime;
@@ -240,25 +265,11 @@ namespace Frameset.Core.Common
 
                 else if (columnType.Equals(Constants.MetaType.TIMESTAMP))
                 {
-                    if (valueObj.GetType().Equals(typeof(DateTime)))
-                    {
-                        retObj = (DateTime)valueObj;
-                    }
-                    else
-                    {
-                        retObj = ParseDateTime(value, dateTimeFormatter);
-                    }
+                    retObj = ParseDateTime(value, dateTimeFormatter);
                 }
                 else if (columnType.Equals(Constants.MetaType.DATE))
                 {
-                    if (valueObj.GetType().Equals(typeof(DateTime)))
-                    {
-                        retObj = (DateTime)valueObj;
-                    }
-                    else
-                    {
-                        retObj = ParseDateTime(value, "yyyy-MM-dd");
-                    }
+                    retObj = ParseDateTime(value, "yyyy-MM-dd");
                 }
                 else
                 {

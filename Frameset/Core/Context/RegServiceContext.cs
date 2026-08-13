@@ -220,7 +220,6 @@ namespace Frameset.Core.Context
             else
             {
                 retObj = ConstructInject(wireType, lifeTime, scannedTypes);
-                //AutoWireInject(retObj, wireType, lifeTime, scannedTypes);
             }
             if (retObj != null)
             {

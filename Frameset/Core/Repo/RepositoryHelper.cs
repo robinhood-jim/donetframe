@@ -28,6 +28,10 @@ namespace Frameset.Core.Repo
                     Constants.SqlOperator oper = Constants.SqlOperator.EQ;
 
                     List<object> values = [];
+                    if (item.Value == null && string.IsNullOrWhiteSpace(item.Value.ToString()))
+                    {
+                        continue;
+                    }
                     if (item.Value.ToString().Contains('%'))
                     {
                         if (item.Value.ToString().StartsWith('%'))
@@ -87,7 +91,7 @@ namespace Frameset.Core.Repo
             paramMap = new Dictionary<string, object>();
             CompositeSegment csegment = (CompositeSegment)segment;
             string rsMap = csegment.Parametertype;
-            Type retType = null;
+            Type retType ;
             if (!csegment.Parametertype.IsNullOrEmpty())
             {
                 ConvertUtil.ToDict(input, paramMap);
@@ -157,11 +161,17 @@ namespace Frameset.Core.Repo
         }
         public static Tuple<StringBuilder, IList<DbParameter>> QueryModelByFieldBefore(Type entityType, IJdbcDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
-            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
-            FieldContent fielContent = fields.First(x => string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
+            List<FieldContent> contents = fields.Where(x =>
+                string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
+            FieldContent fielContent = contents.Count>0?contents[0]:null;
             if (fielContent == null)
             {
-                fielContent = fields.First(x => string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase));
+                List<FieldContent> contents1 = fields.Where(x =>
+                    string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (contents1.IsNullOrEmpty())
+                {
+                    fielContent = contents1[0];
+                }
             }
             if (fielContent == null)
             {

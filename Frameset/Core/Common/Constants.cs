@@ -125,7 +125,16 @@ namespace Frameset.Core.Common
 
         public static MetaType MetaTypeOfType(Type targetType)
         {
-            MetaType metaType = MetaType.STRING;
+            MetaType metaType ;
+            if (targetType.IsGenericType || targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                targetType = targetType.GetGenericArguments()[0];
+            }
+            if (targetType.IsEnum)
+            {
+                metaType = MetaType.STRING;
+                return metaType;
+            }
             switch (Type.GetTypeCode(targetType))
             {
                 case TypeCode.Int32:
@@ -150,7 +159,10 @@ namespace Frameset.Core.Common
                     metaType = MetaType.FLOAT;
                     break;
                 default:
-                    if (targetType.Equals(typeof(DateTimeOffset)))
+                    if (targetType.Equals(typeof(byte[])))
+                    {
+                        metaType = MetaType.BLOB;
+                    } else if (targetType.Equals(typeof(DateTimeOffset)))
                     {
                         metaType = MetaType.TIMESTAMP;
                     }
@@ -158,9 +170,7 @@ namespace Frameset.Core.Common
                     {
                         metaType = MetaType.STRING;
                     }
-
                     break;
-
             }
             return metaType;
         }
@@ -304,6 +314,7 @@ namespace Frameset.Core.Common
 
         }
         public static readonly string FSTYPECOLUMN = "fsType";
+        public static readonly string DBTYPECOLUMN = "dbType";
         public static readonly string VALID = "1";
         public static readonly string INVALID = "0";
         public static readonly int VALID_INT = 1;

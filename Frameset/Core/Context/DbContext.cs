@@ -13,7 +13,6 @@ using Serilog;
 using Serilog.Events;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
@@ -54,11 +53,7 @@ namespace Frameset.Core.Context
             if (IsAutoCommit())
             {
                 InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entity);
-                return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.InsertSql, entity, (command, v) =>
-                {
-                    int effectRow = DoInsert(command, segment, v);
-                    return effectRow > 0;
-                });
+                return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.InsertSql, entity, (command, v) =>DoInsert(command, segment, v)> 0);
             }
             else
             {
@@ -84,11 +79,7 @@ namespace Frameset.Core.Context
                 UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), origin, entity);
                 if (segment.UpdateRequired)
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.UpdateSql, entity, (command, v) =>
-                    {
-                        int effectRow = DoUpdate(command, segment, entity);
-                        return effectRow > 0;
-                    });
+                    return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.UpdateSql, entity, (command, v) =>DoUpdate(command, segment, entity)> 0);
                 }
                 return false;
             }
@@ -107,10 +98,7 @@ namespace Frameset.Core.Context
                 if (IsAutoCommit())
                 {
 
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", null, (command, v) =>
-                    {
-                        return DoDelete(command, entityType, pks.Cast<object>().ToList());
-                    });
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", null, (command, v) =>  DoDelete(command, entityType, pks.Cast<object>().ToList()));
                 }
                 else
                 {
@@ -127,10 +115,7 @@ namespace Frameset.Core.Context
             if (IsAutoCommit())
             {
                 Tuple<string, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(GetDao(), entityType, fieldName, sqlOperator, values);
-                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1.ToString(), null, (command, v) =>
-                {
-                    return GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
-                });
+                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1, null, (command, v) =>GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray()));
             }
             else
             {
@@ -207,6 +192,7 @@ namespace Frameset.Core.Context
                 }
             }
         }
+
         public override List<V> QueryByCondition<V>(FilterCondition condition)
         {
             Type entityType = typeof(V);

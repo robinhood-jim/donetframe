@@ -11,6 +11,7 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -96,6 +97,11 @@ namespace Frameset.Core.Dao.Meta
         public override bool SupportSequence()
         {
             return false;
+        }
+
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.ClickHouse;
         }
     }
 }

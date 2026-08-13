@@ -43,7 +43,7 @@ namespace Frameset.Core.Dao
         /// <returns></returns>
         int Execute(DbCommand command, string sql, DbParameter[] parameters);
 
-        AbstractSqlDialect GetDialect();
+        ISqlDialect GetDialect();
 
         int QueryByInt(DbCommand command, List<DbParameter> parameters = null);
         long QueryByLong(DbCommand command, List<DbParameter> parameters = null);

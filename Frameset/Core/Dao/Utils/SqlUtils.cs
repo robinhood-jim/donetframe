@@ -216,7 +216,7 @@ namespace Frameset.Core.Dao.Utils
                     fieldsBuilder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
                 }
             }
-            return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).ToString();
+            return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).Append(' ').ToString();
 
         }
 

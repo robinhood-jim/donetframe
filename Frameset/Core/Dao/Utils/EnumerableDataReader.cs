@@ -25,7 +25,7 @@ namespace Frameset.Core.Dao.Utils
         private Dictionary<string, MethodParam> methodMap = [];
         private T current;
         private bool active = true;
-        protected AbstractSqlDialect sqlDialect;
+        protected ISqlDialect sqlDialect;
         protected DbConnection connection;
         protected IJdbcDao dao;
         protected EntityContent entityContent;

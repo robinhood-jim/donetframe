@@ -21,7 +21,7 @@ namespace Frameset.Core.Mapper
         public Dictionary<string, string> MappingColumns
         {
             get; internal set;
-        } = new Dictionary<string, string>();
+        } = [];
 
     }
 }
