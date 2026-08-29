@@ -6,6 +6,7 @@ target/
 !./logs/**
 !./.idea/**
 
+.idea
 bin
 obj
 Debug
