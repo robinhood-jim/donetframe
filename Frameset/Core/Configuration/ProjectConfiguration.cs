@@ -13,6 +13,7 @@ using System.Linq;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
+using Frameset.Core.Dao.Meta;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -41,21 +42,31 @@ namespace Frameset.Core.Configuration
         public static readonly string USERMULTIPLEFS = "useMFS";
         public static readonly string FILESYSTEMS = "fileSystem";
         public static readonly string DEFAULT = "default";
+        public static readonly string DBTYPE = "dbType";
         public static readonly byte[] ALIVE = { 0x00, 0x00, 0x7F, 0x7F };
         private CancellationTokenSource cancellation;
-
+        private string yamlPath;
+        //proxy Function to support Tracing 
+        private Func<string,AbstractSqlDialect> proxyFunc;
         public ProjectConfiguration(string yamlConfigFile)
         {
-            string yamlPath = yamlConfigFile;
+            this.yamlPath= yamlConfigFile;
+        }
+        public ProjectConfiguration(string yamlConfigFile, Func<string, AbstractSqlDialect> func) : this(yamlConfigFile)
+        {
+            this.proxyFunc = func;
+        }
 
+        public void DoInit()
+        {
             IDeserializer deserializer = new DeserializerBuilder().WithNamingConvention(UnderscoredNamingConvention.Instance).Build();
             if (string.IsNullOrWhiteSpace(yamlPath))
             {
                 yamlPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + "application.yml";
             }
-            else if (string.Equals(yamlPath.Take(10).ToString(), "classpath:", StringComparison.OrdinalIgnoreCase))
+            else if (string.Equals(yamlPath.Substring(0,10), "classpath:", StringComparison.OrdinalIgnoreCase))
             {
-                yamlPath = AppDomain.CurrentDomain.BaseDirectory + Path.DirectorySeparatorChar + yamlPath.Skip(10).ToString();
+                yamlPath = AppDomain.CurrentDomain.BaseDirectory  + yamlPath.Substring(10);
             }
             using StreamReader reader = File.OpenText(yamlPath);
             configDict = deserializer.Deserialize<Dictionary<string, object>>(reader);
@@ -65,6 +76,7 @@ namespace Frameset.Core.Configuration
             configDict.TryGetValue(APPNAME, out object appNameObj);
             configDict.TryGetValue(MAPPERPATH, out object mapperPathObj);
             configDict.TryGetValue(USERMULTIPLEFS, out object userMFSObj);
+           
             if (appNameObj != null && !string.IsNullOrWhiteSpace(appNameObj.ToString()))
             {
                 appName = appNameObj.ToString();
@@ -91,7 +103,14 @@ namespace Frameset.Core.Configuration
                 {
                     string key = entry.Key.ToString();
                     Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
-                    DAOFactory.RegisterJdbcDao(key, dict1);
+                    Dictionary<string, object> tmpDict = [];
+                    foreach (KeyValuePair<object,object> pair in dict1)
+                    {
+                        tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
+                    }
+                    tmpDict.TryGetValue(DBTYPE, out object dbTypeObj);
+                    Trace.Assert(dbTypeObj!=null && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()),"missing config dbType");
+                    DAOFactory.RegisterJdbcDao(key, tmpDict, proxyFunc?.Invoke(dbTypeObj.ToString()));
                 }
             }
             //fileSystem 配置
@@ -121,8 +140,8 @@ namespace Frameset.Core.Configuration
                 cancellation = new();
                 RegisterWorker();
             }
-
         }
+
         private void AddFileSystemConfig(string fsName, Dictionary<object, object> inputDict)
         {
             Dictionary<string, string> targetDict = [];

@@ -17,14 +17,14 @@ namespace Frameset.Common.Data.Reader
 
         public JsonIterator(DataCollectionDefine define) : base(define)
         {
-            Identifier = Constants.FileFormatType.CSV;
+            Identifier = Constants.FileFormatType.JSON;
             useReader = true;
             Initalize(define.Path);
         }
 
         public JsonIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
-            Identifier = Constants.FileFormatType.CSV;
+            Identifier = Constants.FileFormatType.JSON;
             useReader = true;
             Initalize(define.Path);
         }

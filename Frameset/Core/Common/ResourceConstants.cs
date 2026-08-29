@@ -43,6 +43,7 @@ namespace Frameset.Core.Common
         public static readonly string DYNAMICORCCLASSNAME = "orc.dynamicClassName";
         //parquet
         public static readonly string PARQUETGROUPSIZE = "fs.parquetGroupSize";
+        public static readonly string ARROWGROUPSIZE = "fs.arrowGroupSize";
         //xml
         public static readonly string XMLCOLLECTIONNAME = "xml.collectionName";
         public static readonly string XMLENTITYIONNAME = "xml.entityName";
@@ -88,6 +89,8 @@ namespace Frameset.Core.Common
         public static readonly string CASSANDRAUSERNAME = "cassandra.userName";
         public static readonly string CASSANDRAPASSWD = "cassandra.passwd";
         public static readonly string CASSANDRASSLPATH = "cassandra.sslPath";
+
+        public static readonly string CASSANDRATARGETTABLE = "cassandra.targetTable";
         //hbase
         public static readonly string HBASEQUORUMURL = "hbase.quorumUrl";
         public static readonly string HBASEPROTOBUFURL = "hbase.protoBufUrl";

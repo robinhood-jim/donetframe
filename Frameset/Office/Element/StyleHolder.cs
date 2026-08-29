@@ -20,7 +20,7 @@ namespace Frameset.Office.Element
         public StyleHolder()
         {
             MergeCellStyle(0, "0", Font.DEFAULT, Fill.NONE, Border.NONE, null);
-            cacheFill(Fill.DARKGRAY);
+            cacheFill(Fill.BLACK);
         }
         public void replaceDefaultFont(Font font)
         {
@@ -82,7 +82,7 @@ namespace Frameset.Office.Element
             w.Append("<?xml version=\"1.0\" encoding=\"UTF-8\"?><styleSheet xmlns=\"http://schemas.openxmlformats.org/spreadsheetml/2006/main\">");
             WriteContent(w, valueFormattings, "numFmts", (e) => w.Append("<numFmt numFmtId=\"").Append(e.Value).Append("\" formatCode=\"").Append(e.Key).Append("\"/>"));
             WriteContent(w, fonts, "fonts", (e) => e.Key.WriteOut(w));
-            //writeContent(w, fills, "fills", e -> e.getKey().writeOut(w));
+            WriteContent(w, fills, "fills", (e) => e.Key.WriteOut(w));
             WriteContent(w, borders, "borders", (e) => e.Key.WriteOut(w));
             w.Append("<cellStyleXfs count=\"1\"><xf numFmtId=\"0\" fontId=\"0\" fillId=\"0\" borderId=\"0\"/></cellStyleXfs>");
             WriteContent(w, styles, "cellXfs", (e) => e.Key.WriteOut(w));

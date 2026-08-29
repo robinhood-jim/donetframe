@@ -64,7 +64,7 @@ namespace Frameset.Office.Excel.Util
             }
             if (reuseCurrent)
             {
-                current = System.Activator.CreateInstance<T>();
+                current = Activator.CreateInstance<T>();
             }
             r.GotoElement("sheetData");
         }

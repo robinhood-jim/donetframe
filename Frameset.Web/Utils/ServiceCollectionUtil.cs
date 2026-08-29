@@ -4,6 +4,7 @@ using Frameset.Core.Context;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System.Reflection;
+using Frameset.Core.Dao.Meta;
 
 namespace Frameset.Web.Utils
 {
@@ -45,9 +46,18 @@ namespace Frameset.Web.Utils
         /// </summary>
         /// <param name="services"></param>
         /// <param name="configYaml"></param>
-        public static ProjectConfiguration UsingConfiguration(this IServiceCollection services, string configYaml = null)
+        public static ProjectConfiguration UsingConfiguration(this IServiceCollection services, string? configYaml = null)
         {
             ProjectConfiguration configuration = new(configYaml);
+            configuration.DoInit();
+            services.AddSingleton(typeof(ProjectConfiguration), configuration);
+            return configuration;
+        }
+        
+        public static ProjectConfiguration UsingConfiguration(this IServiceCollection services, string? configYaml,Func<string,AbstractSqlDialect> proxyFunc)
+        {
+            ProjectConfiguration configuration = new(configYaml,proxyFunc);
+            configuration.DoInit();
             services.AddSingleton(typeof(ProjectConfiguration), configuration);
             return configuration;
         }

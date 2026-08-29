@@ -11,6 +11,8 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using ClickHouse.Client.ADO.Adapters;
+using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -64,6 +66,16 @@ namespace Frameset.Core.Dao.Meta
             }
             return command;
         }
+        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        {
+            ClickHouseCommand command = new ClickHouseCommand((ClickHouseConnection)connection);
+            command.Transaction = transaction;
+            if (!sql.IsNullOrEmpty())
+            {
+                command.CommandText = sql;
+            }
+            return command;
+        }
         public override DbCommand GetDbCommand(DbConnection connection)
         {
             return new ClickHouseCommand((ClickHouseConnection)connection);
@@ -96,6 +108,16 @@ namespace Frameset.Core.Dao.Meta
         public override bool SupportSequence()
         {
             return false;
+        }
+
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.ClickHouse;
+        }
+
+        public override DbDataAdapter GetDataAdapter()
+        {
+            return new ClickHouseDataAdapter();
         }
     }
 }

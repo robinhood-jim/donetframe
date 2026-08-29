@@ -24,7 +24,7 @@ namespace Frameset.Core.Dao.Utils
         public static EntityContent GetEntityInfo(Type entityType)
         {
             AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
-            EntityContent content = null;
+            EntityContent content;
 
 
             if (!entityContentMap.TryGetValue(entityType, out content))
@@ -33,9 +33,9 @@ namespace Frameset.Core.Dao.Utils
                 if (entity != null)
                 {
                     string tableName = entity.TableName;
-                    string schema = entity.Schema != null ? entity.Schema : null;
+                    string schema = entity.Schema;
                     string dsName = entity.DsName;
-                    content = new EntityContent(entityType, tableName, schema, dsName);
+                    content = new(entityType, tableName, schema, dsName);
                     content.IfExplicit = entity.IfExplicit;
                 }
                 else
@@ -43,7 +43,7 @@ namespace Frameset.Core.Dao.Utils
                     TableAttribute attribute = (TableAttribute)entityType.GetCustomAttribute(typeof(TableAttribute));
                     if (attribute != null)
                     {
-                        content = new EntityContent(entityType, attribute.Name, attribute.Schema, null);
+                        content = new(entityType, attribute.Name, attribute.Schema, null);
                     }
                 }
 
@@ -60,12 +60,11 @@ namespace Frameset.Core.Dao.Utils
         public static IList<FieldContent> GetFieldsContent(Type entityType)
         {
             AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
-            bool extendBaseModel = entityType.IsSubclassOf(typeof(BaseModel));
-            IList<FieldContent> fields = null;
+            IList<FieldContent> fields;
             EntityContent entityContent = GetEntityInfo(entityType);
             if (!fieldsListMap.TryGetValue(entityType, out fields))
             {
-                fields = new List<FieldContent>();
+                fields = [];
                 PropertyInfo[] propertyInfos = entityType.GetProperties();
                 foreach (PropertyInfo prop in propertyInfos)
                 {
@@ -79,7 +78,6 @@ namespace Frameset.Core.Dao.Utils
                         builder.Property(prop);
                         for (int i = 0; i < attributes.Length; i++)
                         {
-
                             if (attributes[i].GetType().Equals(typeof(MappingFieldAttribute)))
                             {
                                 MappingFieldAttribute mappingField = attributes[i] as MappingFieldAttribute;
@@ -105,7 +103,6 @@ namespace Frameset.Core.Dao.Utils
                                     builder.Required(mappingField.IfRequired).DataType(dataType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                                 }
-                                break;
                             }
                             else if (attributes[i].GetType().Equals(typeof(ColumnAttribute)))
                             {
@@ -260,31 +257,31 @@ namespace Frameset.Core.Dao.Utils
         public static Constants.MetaType AdjustType(Type type)
         {
             Constants.MetaType dataType = Constants.MetaType.INTEGER;
-            if (type.Equals(typeof(long)))
+            if (type.Equals(typeof(long)) || type.Equals(typeof(long?)))
             {
                 dataType = Constants.MetaType.LONG;
             }
-            else if (type.Equals(typeof(int)))
+            else if (type.Equals(typeof(int)) || type.Equals(typeof(int?)))
             {
                 dataType = Constants.MetaType.INTEGER;
             }
-            else if (type.Equals(typeof(short)))
+            else if (type.Equals(typeof(short)) || type.Equals(typeof(short?)))
             {
                 dataType = Constants.MetaType.SHORT;
             }
-            else if (type.Equals(typeof(float)))
+            else if (type.Equals(typeof(float)) || type.Equals(typeof(float?)))
             {
                 dataType = Constants.MetaType.FLOAT;
             }
-            else if (type.Equals(typeof(double)))
+            else if (type.Equals(typeof(double)) || type.Equals(typeof(double?)))
             {
                 dataType = Constants.MetaType.DOUBLE;
             }
-            else if (type.Equals(typeof(DateTime)))
+            else if (type.Equals(typeof(DateTime)) || type.Equals(typeof(DateTime?)))
             {
                 dataType = Constants.MetaType.DATE;
             }
-            else if (type.Equals(typeof(DateTimeOffset)))
+            else if (type.Equals(typeof(DateTimeOffset)) || type.Equals(typeof(DateTimeOffset?)))
             {
                 dataType = Constants.MetaType.TIMESTAMP;
             }

@@ -24,7 +24,7 @@ namespace Frameset.Common.FileSystem.utils
             Debug.Assert(!baseUrl.IsNullOrEmpty());
 
             define.ResourceConfig.TryGetValue(ResourceConstants.HDFSAUTHTYPE, out string? authType);
-            Trace.Assert(!string.IsNullOrWhiteSpace(authType),"");
+            Trace.Assert(!string.IsNullOrWhiteSpace(authType), "");
             type = AuthTypeOf(authType);
             switch (type)
             {

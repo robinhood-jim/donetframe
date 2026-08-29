@@ -4,7 +4,8 @@ using Frameset.Common.Data.Writer;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Utils;
-using Frametest.Dao;
+
+using Frametest.Models;
 using Serilog;
 
 namespace Frametest.FileSystem
@@ -15,18 +16,19 @@ namespace Frametest.FileSystem
         {
             DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
             builder
-                .Path("e:/testlocal.csv.brotil").FsType(Constants.FileSystemType.LOCAL)
+                .Path("f:/testlocal.proto").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.orc.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY, "jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME, "test")
                 //.Path("testftp.json.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.FTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING)
-                .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING).AddColumnDefine("type",Constants.MetaType.INTEGER)
+                .AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE).AddColumnDefine("time", Constants.MetaType.TIMESTAMP);
             Dictionary<string, object> cachedMap = new Dictionary<string, object>();
             Random random = new Random(1231313);
             long startTs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 3600 * 24 * 1000;
-            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+            DateTime dateTime = new DateTime(1970,1,1,0,0,0);
+            
             using (AbstractDataWriter<Dictionary<string, object>> writer = builder.Build().GetDataWriter<Dictionary<string, object>>())
             {
-                for (int i = 0; i < 2000; i++)
+                for (int i = 0; i < 1000000; i++)
                 {
                     cachedMap.Clear();
                     cachedMap.TryAdd("name", StringUtils.GenerateRandomChar(random, 12));
@@ -34,6 +36,7 @@ namespace Frametest.FileSystem
                     cachedMap.TryAdd("amount", random.Next(1000) + 1);
                     cachedMap.TryAdd("price", random.NextDouble() * 1000);
                     cachedMap.TryAdd("id", Convert.ToInt64(i));
+                    cachedMap.TryAdd("type", random.Next((3)) + 1);
                     writer.WriteRecord(cachedMap);
                 }
             }
@@ -69,11 +72,11 @@ namespace Frametest.FileSystem
         {
             DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
             builder
-                .Path("e:/testlocal.csv.brotil").FsType(Constants.FileSystemType.LOCAL)
+                .Path("f:/testlocal.proto").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.csv.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY,"jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME,"test")
                 //.Path("testftp.csv.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.SFTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING)
-                .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING).AddColumnDefine("type",Constants.MetaType.INTEGER)
+                                .AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE).AddColumnDefine("time", Constants.MetaType.TIMESTAMP);
             DataCollectionDefine define = builder.Build();
             using (AbstractDataIterator<Dictionary<string, object>> iterator = define.GetDataReader<Dictionary<string, object>>())
             {

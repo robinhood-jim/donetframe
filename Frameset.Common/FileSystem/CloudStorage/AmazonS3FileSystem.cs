@@ -59,6 +59,19 @@ namespace Frameset.Common.FileSystem.CloudStorage
             throw new OperationFailedException("key " + resourcePath + " not found in bucket");
         }
 
+        public override bool Delete(string resourcePath)
+        {
+            if (Exist(resourcePath))
+            {
+                var deleteresponse=client.DeleteObjectAsync(GetBucketName(), resourcePath).GetAwaiter().GetResult();
+                return deleteresponse.HttpStatusCode == HttpStatusCode.OK;
+            }
+
+            return false;
+        }
+
+       
+
         internal override bool BucketExists(string bucketName)
         {
             Debug.Assert(client != null);
@@ -104,5 +117,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             return new AmazonS3OutputStream(client, define, bucketName, resourcePath);
         }
+
+        
     }
 }

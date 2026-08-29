@@ -128,7 +128,14 @@ namespace Frameset.Core.Dao.Utils
             {
                 object realVal = content.GetMethod.Invoke(update, null);
                 //GetDirty不为空，代表修改字段名在Dirty中，避免非空类型初始化有值导致判断失效
-                if ((update.GetDirties().IsNullOrEmpty() || update.GetDirties().Contains(content.PropertyName)) && realVal != null && !string.IsNullOrWhiteSpace(realVal.ToString()))
+                if (realVal == null)
+                {
+                    if (update.GetDirties().Contains(content.PropertyName))
+                    {
+                        columnsBuilder.Append(content.FieldName).Append("=null,");
+                    }
+                }
+                else
                 {
                     object originVal = content.GetMethod.Invoke(origin, null);
                     if (!content.IfPrimary)
@@ -145,12 +152,6 @@ namespace Frameset.Core.Dao.Utils
                         whereSegment.Append(" where " + content.FieldName + "=@id");
                         parameters.Add(dao.GetDialect().WrapParameter("@id", realVal));
                     }
-
-
-                }
-                else if (update.GetDirties().Contains(content.PropertyName))
-                {
-                    columnsBuilder.Append(content.FieldName).Append("=null,");
                 }
             }
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, update.GetType());
@@ -184,18 +185,46 @@ namespace Frameset.Core.Dao.Utils
             }
             return removeBuilder.ToString();
         }
+
+        public static string GetRemoveTableSql(Type modelType)
+        {
+            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
+            StringBuilder removeBuilder = new StringBuilder("delete from ");
+
+            removeBuilder.Append(entityContent.GetTableName()).Append(" where ");
+            return removeBuilder.ToString();
+        }
         public static Tuple<string, IList<DbParameter>> GetRemoveCondition(IJdbcDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
+            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
             Dictionary<string, FieldContent> fieldMaps = EntityReflectUtils.GetFieldsMap(modelType);
             if (!fieldMaps.TryGetValue(fieldName, out FieldContent fieldContent))
             {
                 throw new BaseSqlException("field " + fieldName + " not found in entity");
             }
-            StringBuilder builder = new StringBuilder("DELETE FROM ").Append(entityContent.GetTableName()).Append(" WHERE ");
-
-            IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, out int _, oper, values);
-            return Tuple.Create(builder.ToString(), parameters);
+            if (logicColumn == null)
+            {
+                StringBuilder builder = new StringBuilder("DELETE FROM ").Append(entityContent.GetTableName())
+                    .Append(" WHERE ");
+                IList<DbParameter> parameters =
+                    ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, out int _, oper, values);
+                return Tuple.Create(builder.ToString(), parameters);
+            }
+            else
+            {
+                StringBuilder updateBuilder = new();
+                updateBuilder.Append("update ").Append(entityContent.GetTableName()).Append(" set ")
+                    .Append(logicColumn.FieldName).Append("=@invalid where ").Append(logicColumn.FieldName).Append("=@valid");
+                updateBuilder.Append(" and (");
+                List<DbParameter> parameters = [dao.GetDialect().WrapParameter("invalid",logicColumn.InvalidValue),
+                    dao.GetDialect().WrapParameter("valid", logicColumn.ValidValue)];
+                parameters.AddRange(ParameterHelper.AddQueryParam(dao, fieldContent, updateBuilder, 0,
+                    out _, oper, values));
+                updateBuilder.Append(")");
+                return Tuple.Create(updateBuilder.ToString(), (IList<DbParameter>)parameters);
+            }
         }
         public static string GetSelectSql(Type modelType)
         {
@@ -216,7 +245,7 @@ namespace Frameset.Core.Dao.Utils
                     fieldsBuilder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
                 }
             }
-            return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).ToString();
+            return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).Append(' ').ToString();
 
         }
 

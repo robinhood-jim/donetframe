@@ -13,14 +13,15 @@ namespace Frameset.Common.Data.Writer
     public class ParquetDateWriter<T> : AbstractDataWriter<T>
     {
         private ParquetWriter pwriter = null!;
-        private ParquetRowGroupWriter groupWriter = null!;
+        private ParquetRowGroupWriter? groupWriter ;
         private ParquetSchema schema = null!;
         private List<DataField> fields = new();
         private Dictionary<int, ArrayList> chunckMap = new();
         private int chunckCapcity = 20000;
         private long totalRow = 0;
-        internal ParquetOptions parquetOptions=null!;
+        internal ParquetOptions parquetOptions = null!;
         internal bool appendMode = false;
+        private int writeRow = 0;
 
         public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
@@ -28,7 +29,7 @@ namespace Frameset.Common.Data.Writer
             useRawOutputStream = true;
             Initalize();
         }
-        public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataWriter<T>> initFunc) : base(define, fileSystem, initFunc)
+        public ParquetDateWriter(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataWriter<T>>? initFunc) : base(define, fileSystem, initFunc)
         {
             Identifier = Constants.FileFormatType.PARQUET;
             useRawOutputStream = true;
@@ -76,35 +77,39 @@ namespace Frameset.Common.Data.Writer
                 CompressType.LZMA => CompressionMethod.Lz4Raw,
                 _ => CompressionMethod.None
             };
-
             pwriter.CompressionMethod = method;
         }
 
 
         public override void FinishWrite()
         {
-            if (groupWriter != null)
+            if (groupWriter != null && writeRow>0)
             {
                 FlushGroup();
-                groupWriter.Dispose();
             }
+            groupWriter.Dispose();
             pwriter.Dispose();
         }
 
         public override void WriteRecord(T value)
         {
-            groupWriter ??= pwriter.CreateRowGroup();
+            if (groupWriter == null || writeRow==0)
+            {
+                groupWriter= pwriter.CreateRowGroup();
+            }
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 object? retVal = GetValue(value, MetaDefine.ColumnList[i]);
                 chunckMap[i].Add(retVal);
             }
             totalRow++;
+            writeRow++;
             if (totalRow % chunckCapcity == 0)
             {
                 FlushGroup();
                 Flush();
                 groupWriter.Dispose();
+                writeRow = 0;
             }
         }
         internal bool FlushGroup()
@@ -119,7 +124,6 @@ namespace Frameset.Common.Data.Writer
             {
                 item.GetAwaiter().GetResult();
             }
-
             for (int pos = 0; pos < MetaDefine.ColumnList.Count; pos++)
             {
                 chunckMap[pos].Clear();

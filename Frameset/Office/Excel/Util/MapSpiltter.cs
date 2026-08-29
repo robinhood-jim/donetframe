@@ -56,7 +56,7 @@ namespace Frameset.Office.Excel.Util
         public override void ConstructReturn()
         {
             Dictionary<string, object> dict = Current;
-            dict.Clear();
+            dict?.Clear();
             for (int i = 0; i < prop.CellProps.Count; i++)
             {
                 if (cells[i] != null && cells[i].GetValue() != null)
@@ -95,12 +95,12 @@ namespace Frameset.Office.Excel.Util
             {
                 for (int i = 0; i < prop.CellProps.Count; i++)
                 {
-                    MethodParam param = null;
-                    if (methodParam.TryGetValue(prop.CellProps[i].ColumnCode, out param))
+                    if (methodParam.TryGetValue(prop.CellProps[i].ColumnCode, out MethodParam param))
                     {
                         if (cells[i] != null && cells[i].GetValue() != null)
                         {
-                            param.SetMethod.Invoke(Current, new object[] { ConvertUtil.ParseByType(param.ParamType, cells[i].GetValue()) });
+                            param.SetMethod.Invoke(Current, [ConvertUtil.ParseByType(param.ParamType, cells[i].GetValue())
+                            ]);
                         }
                         else
                         {

@@ -8,10 +8,12 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         }
+
         public Dictionary<string, object> NewColumns
         {
-            get; set;
-        }
+            get;
+            set;
+        } = [];
         public string GroupBy
         {
             get; set;

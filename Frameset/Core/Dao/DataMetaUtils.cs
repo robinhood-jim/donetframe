@@ -12,9 +12,9 @@ namespace Frameset.Core.Dao
 {
     public class DataMetaUtils
     {
-        public static IList<ColumnMeta> GetTableColumns(DbConnection connection, string schema, string tableName)
+        public static List<ColumnMeta> GetTableColumns(DbConnection connection, string schema, string tableName)
         {
-            IList<ColumnMeta> list = new List<ColumnMeta>();
+            List<ColumnMeta> list = [];
             try
             {
                 string[] resrtictions = new string[4];
@@ -59,9 +59,9 @@ namespace Frameset.Core.Dao
             }
             return list;
         }
-        public static IList<TableMeta> GetTables(DbConnection connection, string schema)
+        public static List<TableMeta> GetTables(DbConnection connection, string schema)
         {
-            IList<TableMeta> list = [];
+            List<TableMeta> list = [];
             try
             {
                 string[] resrtictions = new string[2];
@@ -134,7 +134,7 @@ namespace Frameset.Core.Dao
         public static Constants.MetaType GetMetaType(PropertyInfo info)
         {
             Constants.MetaType metaType = Constants.MetaType.STRING;
-            switch (Type.GetTypeCode(info.GetGetMethod().ReturnType))
+            switch (Type.GetTypeCode(info.GetGetMethod()?.ReturnType))
             {
                 case TypeCode.Int32:
                     metaType = Constants.MetaType.INTEGER;
@@ -194,7 +194,7 @@ namespace Frameset.Core.Dao
         public bool Nullable
         {
             get; set;
-        } = false;
+        } 
         public string Comment
         {
             get; set;

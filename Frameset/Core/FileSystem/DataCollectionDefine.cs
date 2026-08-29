@@ -8,7 +8,7 @@ using System.Reflection;
 
 namespace Frameset.Core.FileSystem
 {
-    public class DataCollectionDefine
+    public class DataCollectionDefine : ICloneable
     {
         public string Split
         {
@@ -25,7 +25,7 @@ namespace Frameset.Core.FileSystem
         public string Path
         {
             get; set;
-        }
+        } = string.Empty;
         public Dictionary<string, string> ResourceConfig
         {
             get;
@@ -66,11 +66,12 @@ namespace Frameset.Core.FileSystem
         }
         public Constants.FileFormatType FileFormat
         {
-            get; internal set;
+            get; set;
         }
         public FileMeta MetaData
         {
             get; set;
+
         }
         internal DataCollectionDefine()
         {
@@ -91,11 +92,17 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(new DataSetColumnMeta(columnName, columnType, defaultValue, required, dateFormat));
             ColumnNameMap.TryAdd(columnName, 1);
         }
+        public void AddColumnDefine(string columnName,string columnCode, Constants.MetaType columnType, object defaultValue=null, bool required=false, string dateFormat="yyyy-MM-dd")
+        {
+            ColumnList.Add(new DataSetColumnMeta(columnName,columnCode, columnType, defaultValue, required, dateFormat));
+            ColumnNameMap.TryAdd(columnName, 1);
+        }
         public void AddColumnDefine(DataSetColumnMeta meta)
         {
             ColumnList.Add(meta);
             ColumnNameMap.TryAdd(meta.ColumnName, 1);
         }
+        
         public void AddNotNullColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue)
         {
             DataSetColumnMeta meta = new DataSetColumnMeta(columnName, columnType, defaultValue);
@@ -118,6 +125,18 @@ namespace Frameset.Core.FileSystem
             }
         }
 
+        public object Clone()
+        {
+            DataCollectionDefine collectionDefine = new();
+            collectionDefine.ColumnList = ColumnList;
+            collectionDefine.ResType = ResType;
+            collectionDefine.PrimaryKeys = PrimaryKeys;
+            collectionDefine.ColumnNameMap = ColumnNameMap;
+            collectionDefine.Encode = Encode;
+            collectionDefine.Split = Split;
+            return collectionDefine;
+
+        }
     }
     public class DataCollectionBuilder
     {
@@ -140,9 +159,19 @@ namespace Frameset.Core.FileSystem
             define.AddColumnDefine(columnName, columnType, defaultValue);
             return this;
         }
+
+        public DataCollectionBuilder(string columnName, string columnCode, Constants.MetaType columnType)
+        {
+            define.AddColumnDefine(columnName,columnCode,columnType);
+        }
         public DataCollectionBuilder AddColumnDefine(string columnName, Constants.MetaType columnType, bool flushOut)
         {
             define.AddColumnDefine(columnName, columnType, flushOut);
+            return this;
+        }
+        public DataCollectionBuilder AddColumnDefine(DataSetColumnMeta columnMeta)
+        {
+            define.AddColumnDefine(columnMeta);
             return this;
         }
         public DataCollectionBuilder FsType(Constants.FileSystemType fsType)
@@ -157,7 +186,12 @@ namespace Frameset.Core.FileSystem
         }
         public DataCollectionBuilder FileFormat(string format)
         {
+            if (define.MetaData == null)
+            {
+                define.MetaData = new FileMeta();
+            }
             define.FileFormat = Constants.FileFormatTypeOf(format);
+            define.MetaData.FileFormat = format;
             return this;
         }
         public DataCollectionBuilder AddConfig(string name, string value)
@@ -190,6 +224,10 @@ namespace Frameset.Core.FileSystem
         public DataCollectionDefine Build()
         {
             return define;
+        }
+        public List<DataSetColumnMeta> GetMetas()
+        {
+            return (List<DataSetColumnMeta>)define.ColumnList;
         }
         public DataCollectionBuilder ParseType(Type type)
         {
@@ -251,9 +289,9 @@ namespace Frameset.Core.FileSystem
         {
             get; set;
         }
-        public IList<string> nominalValues
+        public List<string> NominalValues
         {
-            get; internal set;
+            get; set;
         } = new List<string>();
         public bool FlushOut
         {
@@ -291,6 +329,12 @@ namespace Frameset.Core.FileSystem
         {
             this.Required = required;
             this.DateFormat = dateFormat;
+        }
+        public DataSetColumnMeta(string columnName,string columnCode, Constants.MetaType columnType, object defaultNullValue, bool required, string dateFormat) : this(columnName, columnType, defaultNullValue)
+        {
+            this.Required = required;
+            this.DateFormat = dateFormat;
+            this.ColumnCode = columnCode;
         }
         public DataSetColumnMeta(string columnName, Constants.MetaType columnType, object defaultNullValue, bool required) : this(columnName, columnType, defaultNullValue)
         {

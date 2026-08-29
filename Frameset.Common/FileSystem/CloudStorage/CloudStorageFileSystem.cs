@@ -81,5 +81,10 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             this.bucketName = bucketName;
         }
+
+        public override bool CreateFile(string resourcePath)
+        {
+            throw new NotImplementedException();
+        }
     }
 }

@@ -12,7 +12,7 @@ namespace Frameset.Common.Data.Reader
     {
         private RecordSchema schema = null!;
         private IFileReader<GenericRecord> fileReader = null!;
-        protected ParquetOptions options;
+        protected ParquetOptions options=null!;
 
 
         public AvroIterator(DataCollectionDefine define) : base(define)

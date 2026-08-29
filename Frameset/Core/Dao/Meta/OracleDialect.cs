@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
+using Frameset.Core.FileSystem;
 
 
 namespace Frameset.Core.Dao.Meta
@@ -33,13 +35,17 @@ namespace Frameset.Core.Dao.Meta
         {
             return ";selece " + sequenceName + ".CURRVAL from dual";
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
         {
             return "selece " + sequenceName + ".CURRVAL from dual";
         }
+        public override string GetSqlNextSequenceValue(string sequenceName)
+        {
+            return "selece " + sequenceName + ".NEXTVAL from dual";
+        }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (OracleCommand command = new OracleCommand(executeSql, (OracleConnection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -62,6 +68,21 @@ namespace Frameset.Core.Dao.Meta
             }
         }
 
+        public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
+            CancellationToken token, int batchSize = 10000)
+        {
+            using (OracleBulkCopy copy = new OracleBulkCopy((OracleConnection)connection, OracleBulkCopyOptions.UseInternalTransaction))
+            {
+                copy.DestinationSchemaName = schema;
+                copy.DestinationTableName = tableName;
+
+                var reader = new EnumerableDataReader<Dictionary<string,object>>(dao, connection, metas, schema,tableName, models);
+                copy.BatchSize = batchSize;
+                copy.WriteToServer(reader);
+                return 0;
+            }
+        }
+
         public override DbConnection GetDbConnection(string connectStr)
         {
             return new OracleConnection(connectStr);
@@ -69,6 +90,12 @@ namespace Frameset.Core.Dao.Meta
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
             return new OracleCommand(sql, (OracleConnection)connection);
+        }
+        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        {
+            OracleCommand command = new OracleCommand(sql, (OracleConnection)connection);
+            command.Transaction = (OracleTransaction)transaction;
+            return command;
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {
@@ -161,6 +188,15 @@ namespace Frameset.Core.Dao.Meta
             return true;
         }
 
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.Oracle;
+        }
+
+        public override DbDataAdapter GetDataAdapter()
+        {
+            return new OracleDataAdapter();
+        }
     }
 
 }

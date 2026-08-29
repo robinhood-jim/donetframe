@@ -73,9 +73,10 @@ namespace Frameset.Bigdata.Cassandra
                     throw new OperationFailedException("getById return more than one rows!");
                 }
                 V entity = Activator.CreateInstance<V>();
-                if (rows.GetEnumerator().MoveNext())
+                using IEnumerator<Row> enumerator = rows.GetEnumerator();
+                if (enumerator.MoveNext())
                 {
-                    var row = rows.GetEnumerator().Current;
+                    var row = enumerator.Current;
                     foreach (FieldContent fieldContent in fieldContents)
                     {
                         var obj = row[fieldContent.FieldName];
@@ -121,6 +122,7 @@ namespace Frameset.Bigdata.Cassandra
             PreparedStatement prepared = session.Prepare(segment.InsertSql);
             BoundStatement bound = prepared.Bind(segment.ParamObjects.ToArray());
             var rowset = session.Execute(bound);
+            
             return true;
         }
 
@@ -205,7 +207,7 @@ namespace Frameset.Bigdata.Cassandra
             }
             return builder.ToString();
         }
-        private class CustomTrustStoreCertificateValidator
+        internal class CustomTrustStoreCertificateValidator
         {
             private readonly X509Certificate2 rootCertificate;
             public CustomTrustStoreCertificateValidator(X509Certificate2 rootCertificate)

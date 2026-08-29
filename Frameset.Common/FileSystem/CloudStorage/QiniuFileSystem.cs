@@ -13,7 +13,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         private Mac client;
         private string? zoneStr;
         private BucketManager bucketManager;
-        private string domain=null!;
+        private string domain = null!;
         private UploadManager uploadManager;
         private Config config;
         private bool useHttps = false;
@@ -60,6 +60,16 @@ namespace Frameset.Common.FileSystem.CloudStorage
                 return result.Result.Fsize;
             }
             return -1;
+        }
+
+        public override bool Delete(string resourcePath)
+        {
+            if (Exist(resourcePath))
+            {
+                var result = bucketManager.Delete(GetBucketName(), resourcePath);
+                return result.Code == 200;
+            }
+            return false;
         }
 
         internal override bool BucketExists(string bucketName)

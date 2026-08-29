@@ -28,7 +28,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string AppendAutoIncrement()
         {
-            return "AUTO INCREMENT";
+            return "AUTO_INCREMENT";
         }
         public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
@@ -77,6 +77,60 @@ namespace Frameset.Core.Dao.Meta
             }
         }
 
+        public override int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys)
+        {
+            return BatchInsert(dao, dbConnection, entitys, (adpater, filecontents) =>
+            {
+                MySqlDataAdapter mySqlDataAdapter=adpater as MySqlDataAdapter;
+                foreach (FieldContent content in filecontents)
+                {
+                    switch (content.DataType)
+                    {
+                        case Constants.MetaType.LONG:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Int64);
+                            break;
+                        case Constants.MetaType.INTEGER:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Int32);
+                            break;
+                        case Constants.MetaType.SHORT:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Int16);
+                            break;
+                        case Constants.MetaType.FLOAT:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Float);
+                            break;
+                        case Constants.MetaType.DOUBLE:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Double);
+                            break;
+                        case Constants.MetaType.NUMERIC:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Decimal);
+                            break;
+                        case Constants.MetaType.DATE:
+                        case Constants.MetaType.TIMESTAMP:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName,
+                                MySqlDbType.Timestamp);
+                            break;
+                        case Constants.MetaType.CLOB:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName,
+                                MySqlDbType.LongText);
+                            break;
+                        case Constants.MetaType.BLOB:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Binary);
+                            break;
+                        default:
+                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.VarChar);
+                            break;
+                    }
+                }
+                return filecontents.Count;
+            });
+
+        }
+
+        public override DbDataAdapter GetDataAdapter()
+        {
+            return new MySqlDataAdapter();
+        }
+
         internal MySqlDbType GetDbType(FieldContent content)
         {
             MySqlDbType type = MySqlDbType.VarChar;
@@ -119,7 +173,11 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
-            return new MySqlCommand(sql, (MySqlConnection)connection);
+            return new MySqlCommand(sql, (MySqlConnection)connection);  
+        }
+        public override DbCommand GetDbCommand(DbConnection connection,string sql,DbTransaction transaction)
+        {
+            return new MySqlCommand(sql, (MySqlConnection)connection, (MySqlTransaction)transaction);
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {
@@ -171,6 +229,11 @@ namespace Frameset.Core.Dao.Meta
             DbBatch batch = new MySqlBatch((MySqlConnection)connection);
             DbBatchCommand command = new MySqlBatchCommand(batchSql);
             return Tuple.Create(batch, command);
+        }
+
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.Mysql;
         }
     }
 }

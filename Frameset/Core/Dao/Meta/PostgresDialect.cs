@@ -25,9 +25,13 @@ namespace Frameset.Core.Dao.Meta
         {
             return ";select nextval('" + sequenceName + "')";
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
         {
             return "select nextval('" + sequenceName + "')";
+        }
+        public override string GetSqlNextSequenceValue(string sequenceName)
+        {
+            return "selece currval('" + sequenceName + "')";
         }
         public override string AppendAutoIncrement()
         {
@@ -39,7 +43,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (NpgsqlCommand command = new NpgsqlCommand(executeSql, (NpgsqlConnection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -112,6 +116,10 @@ namespace Frameset.Core.Dao.Meta
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
             return new NpgsqlCommand(sql, (NpgsqlConnection)connection);
+        }
+        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        {
+            return new NpgsqlCommand(sql, (NpgsqlConnection)connection,(NpgsqlTransaction) transaction);
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {
@@ -215,7 +223,14 @@ namespace Frameset.Core.Dao.Meta
 
         }
 
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.Postgres;
+        }
 
-
+        public override DbDataAdapter GetDataAdapter()
+        {
+            return new NpgsqlDataAdapter();
+        }
     }
 }

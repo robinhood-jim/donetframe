@@ -76,7 +76,7 @@ namespace Frameset.Core.Security
                     throw new NotSupportedException($"Unsupported public key algorithm: {keyType}");
 
                 // 2. Decode the raw wire format byte payload
-                byte[] binaryData = Convert.FromBase64String(base64Data);   
+                byte[] binaryData = Convert.FromBase64String(base64Data);
                 try
                 {
                     RSAParameters parameters = ParseFromOpenSSHPublic(binaryData);

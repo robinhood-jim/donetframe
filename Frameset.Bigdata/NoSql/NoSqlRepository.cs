@@ -16,8 +16,10 @@ namespace Frameset.Bigdata.NoSql
         protected readonly Type pkType;
         protected IList<FieldContent> fieldContents;
         protected Dictionary<string, FieldContent> fieldMap;
+        protected DataCollectionDefine collectionDefine;
         public NoSqlRepository(DataCollectionDefine define)
         {
+            collectionDefine = define;
             Type[] genericType = GetType().GetInterfaces()[0].GetGenericArguments();
             AssertUtils.IsTrue(genericType[0].IsSubclassOf(typeof(BaseEntity)));
             content = EntityReflectUtils.GetEntityInfo(genericType[0]);

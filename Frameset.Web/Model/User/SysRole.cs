@@ -1,7 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Model;
 
-namespace Frameset.Web.Model
+namespace Frameset.Web.Model.User
 {
     [MappingEntity("t_sys_role_info")]
     public class SysRole : BaseEntity

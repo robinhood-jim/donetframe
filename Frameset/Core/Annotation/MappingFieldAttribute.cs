@@ -95,7 +95,7 @@ namespace Frameset.Core.Annotation
         public MappingFieldAttribute(bool ifPrimary, bool ifIncrement)
         {
             this.IfPrimary = ifPrimary;
-            this.IfIncrement = IfIncrement;
+            this.IfIncrement = ifIncrement;
         }
 
 

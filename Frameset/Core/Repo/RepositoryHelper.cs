@@ -28,6 +28,10 @@ namespace Frameset.Core.Repo
                     Constants.SqlOperator oper = Constants.SqlOperator.EQ;
 
                     List<object> values = [];
+                    if (item.Value == null && string.IsNullOrWhiteSpace(item.Value.ToString()))
+                    {
+                        continue;
+                    }
                     if (item.Value.ToString().Contains('%'))
                     {
                         if (item.Value.ToString().StartsWith('%'))
@@ -87,7 +91,7 @@ namespace Frameset.Core.Repo
             paramMap = new Dictionary<string, object>();
             CompositeSegment csegment = (CompositeSegment)segment;
             string rsMap = csegment.Parametertype;
-            Type retType = null;
+            Type retType ;
             if (!csegment.Parametertype.IsNullOrEmpty())
             {
                 ConvertUtil.ToDict(input, paramMap);
@@ -134,15 +138,33 @@ namespace Frameset.Core.Repo
             }
             Trace.Assert(!paramMap.IsNullOrEmpty(), "all property is null");
         }
+        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbCommand, int> function)
+        {
+            using DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString());
+            connection.Open();
+            DbTransaction transaction = connection.BeginTransaction();
+            using DbCommand command = dao.GetDialect().GetDbCommand(connection);
+            try
+            {
+                command.Transaction = transaction;
+                int ret= function.Invoke(command);
+                transaction.Commit();
+                return ret;
+            }catch(Exception ex)
+            {
+                transaction.Rollback();
+                throw new BaseSqlException(ex.Message);
+            }
+        }
         public static int ExecuteInTransaction(IJdbcDao dao, string sql, Func<DbCommand, int> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
                 connection.Open();
                 DbTransaction transaction = connection.BeginTransaction();
+                using DbCommand command = dao.GetDialect().GetDbCommand(connection, sql);
                 try
                 {
-                    DbCommand command = dao.GetDialect().GetDbCommand(connection, sql);
                     command.Transaction = transaction;
                     int ret = func.Invoke(command);
                     transaction.Commit();
@@ -157,11 +179,17 @@ namespace Frameset.Core.Repo
         }
         public static Tuple<StringBuilder, IList<DbParameter>> QueryModelByFieldBefore(Type entityType, IJdbcDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
-            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
-            FieldContent fielContent = fields.First(x => string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase));
+            List<FieldContent> contents = fields.Where(x =>
+                string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
+            FieldContent fielContent = contents.Count>0?contents[0]:null;
             if (fielContent == null)
             {
-                fielContent = fields.First(x => string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase));
+                List<FieldContent> contents1 = fields.Where(x =>
+                    string.Equals(x.FieldName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
+                if (contents1.IsNullOrEmpty())
+                {
+                    fielContent = contents1[0];
+                }
             }
             if (fielContent == null)
             {
@@ -193,8 +221,7 @@ namespace Frameset.Core.Repo
                 DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
-                    DbCommand command = dao.GetDialect().GetDbCommand(connection, sql);
-                    command.Transaction = transaction;
+                    DbCommand command = dao.GetDialect().GetDbCommand(connection, sql,transaction);
                     T ret = func.Invoke(command, entity);
                     transaction.Commit();
                     return ret;
@@ -210,7 +237,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbConnection, int> func)
+        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbConnection,DbTransaction, int> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
@@ -218,7 +245,7 @@ namespace Frameset.Core.Repo
                 DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
-                    int ret = func.Invoke(connection);
+                    int ret = func.Invoke(connection,transaction);
                     transaction.Commit();
                     return ret;
                 }

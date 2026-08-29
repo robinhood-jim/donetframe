@@ -9,10 +9,12 @@ namespace Frameset.Web.Utils
         {
             get; protected set;
         }
+
         public List<ServerlessParameter> Parameters
         {
-            get; set;
-        }
+            get;
+            set;
+        } = [];
         public List<string> AllowMethods
         {
             get; protected set;
@@ -29,14 +31,18 @@ namespace Frameset.Web.Utils
         {
             get; protected set;
         }
+
         public string InitFunc
         {
-            get; set;
-        }
+            get;
+            set;
+        } = string.Empty;
+
         public string InitParam
         {
-            get; set;
-        }
+            get;
+            set;
+        } = string.Empty;
         public DynamicFunction(string funcName, Type targetType, MethodInfo info, string allowMethods, bool isStatic)
         {
             FuncName = funcName;

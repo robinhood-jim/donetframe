@@ -1,4 +1,6 @@
-﻿dataSource:
+﻿#mapper: mapper
+appName: test
+dataSource:
  core:
   host: localhost
   port: 3316
@@ -10,4 +12,4 @@
 fileSystem:
  fsType: local
  ftp.userName: test
- frp.passwd: test
+ ftp.passwd: test

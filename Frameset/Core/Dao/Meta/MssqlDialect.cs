@@ -5,9 +5,11 @@ using Microsoft.Data.SqlClient;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -33,13 +35,13 @@ namespace Frameset.Core.Dao.Meta
         {
             return "NEXT VALUE for " + sequenceName;
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
         {
             return "SELECT NEXT VALUE for " + sequenceName + " as seqValue";
         }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (SqlCommand command = new SqlCommand(executeSql, (SqlConnection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -52,18 +54,10 @@ namespace Frameset.Core.Dao.Meta
             using (SqlBulkCopy copy = new SqlBulkCopy((SqlConnection)connection))
             {
                 copy.DestinationTableName = entityContent.TableName;
-                List<string> columnNames = new();
-                foreach (FieldContent content in fields)
-                {
-                    if (!content.IfIncrement)
-                    {
-                        columnNames.Add(content.PropertyName);
-                    }
+                IDataReader dataReader = new EnumerableDataReader<V>(dao, connection, entityContent, fields, models);
 
-                }
-                var reader = ObjectReader.Create(models, columnNames.ToArray());
                 copy.BatchSize = batchSize;
-                copy.WriteToServerAsync(reader, token);
+                copy.WriteToServerAsync(dataReader, token);
                 return copy.RowsCopied;
             }
         }
@@ -74,6 +68,10 @@ namespace Frameset.Core.Dao.Meta
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
             return new SqlCommand(sql, (SqlConnection)connection);
+        }
+        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        {
+            return new SqlCommand(sql, (SqlConnection)connection,(SqlTransaction)transaction);
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {
@@ -114,6 +112,16 @@ namespace Frameset.Core.Dao.Meta
             {
                 return GetNoPageSql(baseSql, query);
             }
+        }
+
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.SqlServer;
+        }
+
+        public override DbDataAdapter GetDataAdapter()
+        {
+            return new SqlDataAdapter();
         }
     }
 }

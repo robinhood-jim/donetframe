@@ -11,7 +11,6 @@ using System.Data;
 using System.Data.Common;
 using System.Threading;
 
-
 namespace Frameset.Core.Dao
 {
     public interface IJdbcDao
@@ -44,7 +43,7 @@ namespace Frameset.Core.Dao
         /// <returns></returns>
         int Execute(DbCommand command, string sql, DbParameter[] parameters);
 
-        AbstractSqlDialect GetDialect();
+        ISqlDialect GetDialect();
 
         int QueryByInt(DbCommand command, List<DbParameter> parameters = null);
         long QueryByLong(DbCommand command, List<DbParameter> parameters = null);
@@ -71,7 +70,7 @@ namespace Frameset.Core.Dao
         /// <param name="action"></param>
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
         void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action);
-        List<V> QueryByConditon<V>(DbCommand command, FilterCondition condition);
+        List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
         /// </summary>
@@ -92,6 +91,6 @@ namespace Frameset.Core.Dao
         int GetValidValue();
         void SetInvalidValue(int value);
         int GetInvalidValue();
-        long InsertBatch(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000);
+        long InsertBatch(DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000);
     }
 }

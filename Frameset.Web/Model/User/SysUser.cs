@@ -1,6 +1,6 @@
 ﻿using Frameset.Core.Annotation;
 
-namespace Frameset.Web.Model
+namespace Frameset.Web.Model.User
 {
     [MappingEntity("t_sys_user_info")]
     public class SysUser : AbstractModel

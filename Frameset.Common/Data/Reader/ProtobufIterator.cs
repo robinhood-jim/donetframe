@@ -13,13 +13,13 @@ namespace Frameset.Common.Data.Reader
 
         public ProtobufIterator(DataCollectionDefine define) : base(define)
         {
-            Identifier = Constants.FileFormatType.PARQUET;
+            Identifier = Constants.FileFormatType.PROTO;
             Initalize(define.Path);
         }
 
         public ProtobufIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
-            Identifier = Constants.FileFormatType.PARQUET;
+            Identifier = Constants.FileFormatType.PROTO;
             Initalize(define.Path);
         }
         public override bool MoveNext()
@@ -50,7 +50,7 @@ namespace Frameset.Common.Data.Reader
                 builder.AddField("required", ProtobufUtils.GetTypeStr(columnMeta.ColumnType), columnMeta.ColumnCode, i + 1);
             }
             definition = builder.Build();
-            message = new DynamicMessage(definition);
+            message = new DynamicMessage(definition,MetaDefine.ColumnList);
         }
 
         public override IAsyncEnumerable<T> ReadAsync(string path, string? filterSql = null)

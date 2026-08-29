@@ -13,7 +13,7 @@ namespace Frameset.Common.FileSystem
     /// <summary>
     /// United Data File access FileSystem Abstract class 
     /// </summary>
-    public abstract class AbstractFileSystem : IFileSystem, IDisposable
+    public abstract class AbstractFileSystem : IFileSystem
     {
         internal DataCollectionDefine define;
         internal Constants.FileSystemType identifier;
@@ -120,6 +120,14 @@ namespace Frameset.Common.FileSystem
         public virtual void FinishWrite(Stream outputStream)
         {
 
+        }
+
+        public abstract bool Delete(string resourcePath);
+        public abstract bool CreateFile(string resourcePath);
+        
+        public virtual List<string> List(string resourcePath)
+        {
+            throw new NotSupportedException();
         }
         internal void BeginOperator()
         {

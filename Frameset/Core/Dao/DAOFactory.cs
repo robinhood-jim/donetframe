@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
+using Frameset.Core.FileSystem;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -43,7 +44,12 @@ namespace Frameset.Core.Dao
                     {
                         string key = entry.Key.ToString();
                         Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
-                        IJdbcDao dao = ConstructWithDict(dict1);
+                        Dictionary<string, object> tmpDict = [];
+                        foreach (KeyValuePair<object,object> pair in dict1)
+                        {
+                            tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
+                        }
+                        IJdbcDao dao = ConstructWithDict(tmpDict);
                         containner.Add(key, dao);
                         if (autoConstructDbContext)
                         {
@@ -58,9 +64,10 @@ namespace Frameset.Core.Dao
                 }
             }
         }
-        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<object, object> dict, bool autoConstructDbContext = true)
+        
+        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict,ISqlDialect sqlDialect, bool autoConstructDbContext = true)
         {
-            IJdbcDao dao = ConstructWithDict(dict);
+            IJdbcDao dao = ConstructWithDict(dict,sqlDialect);
             containner.Add(key, dao);
             if (autoConstructDbContext)
             {
@@ -73,17 +80,52 @@ namespace Frameset.Core.Dao
         {
             return keyValues;
         }
-        internal static IJdbcDao ConstructWithDict(Dictionary<object, object> dict)
+
+        internal static IJdbcDao ConstructWithDict(Dictionary<string, object> dict, ISqlDialect sqlDialect = null)
         {
-            dict.TryGetValue("dbType", out object dbTypeObj);
-            string dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
-            dict.TryGetValue("ConnectionString", out object connStr);
+            var builder = GetConnectString(dict, out var dbType, out var schema, out var logicColumnStr, out var validValue, out var invalidValue);
+            IJdbcDao dao = null;
+            if (sqlDialect == null)
+            {
+                if (string.IsNullOrEmpty(logicColumnStr))
+                {
+                    dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
+                }
+                else
+                {
+                    dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1),
+                        logicColumnStr, validValue, invalidValue);
+                }
+            }
+            else
+            {
+                if (string.IsNullOrEmpty(logicColumnStr))
+                {
+                    dao = new JdbcDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1));
+                }
+                else
+                {
+                    dao = new JdbcDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1),
+                        logicColumnStr, validValue, invalidValue);
+                }
+            }
+
+            return dao;
+
+        }
+
+        public static StringBuilder GetConnectString(Dictionary<string, object> dict, out string dbType, out string schema,
+            out string logicColumnStr, out object validValue, out object invalidValue)
+        {
             StringBuilder builder = new StringBuilder();
+            dict.TryGetValue(Constants.DBTYPECOLUMN, out object dbTypeObj);
+            dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
+            dict.TryGetValue("ConnectionString", out object connStr);
             dict.TryGetValue("schema", out object schemaStr);
-            string schema = IsNull(schemaStr) ? null : schemaStr.ToString();
-            string logicColumnStr = string.Empty;
-            object validValue = null;
-            object invalidValue = null;
+            schema = IsNull(schemaStr) ? null : schemaStr.ToString();
+            logicColumnStr = string.Empty;
+            validValue = null;
+            invalidValue = null;
             Constants.DbType dbType1 = Constants.DbTypeOf(dbType);
             if (IsNull(connStr))
             {
@@ -177,18 +219,10 @@ namespace Frameset.Core.Dao
             {
                 builder.Append(connStr).Append(";");
             }
-            IJdbcDao dao = null;
-            if (string.IsNullOrEmpty(logicColumnStr))
-            {
-                dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
-            }
-            else
-            {
-                dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1), logicColumnStr, validValue, invalidValue);
-            }
-            return dao;
 
+            return builder;
         }
+
         private static bool IsNull(object input)
         {
             return input == null || string.IsNullOrWhiteSpace(input.ToString());
@@ -204,7 +238,23 @@ namespace Frameset.Core.Dao
             JdbcDao dao = new JdbcDao(dbType, schema, connectionString);
             return dao;
         }
-        public static void Register(string dsName, Dictionary<object, object> configMap, bool autoConstructDbContext = false)
+
+        public static IJdbcDao Construct(Dictionary<string, object> dictParameter)
+        {
+            return ConstructWithDict(dictParameter);
+        }
+
+        public static IJdbcDao ConstructWithMeta(DataCollectionDefine collectionDefine)
+        {
+            Dictionary<string, object> configDit = [];
+            foreach (KeyValuePair<string,string> pair in collectionDefine.ResourceConfig)
+            {
+                configDit.TryAdd(pair.Key, pair.Value);
+            }
+            return ConstructWithDict(configDit);
+        }
+        
+        public static void Register(string dsName, Dictionary<string, object> configMap, bool autoConstructDbContext = false)
         {
             if (containner.ContainsKey(dsName))
             {

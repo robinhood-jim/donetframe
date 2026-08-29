@@ -4,7 +4,6 @@ using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
-using Spring.Globalization.Formatters;
 using System.Collections;
 using System.Diagnostics;
 
@@ -21,8 +20,8 @@ namespace Frameset.Common.Data.Reader
         internal T current;
         public T Current => current;
         internal bool readAsDict = true;
-        internal DateTimeFormatter? dateFormatter = null;
-        internal DateTimeFormatter? timestampFormatter = null;
+        internal string? dateFormatter = null;
+        internal string? timestampFormatter = null;
         protected Action<AbstractDataIterator<T>>? initFunction;
         protected bool cancelTag = false;
         //Projection Columns,Ignore unused Columns
@@ -96,7 +95,7 @@ namespace Frameset.Common.Data.Reader
             FileSystem = fileSystem;
             readAsDict = false;
             MethodMap = AnnotationUtils.ReflectObject(typeof(T));
-            current = System.Activator.CreateInstance<T>();
+            current = Activator.CreateInstance<T>();
         }
         protected AbstractDataIterator(IFileSystem fileSystem, string processPath, Action<AbstractDataIterator<T>>? initFunc) : this(fileSystem, processPath)
         {
@@ -127,7 +126,7 @@ namespace Frameset.Common.Data.Reader
                 define.ParseType(typeof(T));
                 MethodMap = AnnotationUtils.ReflectObject(typeof(T));
             }
-            current = System.Activator.CreateInstance<T>();
+            current = Activator.CreateInstance<T>();
         }
         protected AbstractDataIterator(DataCollectionDefine define, IFileSystem fileSystem, Action<AbstractDataIterator<T>>? initFunc) : this(define, fileSystem)
         {
@@ -151,8 +150,8 @@ namespace Frameset.Common.Data.Reader
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
             }
-            dateFormatter = new DateTimeFormatter(dateFormatStr);
-            timestampFormatter = new DateTimeFormatter(timestampFormatStr);
+            dateFormatter = dateFormatStr;
+            timestampFormatter = timestampFormatStr;
             if (useReader)
             {
 
@@ -201,10 +200,10 @@ namespace Frameset.Common.Data.Reader
             {
                 return false;
             }
-            if (current == null || !reUseCurrent)
+            /*if (current == null || !reUseCurrent)
             {
-                current = System.Activator.CreateInstance<T>();
-            }
+                current = Activator.CreateInstance<T>();
+            }*/
 
             return true;
         }
@@ -214,24 +213,14 @@ namespace Frameset.Common.Data.Reader
         }
         internal void ConstructReturn()
         {
-            if (current == null)
-            {
-                current = System.Activator.CreateInstance<T>();
-            }
             if (readAsDict)
             {
-                dynamic? tmp = Convert.ChangeType(current, typeof(Dictionary<string, object>));
-                if (reUseCurrent)
-                {
-                    tmp?.Clear();
-                }
-                foreach (var item in CachedValue)
-                {
-                    tmp?.TryAdd(item.Key, item.Value);
-                }
+                dynamic tmp = Convert.ChangeType(CachedValue, typeof(Dictionary<string, object>));
+                current = tmp;
             }
             else
             {
+                current = Activator.CreateInstance<T>();
                 foreach (var item in CachedValue)
                 {
                     MethodParam? param = null;

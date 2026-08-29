@@ -6,7 +6,7 @@ namespace Frameset.Core.Model
 {
     public class BaseEntity
     {
-        private IList<string> dirtyProperties = [];
+        private List<string> dirtyProperties = [];
         private List<BaseEntity> _subEntitys = [];
 
         public void AddDirtys(params string[] dirtyColumns)
@@ -23,7 +23,7 @@ namespace Frameset.Core.Model
             }
         }
 
-        public IList<string> GetDirties()
+        public List<string> GetDirties()
         {
             return dirtyProperties;
         }

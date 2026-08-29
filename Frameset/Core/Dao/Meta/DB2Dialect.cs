@@ -7,6 +7,8 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Common;
+using Frameset.Core.FileSystem;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -18,15 +20,19 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string AppendSequence(string sequenceName)
         {
-            return ";SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+            return ";SELECT PREVIOUS VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
         }
-        public override string GenerateSequenceQuery(string sequenceName)
+        public override string GetSqlCurrentSequenceValue(string sequenceName)
+        {
+            return "SELECT PREVIOUS VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
+        }
+        public override string GetSqlNextSequenceValue(string sequenceName)
         {
             return "SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
         }
         public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
         {
-            string executeSql = GenerateSequenceQuery(sequenceName);
+            string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (DB2Command command = new DB2Command(executeSql, (DB2Connection)connection))
             {
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
@@ -48,6 +54,22 @@ namespace Frameset.Core.Dao.Meta
                 return count;
             }
         }
+
+        public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
+            CancellationToken token, int batchSize = 10000)
+        {
+            using (DB2BulkCopy copy=new DB2BulkCopy((DB2Connection)connection, DB2BulkCopyOptions.Default))
+            {
+                copy.DestinationTableName = tableName;
+                var dataReader =
+                    new EnumerableDataReader<Dictionary<string, object>>(dao, connection, metas, schema, tableName,
+                        models);
+                copy.WriteToServer(dataReader);
+                return 0;
+            }
+            
+        }
+
         public override DbConnection GetDbConnection(string connectStr)
         {
             return new DB2Connection(connectStr);
@@ -60,13 +82,13 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
-            DB2Command command = new DB2Command();
-            command.Connection = (DB2Connection)connection;
-            if (!sql.IsNullOrEmpty())
-            {
-                command.CommandText = sql;
-            }
-            return command;
+            return new DB2Command(sql,(DB2Connection)connection);
+            
+        }
+        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        {
+            return new DB2Command(sql,(DB2Connection)connection,(DB2Transaction)transaction);
+           
         }
         public override DbParameter WrapParameter(int pos, object value)
         {
@@ -90,6 +112,20 @@ namespace Frameset.Core.Dao.Meta
             {
                 return GetNoPageSql(baseSql, query);
             }
+        }
+        public override Constants.DbType GetDbType()
+        {
+            return Constants.DbType.DB2;
+        }
+
+        public override string GetTruncateTableStatement(string tableName)
+        {
+            return Constants.ALTER_TABLE+tableName+" ACTIVATE NOT LOGGED INITIALLY WITH EMPTY TABLE";
+        }
+
+        public override DbDataAdapter GetDataAdapter()
+        {
+            return new DB2DataAdapter();
         }
     }
 }

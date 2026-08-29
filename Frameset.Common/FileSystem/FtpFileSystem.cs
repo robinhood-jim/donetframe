@@ -1,4 +1,5 @@
-﻿using FluentFTP;
+﻿using System.Diagnostics;
+using FluentFTP;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
@@ -39,6 +40,7 @@ namespace Frameset.Common.FileSystem
                 define.ResourceConfig.TryGetValue(ResourceConstants.FTPPASSWD, out password);
 
                 client = new FtpClient(host, userName, password, port);
+                Trace.Assert(client!=null,"");
                 busyTag = false;
             }
         }
@@ -208,6 +210,90 @@ namespace Frameset.Common.FileSystem
             }
         }
 
+        public override List<string> List(string resourcePath)
+        {
+            BeginOperator();
+            bool isDir = false;
+            try
+            {
+                client.Connect();
+                if (client.DirectoryExists(resourcePath))
+                {
+                    isDir = true;
+                }
+                else if (!client.FileExists(resourcePath))
+                {
+                    return [];
+                }
+                if (isDir)
+                {
+                    string[] names = client.GetNameListing(resourcePath);
+                    if (names != null && names.Length > 0)
+                    {
+                        return new(names);
+                    }
+                }
+
+            }
+            catch (Exception ex)
+            {
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
+            }
+            return [];
+        }
+        public override bool Delete(string resourcePath)
+        {
+            BeginOperator();
+            try
+            {
+                client.Connect();
+                if (client.DirectoryExists(resourcePath))
+                {
+                    string[] names = client.GetNameListing(resourcePath);
+                    if (names == null || names.Length == 0)
+                    {
+                        client.DeleteDirectory(resourcePath);
+                    }
+                }
+                else if (client.FileExists(resourcePath))
+                {
+                    client.DeleteFile(resourcePath);
+                }
+                return true;
+
+            }
+            catch (Exception ex)
+            {
+                FinishOperator();
+                throw new OperationFailedException(ex.Message, ex);
+            }
+        }
+
+        public override bool CreateFile(string resourcePath)
+        {
+            BeginOperator();
+            try
+            {
+                client.Connect();
+                if (!client.DirectoryExists(resourcePath) && !client.FileExists(resourcePath))
+                {
+                    var stream = client.OpenWrite(resourcePath, FtpDataType.Binary, 0);
+                    stream.Dispose();
+                    return true;
+                }
+
+                return false;
+            }
+            catch (Exception ex)
+            {
+                throw new OperationFailedException(ex.Message, ex);
+            }
+            finally
+            {
+                FinishOperator();
+            }
+        }
 
         protected override void Dispose(bool disposable)
         {
@@ -219,7 +305,7 @@ namespace Frameset.Common.FileSystem
                 }
                 client.Dispose();
             }
-            GC.SuppressFinalize(this);
+            
         }
         public override void FinishWrite(Stream outputStream)
         {

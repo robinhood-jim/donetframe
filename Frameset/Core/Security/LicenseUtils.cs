@@ -12,9 +12,9 @@ namespace Frameset.Core.Security
 {
     public sealed class LicenseUtils
     {
-        protected static byte[] mzHeader = { 0x4D, 0x5A, 0x50, 0x00, 0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
-        protected static byte[] PADDING = { 0X7f };
-        protected static byte[] ENDING = { 0x00 };
+        internal static byte[] mzHeader = { 0x4D, 0x5A, 0x50, 0x00, 0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
+        internal static byte[] PADDING = { 0X7f };
+        internal static byte[] ENDING = { 0x00 };
         public static byte[] ACK = { 0x7E, 0x7F, 0x7E, 0x7F };
         internal static byte[] PERMIT = { 0x7E, 0x7F, 0x01, 0x01 };
         public static byte[] BANNED = { 0x7E, 0x7F, 0xFF, 0xFF };
@@ -39,7 +39,7 @@ namespace Frameset.Core.Security
                 byte[] encryptBytes = new byte[length];
                 binaryReader.Read(encryptBytes);
                 string key = GetSerialNo();
-                byte[] decryptBytes = CiperUtils.Decrypt(encryptBytes, Encoding.UTF8.GetBytes(key));
+                byte[] decryptBytes = CiperUtils.AesDecrypt(encryptBytes, Encoding.UTF8.GetBytes(key));
                 string decryptStr = Encoding.UTF8.GetString(decryptBytes);
                 string[] arr = decryptStr.Split(';');
                 binaryReader.Read(paddingByte);
@@ -88,7 +88,7 @@ namespace Frameset.Core.Security
             writer.Write(mzHeader);
             string serialNo = MachineUtils.GetSystemTag();
             LogUtils.Debug($"-- current machine Tag {serialNo}");
-            byte[] encryptBytes = CiperUtils.Encrypt(new string(serialNo + ";" + new DateTimeOffset(expireTime).ToUnixTimeMilliseconds()), Encoding.ASCII.GetBytes(GetSerialNo()));
+            byte[] encryptBytes = CiperUtils.AesEncrypt(new string(serialNo + ";" + new DateTimeOffset(expireTime).ToUnixTimeMilliseconds()), Encoding.ASCII.GetBytes(GetSerialNo()));
             writer.Write(IntToBytes(encryptBytes.Length));
             writer.Write(encryptBytes);
             writer.Write(PADDING);

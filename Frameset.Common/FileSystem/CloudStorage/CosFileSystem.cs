@@ -45,6 +45,17 @@ namespace Frameset.Common.FileSystem.CloudStorage
             throw new OperationFailedException("key " + resourcePath + " not found in bucket");
         }
 
+        public override bool Delete(string resourcePath)
+        {
+            if (Exist(resourcePath))
+            {
+                DeleteObjectResult result= server.DeleteObject(new DeleteObjectRequest(GetBucketName(), resourcePath));
+                return result.IsSuccessful();
+            }
+            return false;
+        }
+        
+
         internal override bool BucketExists(string bucketName)
         {
             return server.DoesBucketExist(new COSXML.Model.Bucket.DoesBucketExistRequest(bucketName));

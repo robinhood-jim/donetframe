@@ -137,44 +137,44 @@ namespace Frameset.Core.Sql
             Tuple<Type, FieldContent> leftEntityTuple = AliasColumn(leftColumn.Split('.'));
             Tuple<Type, FieldContent> rightEntityTuple = AliasColumn(rightColumn.Split('.'));
 
-            if (entityTypeMap.TryGetValue(leftEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple)
-                && entityTypeMap.TryGetValue(rightEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple1))
+            if (entityTypeMap.TryGetValue(leftEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _)
+                && entityTypeMap.TryGetValue(rightEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _))
             {
                 joins.Add(new TableJoin(leftEntityTuple.Item1, rightEntityTuple.Item1, leftEntityTuple.Item2, rightEntityTuple.Item2, joinType));
             }
             return this;
         }
 
-        public SqlBuilder InSubQuery(string column, SqlBuilder sqlBuilder)
+        public SqlBuilder InSubQuery(string column, SqlBuilder _sqlBuilder)
         {
             Tuple<Type, FieldContent> tuple = AliasColumn(column.Split('.'));
-            inSubQuerys.Add(Tuple.Create(tuple.Item1, Constants.SqlOperator.IN, tuple.Item2, sqlBuilder));
+            inSubQuerys.Add(Tuple.Create(tuple.Item1, Constants.SqlOperator.IN, tuple.Item2, _sqlBuilder));
             return this;
         }
-        public SqlBuilder NotInSubQuery(string column, SqlBuilder sqlBuilder)
+        public SqlBuilder NotInSubQuery(string column, SqlBuilder _sqlBuilder)
         {
             Tuple<Type, FieldContent> tuple = AliasColumn(column.Split('.'));
-            inSubQuerys.Add(Tuple.Create(tuple.Item1, Constants.SqlOperator.NOTIN, tuple.Item2, sqlBuilder));
+            inSubQuerys.Add(Tuple.Create(tuple.Item1, Constants.SqlOperator.NOTIN, tuple.Item2, _sqlBuilder));
             return this;
         }
-        public SqlBuilder Exists(SqlBuilder sqlBuilder)
+        public SqlBuilder Exists(SqlBuilder _sqlBuilder)
         {
-            subQuerys.Add(Tuple.Create(Constants.SqlOperator.EXISTS, sqlBuilder));
+            subQuerys.Add(Tuple.Create(Constants.SqlOperator.EXISTS, _sqlBuilder));
             return this;
         }
-        public SqlBuilder NotExists(SqlBuilder sqlBuilder)
+        public SqlBuilder NotExists(SqlBuilder _sqlBuilder)
         {
-            subQuerys.Add(Tuple.Create(Constants.SqlOperator.NOTEXISTS, sqlBuilder));
+            subQuerys.Add(Tuple.Create(Constants.SqlOperator.NOTEXISTS, _sqlBuilder));
             return this;
         }
-        public SqlBuilder Union(SqlBuilder sqlBuilder)
+        public SqlBuilder Union(SqlBuilder _sqlBuilder)
         {
-            subQuerys.Add(Tuple.Create(Constants.SqlOperator.UNION, sqlBuilder));
+            subQuerys.Add(Tuple.Create(Constants.SqlOperator.UNION, _sqlBuilder));
             return this;
         }
-        public SqlBuilder UnionAll(SqlBuilder sqlBuilder)
+        public SqlBuilder UnionAll(SqlBuilder _sqlBuilder)
         {
-            subQuerys.Add(Tuple.Create(Constants.SqlOperator.UNIONALL, sqlBuilder));
+            subQuerys.Add(Tuple.Create(Constants.SqlOperator.UNIONALL, _sqlBuilder));
             return this;
         }
         public SqlBuilder Filter(FilterCondition condition)
@@ -200,7 +200,7 @@ namespace Frameset.Core.Sql
                 }
                 else
                 {
-                    builder.Append(entry.Value.ToString());
+                    builder.Append(entry.Value);
                 }
             }
             if (defaultValue != null)
@@ -208,7 +208,7 @@ namespace Frameset.Core.Sql
                 builder.Append(" ELSE ").Append(defaultValue);
             }
             builder.Append(" END");
-            newColumns.Add(Tuple.Create(newColumnName, new string[] { builder.ToString() }));
+            newColumns.Add(Tuple.Create(newColumnName, new [] { builder.ToString() }));
             newColumnMap.TryAdd(newColumnName, 1);
             return this;
         }
@@ -286,7 +286,7 @@ namespace Frameset.Core.Sql
             sqlBuilder.Append(Constants.SQL_SELECT);
             foreach (Tuple<Type, FieldContent> field in selectFields)
             {
-                if (entityTypeMap.TryGetValue(field.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple) && entityAliasMap.TryGetValue(field.Item1, out string tabAlias))
+                if (entityTypeMap.TryGetValue(field.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _) && entityAliasMap.TryGetValue(field.Item1, out string tabAlias))
                 {
                     sqlBuilder.Append(tabAlias).Append('.').Append(field.Item2.FieldName).Append(Constants.SQL_AS);
                     if (columnAliasMap.TryGetValue(field.Item1, out Dictionary<string, string> aliasDict) && aliasDict.TryGetValue(field.Item2.PropertyName, out string aliasName))
@@ -330,7 +330,7 @@ namespace Frameset.Core.Sql
             {
                 foreach (TableJoin join in joins)
                 {
-                    if (entityTypeMap.TryGetValue(join.LeftClass, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple) && entityTypeMap.TryGetValue(join.RightClass, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple1))
+                    if (entityTypeMap.TryGetValue(join.LeftClass, out Tuple<EntityContent, Dictionary<string, FieldContent>> _) && entityTypeMap.TryGetValue(join.RightClass, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple1))
                     {
                         entityAliasMap.TryGetValue(join.LeftClass, out string leftAlias);
                         entityAliasMap.TryGetValue(join.RightClass, out string rightAlias);
@@ -353,7 +353,7 @@ namespace Frameset.Core.Sql
             {
                 foreach (Tuple<Type, Constants.SqlOperator, FieldContent, SqlBuilder> tuple in inSubQuerys)
                 {
-                    if (entityTypeMap.TryGetValue(tuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> entityTuple))
+                    if (entityTypeMap.TryGetValue(tuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _))
                     {
                         entityAliasMap.TryGetValue(tuple.Item1, out string tabAlias);
                         whereBuilder.Append(Constants.SQL_AND).Append(tabAlias).Append('.').Append(tuple.Item3.FieldName).Append(Constants.OperatorValue(tuple.Item2)).Append("(");
@@ -455,7 +455,7 @@ namespace Frameset.Core.Sql
                     }
                     else
                     {
-                        EntityContent entityContent = EntityReflectUtils.GetEntityInfo(selectColumnTuple.Item1);
+                        //EntityContent entityContent = EntityReflectUtils.GetEntityInfo(selectColumnTuple.Item1);
                         Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(selectColumnTuple.Item1);
                         fieldDict.TryGetValue(selParts[1], out FieldContent content);
                         Trace.Assert(content != null, "");

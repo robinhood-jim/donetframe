@@ -228,7 +228,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public FieldBuilder Increment(bool ifIncrement)
         {
-            content.Required = ifIncrement;
+            content.Required = !ifIncrement;
             content.IfIncrement = ifIncrement;
             return this;
         }

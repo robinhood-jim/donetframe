@@ -5,7 +5,7 @@ namespace Frameset.Common.FileSystem
     /// <summary>
     /// United Data File Access FileSystem Interface
     /// </summary>
-    public interface IFileSystem
+    public interface IFileSystem: IDisposable
     {
         /// <summary>
         /// Read CSV JSON 
@@ -63,5 +63,8 @@ namespace Frameset.Common.FileSystem
         Stream GetRawOutputStream(string resourcePath);
         void FinishWrite(Stream outputStream);
         void FinishWrite(Stream outputStream, string path);
+        bool Delete(string resourcePath);
+        bool CreateFile(string resourcePath);
+        List<string> List(string resourcePath);
     }
 }

@@ -60,6 +60,16 @@ namespace Frameset.Common.FileSystem.CloudStorage
             throw new OperationFailedException("key " + resourcePath + " not found in bucket");
         }
 
+        public override bool Delete(string resourcePath)
+        {
+            if (Exist(resourcePath))
+            {
+                var response=client.DeleteObjectAsync(GetBucketName(),resourcePath).GetAwaiter().GetResult();
+                return response.HttpStatusCode == HttpStatusCode.OK;
+            }
+            return false;
+        }
+
         internal override bool BucketExists(string bucketName)
         {
             Debug.Assert(client != null);

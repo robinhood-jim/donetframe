@@ -23,6 +23,7 @@ namespace Frameset.Core.Hardware
             string machineGuid = null;
             if (IsRunningOnWindows())
             {
+#pragma warning disable CA1416
                 RegistryKey registry = Registry.LocalMachine;
                 RegistryKey software = registry.OpenSubKey("Software");
                 object machineGuidObj = software.OpenSubKey("Microsoft").OpenSubKey("Cryptography").GetValue("MachineGuid");
@@ -30,6 +31,7 @@ namespace Frameset.Core.Hardware
                 {
                     machineGuid = machineGuidObj.ToString();
                 }
+#pragma warning restore CA1416
             }
             else if (IsRunningOnLinux())
             {
@@ -48,13 +50,13 @@ namespace Frameset.Core.Hardware
                 string output = CommandExecutor.ExcuteCommand(EXEC_DARWIN);
                 using (var reader = new StringReader(output))
                 {
-                    string lineStr = null;
+                    string lineStr ;
                     while ((lineStr = reader.ReadLine()) != null)
                     {
-                        int pos = lineStr.IndexOf("IOPlatformUUID");
+                        int pos = lineStr.IndexOf("IOPlatformUUID", StringComparison.Ordinal);
                         if (pos != -1)
                         {
-                            pos = lineStr.IndexOf("\" = \"");
+                            pos = lineStr.IndexOf("\" = \"", StringComparison.Ordinal);
                             machineGuid = lineStr.Substring(pos + 5, lineStr.Length - pos - 5).Trim();
                         }
                     }
@@ -114,12 +116,12 @@ namespace Frameset.Core.Hardware
         }
         public static string GetStorageSerial()
         {
-            string serialNo = string.Empty;
+            string serialNo ;
             if (IsRunningOnWindows())
             {
                 serialNo = CommandExecutor.ExecuteCommandReturnAfterRow(["powershell.exe", "Get-WmiObject", "-Class", "Win32_DiskDrive", "|", "Select-Object", "SerialNumber,DeviceId"], 2);
                 using StringReader reader = new StringReader(serialNo);
-                string lineStr = null;
+                string lineStr ;
                 while ((lineStr = reader.ReadLine()) != null)
                 {
                     string[] arr = lineStr.Split(' ');

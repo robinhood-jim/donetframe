@@ -9,7 +9,7 @@ using System.Diagnostics;
 
 namespace Frameset.Common.Data.Api
 {
-    public static partial class DataFileExporter
+    public static class DataFileExporter
     {
         public static AbstractDataWriter<T> GetDataWriter<T>(this IFileSystem fileSystem, string processPath, Action<AbstractDataWriter<T>>? initFunc = null)
         {
@@ -24,9 +24,10 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.AVRO => new AvroDataWriter<T>(fileSystem, processPath),
                 Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(fileSystem, processPath, initFunc),
                 Constants.FileFormatType.ORC => new OrcDataWriter<T>(fileSystem, processPath),
-                Constants.FileFormatType.XLSX => throw new NotImplementedException(),
+                Constants.FileFormatType.XLSX => new XlsxWriter<T>(fileSystem, processPath),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
-                Constants.FileFormatType.PROTOBUF => new ProtoBufWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.PROTO => new ProtoBufWriter<T>(fileSystem, processPath),
+                Constants.FileFormatType.ARROW => new ArrowWrite<T>(fileSystem, processPath),
                 _ => throw new NotImplementedException()
             };
 
@@ -51,9 +52,10 @@ namespace Frameset.Common.Data.Api
                 Constants.FileFormatType.AVRO => new AvroDataWriter<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.PARQUET => new ParquetDateWriter<T>(collectionDefine, fileSystem, initFunc),
                 Constants.FileFormatType.ORC => new OrcDataWriter<T>(collectionDefine, fileSystem),
-                Constants.FileFormatType.XLSX => throw new NotImplementedException(),
+                Constants.FileFormatType.XLSX => new XlsxWriter<T>(collectionDefine, fileSystem),
                 Constants.FileFormatType.ARFF => throw new NotImplementedException(),
-                Constants.FileFormatType.PROTOBUF => throw new NotImplementedException(),
+                Constants.FileFormatType.PROTO => new ProtoBufWriter<T>(collectionDefine, fileSystem),
+                Constants.FileFormatType.ARROW => new ArrowWrite<T>(collectionDefine, fileSystem),
                 _ => throw new NotImplementedException()
             };
         }

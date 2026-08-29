@@ -92,19 +92,19 @@ namespace Frameset.Core.Dao.Utils
                 for (int i = 0; i < Conditions.Count; i++)
                 {
                     FilterCondition condition = Conditions[i];
-                    if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase) && containParenthesis)
+                    if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase))
                     {
-                        builder.Append("(");
+                        builder.Append('(');
                         containParenthesis = true;
                     }
                     builder.Append(condition.GeneratePreparedSql(valueMap, duplicatedMap, entityAliasMap));
                     if (string.Equals(Constants.LINK_OR, condition.LinkOper, StringComparison.OrdinalIgnoreCase) && containParenthesis)
                     {
-                        builder.Append(")");
+                        builder.Append(')');
                     }
                     if (i < Conditions.Count - 1)
                     {
-                        builder.Append(" ").Append(LinkOper).Append(" ");
+                        builder.Append(' ').Append(LinkOper).Append(' ');
                     }
                 }
                 return builder.ToString();
@@ -234,11 +234,17 @@ namespace Frameset.Core.Dao.Utils
             FilterCondition condition = action.Invoke(this);
             return condition;
         }
-        public SingleFilterConditionBuilder Or(Action<SingleFilterConditionBuilder> action)
+        public SingleFilterConditionBuilder AddOr(Action<FilterCondition> action)
         {
-            action.Invoke(this);
+            FilterCondition condition = new FilterCondition()
+            {
+                LinkOper = Constants.LINK_OR
+            };
+            filterConditions.Add(condition);
+            action.Invoke(condition);
             return this;
         }
+        
         public FilterCondition Or(List<FilterCondition> conditions)
         {
             return new FilterCondition()
@@ -319,13 +325,24 @@ namespace Frameset.Core.Dao.Utils
             filterConditions.Add(condition);
             return this;
         }
-        public SingleFilterConditionBuilder And(List<FilterCondition> conditions)
+        public SingleFilterConditionBuilder AddAnd(List<FilterCondition> conditions)
         {
             filterConditions.Add(new FilterCondition()
             {
                 LinkOper = Constants.LINK_AND,
                 Conditions = conditions
             });
+            return this;
+        }
+
+        public SingleFilterConditionBuilder AddAnd(Action<FilterCondition> action)
+        {
+            FilterCondition condition = new FilterCondition()
+            {
+                LinkOper = Constants.LINK_AND
+            };
+            filterConditions.Add(condition);
+            action.Invoke(condition);
             return this;
         }
         public SingleFilterConditionBuilder SelectParts(string selectParts)

@@ -10,19 +10,19 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
+using Frameset.Core.Model;
+using Frameset.Core.Reflect;
 
 
 namespace Frameset.Core.Dao.Meta
 {
-    public abstract class AbstractSqlDialect
+    public abstract class AbstractSqlDialect : ISqlDialect
     {
         internal static string ORDERSTR = "order by";
-        internal AbstractSqlDialect()
-        {
-
-        }
+        
         public virtual string GetDecimalScript(int scale, int precise)
         {
 
@@ -37,18 +37,29 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        public virtual string GenerateSequenceQuery(string sequenceName)
+        public virtual string GetSqlCurrentSequenceValue(string sequenceName)
         {
             throw new NotSupportedException();
         }
-        
+        public virtual string GetSqlNextSequenceValue(string sequenceName)
+        {
+            throw new NotSupportedException();
+        }
+
         public virtual string GenerateFieldDefine(FieldContent content)
         {
             StringBuilder builder = new();
-            builder.Append(content.FieldName).Append(" ").Append(GetFieldDefineScript(content));
+            builder.Append(content.FieldName).Append(' ').Append(GetFieldDefineScript(content));
             if (content.IfIncrement)
             {
                 builder.Append(AppendAutoIncrement());
+            }
+            if (content.IfPrimary)
+            {
+                builder.Append(" NOT NULL PRIMARY KEY");
+            }else if (content.Required)
+            {
+                builder.Append((" NOT NULL"));
             }
             return builder.ToString();
         }
@@ -56,8 +67,8 @@ namespace Frameset.Core.Dao.Meta
         public virtual string GenerateCountSql(string inputSql)
         {
             string plainSql = inputSql.Replace("\\n", "").Replace("\\r", "").Trim().ToLower();
-            int orderPos = plainSql.LastIndexOf(ORDERSTR);
-            int fromPos = plainSql.IndexOf(" from ");
+            int orderPos = plainSql.LastIndexOf(ORDERSTR, StringComparison.Ordinal);
+            int fromPos = plainSql.IndexOf(" from ", StringComparison.Ordinal);
             if (orderPos == -1)
             {
                 orderPos = plainSql.Length;
@@ -73,7 +84,8 @@ namespace Frameset.Core.Dao.Meta
         }
         public virtual string getVarcharFormat(FieldContent content)
         {
-            return new StringBuilder("VARCHAR(").Append(content.Length).Append(")").ToString();
+            int length = content.Length == 0 ? 32 : content.Length;
+            return new StringBuilder("VARCHAR(").Append(length).Append(")").ToString();
         }
         public virtual string GetCharFormat(int length)
         {
@@ -200,16 +212,67 @@ namespace Frameset.Core.Dao.Meta
             {
                 builder.Append(" ").Append(" PRIMARY KEY");
             }
-
-            builder.Append(",");
+            //builder.Append(",");
             return builder.ToString();
         }
+
+        protected int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys,Func<DbDataAdapter,IList<FieldContent>,int> addParameterFunc,int batchSize=1000)
+        {
+            CheckTypeExists(typeof(T));
+            EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(T));
+            DataTable table=new DataTable(entityContent.GetTableName());
+            IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(typeof(T));
+            Dictionary<string, MethodParam> methodParams = AnnotationUtils.ReflectObject(typeof(T));
+            foreach (var entity in entitys)
+            {
+                DataRow row = table.NewRow();
+                foreach(FieldContent content in fieldContents)
+                {
+                    if (methodParams.TryGetValue(content.PropertyName, out MethodParam param))
+                    {
+                        object value = param.GetMethod.Invoke(entity,[]);
+                        if (value != null)
+                        {
+                            row[content.FieldName] = value;
+                        }
+                        else
+                        {
+                            row[content.FieldName] = DBNull.Value;
+                        }
+                    }
+                }
+            }
+            DbDataAdapter dataAdapter = GetDataAdapter();
+            //dataAdapter.Fill(table);
+            
+            String insertBatchSql = SqlUtils.GetInsertBactchSql(dao, typeof(T));
+            dataAdapter.InsertCommand = GetDbCommand(dbConnection, insertBatchSql);
+            addParameterFunc.Invoke(dataAdapter,fieldContents);
+            dataAdapter.InsertCommand.UpdatedRowSource = UpdateRowSource.None;
+            dataAdapter.UpdateBatchSize = batchSize;
+            return dataAdapter.Update(table);
+        }
+       
+
+        public abstract DbDataAdapter GetDataAdapter();
+
         public abstract DbConnection GetDbConnection(string connectStr);
         public abstract DbCommand GetDbCommand(DbConnection connection, string sql);
+        public abstract DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction);
 
         public abstract DbCommand GetDbCommand(DbConnection connection);
         public abstract DbParameter WrapParameter(int pos, object value);
         public abstract DbParameter WrapParameter(string column, object value);
+        public abstract Constants.DbType GetDbType();
+        public virtual int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys)
+        {
+            throw new NotImplementedException();
+        }
+
+        public virtual string GetTruncateTableStatement(string tableName)
+        {
+            return "TRUNCATE TABLE" + tableName;
+        }
         public virtual bool SupportAutoIncrement()
         {
             return true;
@@ -228,7 +291,7 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException();
         }
-        internal String GetNoPageSql(string sql, PageQuery pageQuery)
+        internal string GetNoPageSql(string sql, PageQuery pageQuery)
         {
 
             StringBuilder builder = new StringBuilder(sql);
@@ -282,7 +345,7 @@ namespace Frameset.Core.Dao.Meta
             }
             return pagingSelect;
         }
-       
+
         public static int GetDefaultPort(string dbType)
         {
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
@@ -360,7 +423,11 @@ namespace Frameset.Core.Dao.Meta
                     row[content.FieldName] = DBNull.Value;
                 }
             }
-
         }
+        protected void CheckTypeExists(Type entityType)
+        {
+            Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)), "Type must sub class of BaseEntity");
+        }
+        
     }
 }

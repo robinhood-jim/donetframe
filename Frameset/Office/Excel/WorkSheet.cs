@@ -393,7 +393,7 @@ namespace Frameset.Office.Excel
         }
         public Fill GetDefaultFill()
         {
-            return Fill.BLACK;
+            return Fill.NONE;
         }
 
         internal void SetDefaultFill(Fill defaultFill)

@@ -1,8 +1,8 @@
 ﻿using ApacheOrcDotNet;
 using Frameset.Common.FileSystem;
-using Frameset.Common.Util;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
+using Frameset.Core.Scripts;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
 
@@ -16,13 +16,13 @@ namespace Frameset.Common.Data.Reader
         private IEnumerator<object> values = null!;
         public OrcIterator(DataCollectionDefine define) : base(define)
         {
-            Identifier = Constants.FileFormatType.AVRO;
+            Identifier = Constants.FileFormatType.ORC;
             useRawStream = true;
             Initalize(define.Path);
         }
         public OrcIterator(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
-            Identifier = Constants.FileFormatType.AVRO;
+            Identifier = Constants.FileFormatType.ORC;
             useRawStream = true;
             Initalize(define.Path);
         }

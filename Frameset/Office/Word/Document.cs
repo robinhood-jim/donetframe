@@ -18,7 +18,7 @@ namespace Frameset.Office.Word
         private readonly List<string> headerPaths = [];
         private readonly List<string> footerPaths = [];
         private readonly List<string> themePaths = [];
-        private readonly PrDefaultRpr defaultRpr = new PrDefaultRpr();
+        private readonly PrDefaultRpr defaultRpr = new ();
         private readonly List<LsdException> lsdExceptions = [];
         public Document(Stream inputStream)
         {
@@ -213,8 +213,16 @@ namespace Frameset.Office.Word
 
         public void Dispose()
         {
-
+            Dispose((true));
             GC.SuppressFinalize(this);
+        }
+
+        internal void Dispose(bool disposable)
+        {
+            if (disposable)
+            {
+                
+            }
         }
         public OpcPackage GetOpcPackage()
         {

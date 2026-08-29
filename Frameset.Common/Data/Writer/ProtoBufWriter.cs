@@ -9,18 +9,18 @@ namespace Frameset.Common.Data.Writer
 {
     public class ProtoBufWriter<T> : AbstractDataWriter<T>
     {
-        private DynamicMessage message=null!;
-        private MessageDefinition definition=null!;
+        private DynamicMessage message = null!;
+        private MessageDefinition definition = null!;
 
         public ProtoBufWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
-            Identifier = Constants.FileFormatType.PROTOBUF;
+            Identifier = Constants.FileFormatType.PROTO;
             Initalize();
         }
 
         public ProtoBufWriter(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
-            Identifier = Constants.FileFormatType.PROTOBUF;
+            Identifier = Constants.FileFormatType.PROTO;
             Initalize();
         }
 
@@ -34,7 +34,7 @@ namespace Frameset.Common.Data.Writer
                 builder.AddField("required", ProtobufUtils.GetTypeStr(columnMeta.ColumnType), columnMeta.ColumnCode, i + 1);
             }
             definition = builder.Build();
-            message = new DynamicMessage(definition);
+            message = new DynamicMessage(definition,MetaDefine.ColumnList);
 
         }
 

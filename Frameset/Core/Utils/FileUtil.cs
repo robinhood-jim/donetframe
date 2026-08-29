@@ -44,21 +44,24 @@ namespace Frameset.Core.Utils
             Assembly _assembly = Assembly.GetExecutingAssembly();
             return _assembly.GetManifestResourceStream(resourceName);
         }
-        public static FileMeta Parse(string resourcePath, char separator = '\\')
+        public static FileMeta Parse(string resourcePath, char? pathSepearatorStr = null)
         {
-            char fileSeparator = separator;
-            int pos = resourcePath.LastIndexOf(fileSeparator);
+            char pathSeparator = pathSepearatorStr != null ? pathSepearatorStr.Value : Path.DirectorySeparatorChar;
+            int pos = resourcePath.LastIndexOf(pathSeparator);
             if (pos == -1)
             {
-                fileSeparator = '/';
-                pos = resourcePath.LastIndexOf(fileSeparator);
+                pathSeparator = '/';
+                pos = resourcePath.LastIndexOf(pathSeparator);
             }
             FileMeta meta = new FileMeta();
-            string fileName;
+            string fileName = string.Empty;
             string filePath;
             if (pos != -1)
             {
-                fileName = resourcePath.Substring(pos + 1);
+                if (pos < resourcePath.Length - 1)
+                {
+                    fileName = resourcePath.Substring(pos + 1);
+                }
                 filePath = resourcePath.Substring(0, pos);
             }
             else
@@ -67,32 +70,35 @@ namespace Frameset.Core.Utils
                 fileName = resourcePath;
             }
             meta.Path = filePath;
-
-            string[] namePart = fileName.Split(".");
-            int suffixPos = 0;
-            for (int i = namePart.Length - 1; i > 0; i--)
+            if (!string.IsNullOrWhiteSpace(fileName))
             {
-                if (CompressType.NONE.Equals(meta.CompressCodec))
+                string[] namePart = fileName.Split(".");
+                int suffixPos = 0;
+                for (int i = namePart.Length - 1; i > 0; i--)
                 {
-                    int pos1 = suffix.IndexOf(namePart[i].ToLower());
-                    if (pos1 != -1)
+                    if (CompressType.NONE.Equals(meta.CompressCodec))
                     {
-                        meta.CompressCodec = compressTypes[pos1];
-                        continue;
+                        int pos1 = suffix.IndexOf(namePart[i].ToLower());
+                        if (pos1 != -1)
+                        {
+                            meta.CompressCodec = compressTypes[pos1];
+                            continue;
+                        }
+                    }
+                    string contentType;
+                    contentTypeMap.TryGetValue(namePart[i].ToLower(), out contentType);
+                    if (!contentType.IsNullOrEmpty())
+                    {
+                        meta.FileFormat = namePart[i].ToLower();
+                        meta.ContentType = contentType;
+                        suffixPos = i;
+                        break;
                     }
                 }
-                string contentType;
-                contentTypeMap.TryGetValue(namePart[i].ToLower(), out contentType);
-                if (!contentType.IsNullOrEmpty())
-                {
-                    meta.FileFormat = namePart[i].ToLower();
-                    meta.ContentType = contentType;
-                    suffixPos = i;
-                    break;
-                }
+
+                meta.FileName = string.Join('.', namePart.Take(suffixPos));
+                meta.FullName = string.Join('.', namePart);
             }
-            meta.FileName = string.Join('.', namePart.Take(suffixPos));
-            meta.FullName = string.Join('.', namePart);
             return meta;
 
         }

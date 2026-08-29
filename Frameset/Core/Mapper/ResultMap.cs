@@ -8,7 +8,7 @@ namespace Frameset.Core.Mapper
     {
         public ResultMap(string modelType)
         {
-            int pos = modelType.IndexOf(".");
+            int pos = modelType.IndexOf('.');
             if (pos != -1)
             {
                 this.ModelType = Assembly.Load(modelType.Substring(0, pos)).GetType(modelType);
@@ -21,7 +21,7 @@ namespace Frameset.Core.Mapper
         public Dictionary<string, string> MappingColumns
         {
             get; internal set;
-        } = new Dictionary<string, string>();
+        } = [];
 
     }
 }

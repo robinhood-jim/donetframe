@@ -59,7 +59,7 @@ namespace Frameset.Common.Data.Writer
                 if (useDictOutput)
                 {
                     Dictionary<string, object> valueMap = value as Dictionary<string, object>;
-                    object retValue = null;
+                    object? retValue = null;
                     valueMap?.TryGetValue(meta.ColumnCode, out retValue);
                     contents.Add(GetOutputString(meta, retValue));
                 }
@@ -68,7 +68,7 @@ namespace Frameset.Common.Data.Writer
                     methodMap.TryGetValue(meta.ColumnCode, out MethodParam? param);
                     if (param != null)
                     {
-                        object retValue = param?.GetMethod.Invoke(value, null);
+                        object? retValue = param?.GetMethod.Invoke(value, null);
                         contents.Add(GetOutputString(meta, retValue));
                     }
                     else

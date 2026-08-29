@@ -11,15 +11,25 @@ namespace Frameset.Common.Streaming.Consumer
     {
         private IConsumer<string, byte[]> consumer;
         private readonly string groupId = null!;
-        private readonly string? brokerUrl;
+        private readonly string brokerUrl;
 
         private readonly string queueName;
         public KafkaConsumer(DataCollectionDefine define) : base(define)
         {
-            define.ResourceConfig.TryGetValue(ResourceConstants.KAFKACONSUMERGROUPID, out groupId);
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.KAFKACONSUMERGROUPID, out string? groupIdStr))
+            {
+                groupId = groupIdStr;
+            }
             Trace.Assert(groupId.IsNullOrEmpty(), "groupId missing");
-            define.ResourceConfig.TryGetValue(ResourceConstants.KAFKABROKERURL, out brokerUrl);
-            define.ResourceConfig.TryGetValue(ResourceConstants.KAFKAQUEUENAME, out queueName);
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.KAFKABROKERURL, out string? brokerUrlStr))
+            {
+                brokerUrl = brokerUrlStr;
+            }
+
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.KAFKAQUEUENAME, out string? queueNameStr))
+            {
+                queueName = queueNameStr;
+            }
             Trace.Assert(!brokerUrl.IsNullOrEmpty(), " broker url must not be null");
             Trace.Assert(!string.IsNullOrWhiteSpace(queueName), "must provide queueName");
             var consumerConfig = new ConsumerConfig

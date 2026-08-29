@@ -32,6 +32,16 @@ namespace Frameset.Common.FileSystem.CloudStorage
             return -1;
         }
 
+        public override bool Delete(string resourcePath)
+        {
+            if (Exist(resourcePath))
+            {
+                var result = ossClient.DeleteObject(GetBucketName(), resourcePath);
+                return result.HttpStatusCode == HttpStatusCode.OK;
+            }
+            return false;
+        }
+
         internal override bool BucketExists(string bucketName)
         {
             return ossClient.DoesBucketExist(bucketName);
@@ -40,7 +50,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         internal override Stream GetObject(string bucketName, string objectName)
         {
             OssObject obj = ossClient.GetObject(bucketName, objectName);
-            if (obj.HttpStatusCode == System.Net.HttpStatusCode.OK)
+            if (obj.HttpStatusCode == HttpStatusCode.OK)
             {
                 return obj.ResponseStream;
             }

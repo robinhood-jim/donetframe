@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Common;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using Frameset.Core.Model;
 
 namespace Frametest.Models
@@ -9,7 +10,11 @@ namespace Frametest.Models
         {
             get; set;
         }
-        public DateTime CreateTm
+        public DateTime? CreateTm
+        {
+            get; set;
+        }
+        public DateTime? ModifyTm
         {
             get; set;
         }
@@ -17,6 +22,7 @@ namespace Frametest.Models
         {
             get; set;
         }
+        [LogicColumn]
         public string Status
         {
             get; set;
