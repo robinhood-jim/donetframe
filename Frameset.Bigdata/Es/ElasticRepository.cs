@@ -14,7 +14,7 @@ using System.Diagnostics;
 
 namespace Frameset.Bigdata.Es
 {
-    public class ElasticRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity
+    public class ElasticRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity where P : notnull
     {
         protected ElasticsearchClient client;
         public ElasticRepository(DataCollectionDefine define) : base(define)
@@ -23,7 +23,7 @@ namespace Frameset.Bigdata.Es
             define.ResourceConfig.TryGetValue(ResourceConstants.ELASTICENDPOINTS, out string? endpoints);
 
             Trace.Assert(!endpoints.IsNullOrEmpty(), "");
-            var nodes = endpoints?.Split('.').AsEnumerable<string>().Select(x => new Uri(x)).ToList();
+            List<Uri>? nodes = endpoints?.Split('.').AsEnumerable<string>().Select(x => new Uri(x)).ToList();
 
             var pool = new StaticNodePool(nodes);
             var settings = new ElasticsearchClientSettings(pool);
@@ -87,10 +87,10 @@ namespace Frameset.Bigdata.Es
         {
             return Type.GetTypeCode(pk.GetType()) switch
             {
-                TypeCode.Int32 => FieldValue.Long(long.Parse(pk.ToString())),
-                TypeCode.Int64 => FieldValue.Long(long.Parse(pk.ToString())),
+                TypeCode.Int32 => FieldValue.Long(Convert.ToInt64(pk.ToString())),
+                TypeCode.Int64 => FieldValue.Long(Convert.ToInt64(pk.ToString())),
                 TypeCode.Boolean => FieldValue.Boolean(string.Equals(Constants.TRUEVALUE, pk.ToString(), StringComparison.OrdinalIgnoreCase)),
-                TypeCode.Double => FieldValue.Double(double.Parse(pk.ToString())),
+                TypeCode.Double => FieldValue.Double(Convert.ToDouble(pk.ToString())),
                 _ => FieldValue.String(pk.ToString())
             };
         }
@@ -99,11 +99,11 @@ namespace Frameset.Bigdata.Es
             Trace.Assert(!string.IsNullOrWhiteSpace(input.ToString()), "");
             return Type.GetTypeCode(input.GetType()) switch
             {
-                TypeCode.Int32 => new Number(int.Parse(input.ToString())),
-                TypeCode.Int64 => new Number(long.Parse(input.ToString())),
-                TypeCode.Double => new Number(double.Parse(input.ToString())),
-                TypeCode.Decimal => new Number(double.Parse(input.ToString())),
-                _ => new Number(int.Parse(input.ToString()))
+                TypeCode.Int32 => new Number(Convert.ToInt32(input.ToString())),
+                TypeCode.Int64 => new Number(Convert.ToInt64(input.ToString())),
+                TypeCode.Double => new Number(Convert.ToDouble(input.ToString())),
+                TypeCode.Decimal => new Number(Convert.ToDouble(input.ToString())),
+                _ => new Number(Convert.ToInt32(input.ToString()))
             };
 
         }
@@ -145,9 +145,9 @@ namespace Frameset.Bigdata.Es
                     }
                 }
                 );
-            if (response.IsSuccess())
+            if (response != null && response.IsSuccess())
             {
-                return response.Hits.ToList().Select(h => h.Source).ToList();
+                return response?.Hits.ToList().Select(h => h.Source).ToList();
             }
             else
             {
@@ -158,7 +158,6 @@ namespace Frameset.Bigdata.Es
         {
             if (query != null && !query.Parameters.IsNullOrEmpty())
             {
-                int currentParamCount = 0;
                 QueryDescriptor<V> descriptor = new QueryDescriptor<V>();
                 descriptor.Bool(b => ConstructQuery(b, query));
                 SearchRequest<V> request = new SearchRequest<V>();

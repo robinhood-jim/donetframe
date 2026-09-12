@@ -96,9 +96,14 @@ namespace Frameset.Common.Data.Reader
                     }
                     else if (jsonReader.TokenType == JsonToken.PropertyName)
                     {
-                        string propName = jsonReader.Value?.ToString();
+                        string? propName = jsonReader.Value?.ToString();
+
                         jsonReader.Read();
                         object? value = jsonReader.Value;
+                        if (string.IsNullOrWhiteSpace(propName))
+                        {
+                            continue;
+                        }
                         DataSetColumnMeta? meta;
                         metaMap.TryGetValue(propName, out meta);
                         if (meta != null && value != null)

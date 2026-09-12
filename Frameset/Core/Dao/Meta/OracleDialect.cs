@@ -1,4 +1,6 @@
-﻿using Frameset.Core.Dao.Utils;
+﻿using Frameset.Core.Common;
+using Frameset.Core.Dao.Utils;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Query;
 using Microsoft.IdentityModel.Tokens;
 using Oracle.ManagedDataAccess.Client;
@@ -7,8 +9,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
-using Frameset.Core.Common;
-using Frameset.Core.FileSystem;
 
 
 namespace Frameset.Core.Dao.Meta
@@ -23,7 +23,7 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotSupportedException("oracle not support increment");
         }
-        public override string getVarcharFormat(FieldContent content)
+        public override string GetVarcharFormat(FieldContent content)
         {
             return "VARCHAR2(" + content.Length + ")";
         }
@@ -76,7 +76,7 @@ namespace Frameset.Core.Dao.Meta
                 copy.DestinationSchemaName = schema;
                 copy.DestinationTableName = tableName;
 
-                var reader = new EnumerableDataReader<Dictionary<string,object>>(dao, connection, metas, schema,tableName, models);
+                var reader = new EnumerableDataReader<Dictionary<string, object>>(dao, connection, metas, schema, tableName, models);
                 copy.BatchSize = batchSize;
                 copy.WriteToServer(reader);
                 return 0;
@@ -91,7 +91,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return new OracleCommand(sql, (OracleConnection)connection);
         }
-        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
         {
             OracleCommand command = new OracleCommand(sql, (OracleConnection)connection);
             command.Transaction = (OracleTransaction)transaction;
@@ -159,14 +159,12 @@ namespace Frameset.Core.Dao.Meta
             if (!paramMap.IsNullOrEmpty())
             {
 
-                object tableSapce;
-                paramMap.TryGetValue("tablespace", out tableSapce);
+                paramMap.TryGetValue("tablespace", out object tableSapce);
                 if (tableSapce != null && !tableSapce.ToString().IsNullOrEmpty())
                 {
                     builder.Append(" TABLESPACE ").Append(tableSapce.ToString());
                 }
-                object storageMap;
-                paramMap.TryGetValue("storageConfig", out storageMap);
+                paramMap.TryGetValue("storageConfig", out object storageMap);
                 if (storageMap != null)
                 {
                     builder.Append(" storage (\n");

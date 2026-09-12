@@ -1,4 +1,4 @@
-﻿using FastMember;
+﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
 using Microsoft.Data.SqlClient;
@@ -9,7 +9,6 @@ using System.Data;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
-using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -69,9 +68,9 @@ namespace Frameset.Core.Dao.Meta
         {
             return new SqlCommand(sql, (SqlConnection)connection);
         }
-        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
         {
-            return new SqlCommand(sql, (SqlConnection)connection,(SqlTransaction)transaction);
+            return new SqlCommand(sql, (SqlConnection)connection, (SqlTransaction)transaction);
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {

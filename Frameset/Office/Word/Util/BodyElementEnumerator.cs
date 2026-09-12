@@ -92,7 +92,7 @@ namespace Frameset.Office.Word.Util
                         {
                             PictureData pictureData = new PictureData();
                             pictureData.Rid = r2.GetAttribute(0);
-                            Trace.Assert(!string.IsNullOrWhiteSpace(pictureData.Rid),"rid is null");
+                            Trace.Assert(!string.IsNullOrWhiteSpace(pictureData.Rid), "rid is null");
                             document.GetOpcPackage().RelationShipMap.TryGetValue(pictureData.Rid, out RelationShip relationShip);
                             pictureData.Path = relationShip?.Target;
                             pictureDatas.Add(pictureData);

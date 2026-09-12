@@ -1,18 +1,18 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Google.Protobuf;
 using Google.Protobuf.Reflection;
+using System.Diagnostics;
 using System.Reflection;
-using Frameset.Core.FileSystem;
-using SqlParser.Ast;
 
 namespace Frameset.Common.Protobuf.Utils;
 
 public class DynamicMessage : IMessage
 {
     private MessageDefinition definition;
-    private List<DataSetColumnMeta>? columnMetas ;
-    private ConstructorInfo constructorInfo = typeof(MessageDescriptor).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(DescriptorProto), typeof(FileDescriptor), typeof(int), typeof(GeneratedClrTypeInfo)]);
+    private List<DataSetColumnMeta>? columnMetas;
+    private readonly ConstructorInfo? constructorInfo = typeof(MessageDescriptor).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(DescriptorProto), typeof(FileDescriptor), typeof(int), typeof(GeneratedClrTypeInfo)]);
     public Dictionary<string, object> DataContent
     {
         get; set;
@@ -32,7 +32,8 @@ public class DynamicMessage : IMessage
     }
     private MessageDescriptor GetMessage()
     {
-        MessageDescriptor messageDescriptor = (MessageDescriptor)constructorInfo.Invoke([definition.descriptor, null, 0, null]);
+        MessageDescriptor? messageDescriptor = constructorInfo?.Invoke([definition.descriptor, null, 0, null]) as MessageDescriptor;
+        Trace.Assert(messageDescriptor != null, "");
         return messageDescriptor;
 
     }
@@ -98,11 +99,11 @@ public class DynamicMessage : IMessage
         {
             return;
         }
-        for (int i=0;i<definition.descriptor.Field.Count;i++)
+        for (int i = 0; i < definition.descriptor.Field.Count; i++)
         {
             FieldDescriptorProto proto = definition.descriptor.Field[i];
             DataSetColumnMeta? columnMeta = columnMetas?[i];
-            if (!ReadObject(input, proto,columnMeta))
+            if (!ReadObject(input, proto, columnMeta))
             {
                 break;
             }
@@ -112,11 +113,11 @@ public class DynamicMessage : IMessage
     public bool ReadFrom(CodedInputStream input)
     {
         DataContent.Clear();
-        for(int i=0;i<definition.descriptor.Field.Count;i++)
+        for (int i = 0; i < definition.descriptor.Field.Count; i++)
         {
             FieldDescriptorProto proto = definition.descriptor.Field[i];
             DataSetColumnMeta? columnMeta = columnMetas?[i];
-            if (!ReadObject(input, proto,columnMeta))
+            if (!ReadObject(input, proto, columnMeta))
             {
                 return false;
             }
@@ -126,13 +127,13 @@ public class DynamicMessage : IMessage
 
     public void WriteTo(CodedOutputStream output)
     {
-        for (int i=0;i<definition.descriptor.Field.Count;i++)
+        for (int i = 0; i < definition.descriptor.Field.Count; i++)
         {
             FieldDescriptorProto proto = definition.descriptor.Field[i];
             DataSetColumnMeta? columnMeta = columnMetas?[i];
             if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
             {
-                WriteObject(output, proto,columnMeta, value);
+                WriteObject(output, proto, columnMeta, value);
             }
             else
             {
@@ -194,7 +195,7 @@ public class DynamicMessage : IMessage
         }
     }
 
-    private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor,DataSetColumnMeta? columnMeta, object value)
+    private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor, DataSetColumnMeta? columnMeta, object value)
     {
         switch (fieldDescriptor.Type)
         {
@@ -209,8 +210,9 @@ public class DynamicMessage : IMessage
                 break;
             case FieldDescriptorProto.Types.Type.Int64:
             case FieldDescriptorProto.Types.Type.Sint64:
-                long? longval=null;
-                if(columnMeta!=null && Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType)){
+                long? longval = null;
+                if (columnMeta != null && Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType))
+                {
                     longval = WrapDateTime(value);
                 }
                 else
@@ -253,7 +255,7 @@ public class DynamicMessage : IMessage
                 break;
         }
     }
-    private bool ReadObject(CodedInputStream codedInput, FieldDescriptorProto fieldDescriptor,DataSetColumnMeta? columnMeta)
+    private bool ReadObject(CodedInputStream codedInput, FieldDescriptorProto fieldDescriptor, DataSetColumnMeta? columnMeta)
     {
         object value = null!;
         if (codedInput.IsAtEnd)
@@ -274,16 +276,14 @@ public class DynamicMessage : IMessage
                 value = codedInput.ReadInt64();
                 if (columnMeta != null && (Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType) || Constants.MetaType.DATE.Equals(columnMeta.ColumnType)))
                 {
-                    DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));//当地时区  
-                    value = startTime.AddMilliseconds((long)value);
+                    value = DateTimeOffset.FromUnixTimeMilliseconds((long)value).LocalDateTime;
                 }
                 break;
             case FieldDescriptorProto.Types.Type.Fixed64:
                 value = codedInput.ReadSFixed64();
                 if (columnMeta != null && (Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType) || Constants.MetaType.DATE.Equals(columnMeta.ColumnType)))
                 {
-                    DateTime startTime = TimeZone.CurrentTimeZone.ToLocalTime(new DateTime(1970, 1, 1));//当地时区  
-                    value = startTime.AddMilliseconds((long)value);
+                    value = DateTimeOffset.FromUnixTimeMilliseconds((long)value).LocalDateTime;
                 }
                 break;
             case FieldDescriptorProto.Types.Type.Fixed32:

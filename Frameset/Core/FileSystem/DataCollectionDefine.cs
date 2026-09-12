@@ -92,9 +92,9 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(new DataSetColumnMeta(columnName, columnType, defaultValue, required, dateFormat));
             ColumnNameMap.TryAdd(columnName, 1);
         }
-        public void AddColumnDefine(string columnName,string columnCode, Constants.MetaType columnType, object defaultValue=null, bool required=false, string dateFormat="yyyy-MM-dd")
+        public void AddColumnDefine(string columnName, string columnCode, Constants.MetaType columnType, object defaultValue = null, bool required = false, string dateFormat = "yyyy-MM-dd")
         {
-            ColumnList.Add(new DataSetColumnMeta(columnName,columnCode, columnType, defaultValue, required, dateFormat));
+            ColumnList.Add(new DataSetColumnMeta(columnName, columnCode, columnType, defaultValue, required, dateFormat));
             ColumnNameMap.TryAdd(columnName, 1);
         }
         public void AddColumnDefine(DataSetColumnMeta meta)
@@ -102,7 +102,7 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(meta);
             ColumnNameMap.TryAdd(meta.ColumnName, 1);
         }
-        
+
         public void AddNotNullColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue)
         {
             DataSetColumnMeta meta = new DataSetColumnMeta(columnName, columnType, defaultValue);
@@ -162,7 +162,7 @@ namespace Frameset.Core.FileSystem
 
         public DataCollectionBuilder(string columnName, string columnCode, Constants.MetaType columnType)
         {
-            define.AddColumnDefine(columnName,columnCode,columnType);
+            define.AddColumnDefine(columnName, columnCode, columnType);
         }
         public DataCollectionBuilder AddColumnDefine(string columnName, Constants.MetaType columnType, bool flushOut)
         {
@@ -330,7 +330,7 @@ namespace Frameset.Core.FileSystem
             this.Required = required;
             this.DateFormat = dateFormat;
         }
-        public DataSetColumnMeta(string columnName,string columnCode, Constants.MetaType columnType, object defaultNullValue, bool required, string dateFormat) : this(columnName, columnType, defaultNullValue)
+        public DataSetColumnMeta(string columnName, string columnCode, Constants.MetaType columnType, object defaultNullValue, bool required, string dateFormat) : this(columnName, columnType, defaultNullValue)
         {
             this.Required = required;
             this.DateFormat = dateFormat;

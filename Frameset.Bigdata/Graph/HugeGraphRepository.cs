@@ -4,17 +4,19 @@ using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Model;
+using Frameset.Core.Utils;
 using Gremlin.Net.Driver;
 using Gremlin.Net.Driver.Remote;
 using Gremlin.Net.Process.Traversal;
 using Gremlin.Net.Structure;
 using Microsoft.IdentityModel.Tokens;
+using System.Text;
 using static Gremlin.Net.Process.Traversal.AnonymousTraversalSource;
 using static Gremlin.Net.Process.Traversal.P;
 
 namespace Frameset.Bigdata.Graph
 {
-    public class GremlinGraphRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity
+    public class HugeGraphRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity where P : notnull
     {
         GremlinClient client;
         string HostName = "localhost";
@@ -23,7 +25,7 @@ namespace Frameset.Bigdata.Graph
         string? UserName;
         string? Passwd;
         GraphTraversalSource g;
-        public GremlinGraphRepository(DataCollectionDefine collectionDefine) : base(collectionDefine)
+        public HugeGraphRepository(DataCollectionDefine collectionDefine) : base(collectionDefine)
         {
             collectionDefine.ResourceConfig.TryGetValue(ResourceConstants.JANUSHOST, out string? HostNameStr);
             collectionDefine.ResourceConfig.TryGetValue(ResourceConstants.JANUSPORT, out string? portStr);
@@ -52,8 +54,8 @@ namespace Frameset.Bigdata.Graph
                 client = new GremlinClient(new GremlinServer(HostName, port, enableSsl, UserName, Passwd));
             }
             g = Traversal().With(new DriverRemoteConnection(client));
-
         }
+
 
         public IList<V> GetByProperty(string propertyName, string queryValue, string ValueField)
         {
@@ -61,6 +63,69 @@ namespace Frameset.Bigdata.Graph
             var values = g.V().HasLabel(content.GetTableName()).Has(propertyName, queryValue).Values<T>(ValueField);
 
             return values.Dedup().Limit<V>(Scope.Local, Convert.ToInt64("1000")).ToList();
+        }
+
+        public bool ExecuteScript(string script)
+        {
+            try
+            {
+                client.SubmitAsync<dynamic>(script);
+                return true;
+            }
+            catch (Exception ex)
+            {
+                LogUtils.Error(ex.Message);
+                return false;
+            }
+
+        }
+
+        public bool CreateSchema()
+        {
+            String pkName = fieldContents.Where(x => x.IfPrimary).First().FieldName;
+
+            StringBuilder builder = new("schema=graph.schema();\\n");
+            StringBuilder fieldNames = new();
+            foreach (FieldContent meta in fieldContents)
+            {
+                builder.Append("schema.propertyKey(").Append("\"").Append(meta.FieldName).Append("\")");
+                fieldNames.Append("\"").Append(meta.FieldName).Append("\",");
+                switch (meta.DataType)
+                {
+                    case Constants.MetaType.CHAR:
+                    case Constants.MetaType.CLOB:
+                    case Constants.MetaType.STRING:
+                        builder.Append(".asString()");
+                        break;
+                    case Constants.MetaType.DATE:
+                    case Constants.MetaType.TIMESTAMP:
+                        builder.Append(".asDate()");
+                        break;
+                    case Constants.MetaType.LONG:
+                        builder.Append(".asLong()");
+                        break;
+                    case Constants.MetaType.FLOAT:
+                        builder.Append(".asFloat()");
+                        break;
+                    case Constants.MetaType.DOUBLE:
+                        builder.Append(".asDouble()");
+                        break;
+                    case Constants.MetaType.BOOLEAN:
+                        builder.Append(".asBoolean()");
+                        break;
+                    default:
+                        builder.Append(".asString()");
+                        break;
+                }
+
+                builder.Append(".ifNotExists().create();\\n");
+            }
+
+            fieldNames.Remove(fieldNames.Length - 1, 1);
+            builder.Append("schmea.vertexLabel(\"").Append(content.TableName).Append("\")")
+                .Append(".properties(\"").Append(fieldNames).Append(")").Append(".primaryKeys(\"").Append(pkName)
+                .Append("\").ifNotExist().create()");
+            return ExecuteScript(builder.ToString());
         }
         public List<Edge> GetEdgeFromVertex(string verticesId, List<string> edgeLabelList)
         {
@@ -71,7 +136,7 @@ namespace Frameset.Bigdata.Graph
             while (traveler.HasNext())
             {
                 Edge? edge = traveler.Next();
-                if (edge == null || addEdgeids.Contains(edge.Id.ToString()))
+                if (edge == null || addEdgeids.Contains(edge.Id?.ToString()))
                 {
                     continue;
                 }
@@ -82,7 +147,7 @@ namespace Frameset.Bigdata.Graph
                     continue;
                 }
 
-                if (edgeLabelList.Contains(target.ToString()) && edgeLabelList.Contains(source.ToString()))
+                if (edgeLabelList.Contains(target?.ToString()) && edgeLabelList.Contains(source?.ToString()))
                 {
                     addEdgeids.Add(edge.Id.ToString());
                     returnEdges.Add(edge);
@@ -109,13 +174,16 @@ namespace Frameset.Bigdata.Graph
             List<RelationContent> relationContents = [];
             while (realtions.HasNext())
             {
-                Vertex target = realtions.Next();
-                RelationContent content = new RelationContent()
+                Vertex? target = realtions.Next();
+                if (target != null)
                 {
-                    Id = target.Id.ToString(),
-                    Properties = target.Properties
-                };
-                relationContents.Add(content);
+                    RelationContent content = new RelationContent()
+                    {
+                        Id = target?.Id.ToString(),
+                        Properties = target?.Properties
+                    };
+                    relationContents.Add(content);
+                }
             }
             return relationContents;
         }
@@ -144,8 +212,6 @@ namespace Frameset.Bigdata.Graph
                 throw new OperationFailedException("found multiplex records");
             }
         }
-
-
         public override int RemoveEntity(IList<P> pks)
         {
             foreach (P pk in pks)
@@ -198,7 +264,6 @@ namespace Frameset.Bigdata.Graph
                 {
                     throw new OperationFailedException("found multiplex records");
                 }
-
             }
             else
             {

@@ -1,15 +1,15 @@
-﻿using System;
-using System.Collections.Generic;
-using Flee.PublicTypes;
+﻿using Flee.PublicTypes;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
+using System;
+using System.Collections.Generic;
 
 namespace Frameset.Core.Scripts;
 
 public class FleeScriptUtils
 {
-    public static IDynamicExpression Compile(IList<DataSetColumnMeta> colmetas,string expression,Type[] addPackages,out ExpressionContext context)
+    public static IDynamicExpression Compile(IList<DataSetColumnMeta> colmetas, string expression, Type[] addPackages, out ExpressionContext context)
     {
         context = new ExpressionContext();
         foreach (DataSetColumnMeta columnMeta in colmetas)
@@ -27,7 +27,7 @@ public class FleeScriptUtils
         return context.CompileDynamic(expression);
     }
 
-    public static IDynamicExpression Compile<T>(string expression, Type[] addPackages, out ExpressionContext context,string objectParameter="o")
+    public static IDynamicExpression Compile<T>(string expression, Type[] addPackages, out ExpressionContext context, string objectParameter = "o")
     {
         Type modelType = typeof(T);
         context = new ExpressionContext();
@@ -43,7 +43,7 @@ public class FleeScriptUtils
         return context.CompileDynamic(expression);
     }
 
-    public static object EvalDict(IList<DataSetColumnMeta> colmetas,Dictionary<string, object> input, ExpressionContext context,
+    public static object EvalDict(IList<DataSetColumnMeta> colmetas, Dictionary<string, object> input, ExpressionContext context,
         IDynamicExpression expression)
     {
         foreach (DataSetColumnMeta columnMeta in colmetas)
@@ -82,5 +82,5 @@ public class FleeScriptUtils
             _ => string.Empty
         };
     }
-    
+
 }

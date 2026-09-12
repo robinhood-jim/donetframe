@@ -1,18 +1,10 @@
-﻿using Frameset.Core.Annotation;
-using Frameset.Core.Common;
-using Frameset.Core.Configuration;
+﻿using Frameset.Core.Common;
 using Frameset.Core.Context;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Hardware;
-using Frameset.Core.Mapper;
-using Frameset.Core.Repo;
-using Frameset.Core.Sql;
 using Frameset.Office.Excel.Util;
-using Frametest.FileSystem;
 using Frametest.Models;
-using Frametest.Office;
-using Frametest.Script;
 using Microsoft.Extensions.Configuration;
 using Serilog;
 
@@ -81,7 +73,7 @@ namespace Frametest.Test
             IDbContext context = new DbContext();
             DbContextFactory.Register(context);
             SysUser sysUser = context.GetById<SysUser, long>(1);
-            SingleFilterConditionBuilder conditionBuilder= SingleFilterConditionBuilder.NewBuilder<SysUser>();
+            SingleFilterConditionBuilder conditionBuilder = SingleFilterConditionBuilder.NewBuilder<SysUser>();
             conditionBuilder.AddOr(condition =>
             {
                 condition.Conditions.Add(conditionBuilder.Eq(nameof(SysUser.UserAccount), "13348675803"));
@@ -131,7 +123,7 @@ namespace Frametest.Test
                 ]
             };
             bool equals = model2.Equals(model4);
-            Dictionary<int, List<ServicesModel.Node>> dict = ServicesModel.Diff([model1,model2], [model3,model4]);
+            Dictionary<int, List<ServicesModel.Node>> dict = ServicesModel.Diff([model1, model2], [model3, model4]);
             Console.WriteLine(dict);
         }
         // private void TestJdbcOper()

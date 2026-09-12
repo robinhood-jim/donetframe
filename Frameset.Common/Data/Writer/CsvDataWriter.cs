@@ -58,7 +58,7 @@ namespace Frameset.Common.Data.Writer
             {
                 if (useDictOutput)
                 {
-                    Dictionary<string, object> valueMap = value as Dictionary<string, object>;
+                    Dictionary<string, object>? valueMap = value as Dictionary<string, object>;
                     object? retValue = null;
                     valueMap?.TryGetValue(meta.ColumnCode, out retValue);
                     contents.Add(GetOutputString(meta, retValue));

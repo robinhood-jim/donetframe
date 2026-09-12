@@ -18,7 +18,7 @@ namespace Frameset.Office.Word
         private readonly List<string> headerPaths = [];
         private readonly List<string> footerPaths = [];
         private readonly List<string> themePaths = [];
-        private readonly PrDefaultRpr defaultRpr = new ();
+        private readonly PrDefaultRpr defaultRpr = new();
         private readonly List<LsdException> lsdExceptions = [];
         public Document(Stream inputStream)
         {
@@ -221,7 +221,7 @@ namespace Frameset.Office.Word
         {
             if (disposable)
             {
-                
+
             }
         }
         public OpcPackage GetOpcPackage()

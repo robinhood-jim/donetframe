@@ -50,7 +50,7 @@ namespace Frameset.Common.Data.Utils
                 Schema schema = new Schema(fields, []);
                 return schema;
             }
-            return null;
+            throw new NotSupportedException("can not construct scheam");
         }
 
     }

@@ -1,11 +1,11 @@
-﻿using System.Collections.Generic;
-using System.Data.Common;
-using System.Text;
-using System.Threading;
-using Frameset.Core.Common;
+﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Query;
+using System.Collections.Generic;
+using System.Data.Common;
+using System.Text;
+using System.Threading;
 
 namespace Frameset.Core.Dao.Meta;
 
@@ -30,10 +30,10 @@ public interface ISqlDialect
     string GenerateFieldDefine(FieldContent content);
     string GenerateCountSql(string inputSql);
     string GeneratePageSql(string baseSql, PageQuery query);
-    string getVarcharFormat(FieldContent content);
+    string GetVarcharFormat(FieldContent content);
     string GetCharFormat(int length);
     string GetTimestampFormat(FieldContent content);
-    long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token,int batchSize = 10000);
+    long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000);
     long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName,
         List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token,
         int batchSize = 10000);

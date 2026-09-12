@@ -1,5 +1,4 @@
-﻿using System.Diagnostics;
-using Frameset.Common.FileSystem;
+﻿using Frameset.Common.FileSystem;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Office.Excel;
@@ -10,10 +9,10 @@ namespace Frameset.Common.Data.Writer
 {
     public class XlsxWriter<T> : AbstractDataWriter<T>
     {
-        private SingleWorkBook workBook=null!;
-        private ExcelSheetProp sheetProp=null!;
-        private SheetPropBuilder propBuilder=null!;
-        private WorkSheet workSheet=null!;
+        private SingleWorkBook workBook = null!;
+        private ExcelSheetProp sheetProp = null!;
+        private SheetPropBuilder propBuilder = null!;
+        private WorkSheet workSheet = null!;
 
         public XlsxWriter(DataCollectionDefine define, IFileSystem fileSystem) : base(define, fileSystem)
         {
@@ -57,7 +56,7 @@ namespace Frameset.Common.Data.Writer
         {
             if (useDictOutput)
             {
-                Dictionary<string, object> tmp = value as Dictionary<string, object>;
+                Dictionary<string, object>? tmp = value as Dictionary<string, object>;
                 workSheet.WriteRow(tmp);
             }
             else

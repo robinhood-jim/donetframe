@@ -40,13 +40,13 @@ namespace Frameset.Core.Dao
         {
             this.connectionStr = connectionStr;
         }
-        internal JdbcDao(string dbTypeStr, string connectionStr):this(connectionStr)
+        internal JdbcDao(string dbTypeStr, string connectionStr) : this(connectionStr)
         {
             this.dbTypeStr = dbTypeStr;
             this.dbType = Constants.DbTypeOf(dbTypeStr);
             this.dataMeta = DbDialectFactory.GetInstance(dbType);
         }
-        internal JdbcDao(string dbTypeStr, string schema, string connectionStr):this(dbTypeStr,connectionStr)
+        internal JdbcDao(string dbTypeStr, string schema, string connectionStr) : this(dbTypeStr, connectionStr)
         {
             this.schema = schema;
         }
@@ -70,13 +70,13 @@ namespace Frameset.Core.Dao
             this.dbTypeStr = this.dbType.ToString();
             dataMeta = sqlDialect;
         }
-        internal JdbcDao(ISqlDialect sqlDialect,string schema, string connectionStr):this(sqlDialect,connectionStr)
+        internal JdbcDao(ISqlDialect sqlDialect, string schema, string connectionStr) : this(sqlDialect, connectionStr)
         {
             this.schema = schema;
         }
-        
 
-        internal JdbcDao(ISqlDialect sqlDialect,string schema, string connectionStr, string logicColumn, object validValue,object invalidValue) : this(sqlDialect,schema, connectionStr)
+
+        internal JdbcDao(ISqlDialect sqlDialect, string schema, string connectionStr, string logicColumn, object validValue, object invalidValue) : this(sqlDialect, schema, connectionStr)
         {
             this.logicColumn = logicColumn;
             if (validValue != null)
@@ -122,7 +122,7 @@ namespace Frameset.Core.Dao
                 {
                     command.Parameters.AddRange(parameters.ToArray());
                 }
-                object ret=command.ExecuteScalar();
+                object ret = command.ExecuteScalar();
                 return ret == null ? -1 : (int)ret;
             }
             catch (Exception ex)
@@ -139,7 +139,7 @@ namespace Frameset.Core.Dao
                 {
                     command.Parameters.AddRange(parameters.ToArray());
                 }
-                object ret=command.ExecuteScalar();
+                object ret = command.ExecuteScalar();
                 return ret == null ? -1 : (long)ret;
             }
             catch (Exception ex)
@@ -267,7 +267,7 @@ namespace Frameset.Core.Dao
                             {
                                 if (!Convert.IsDBNull(reader[col]))
                                 {
-                                    param.SetMethod.Invoke(retObj,new[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
+                                    param.SetMethod.Invoke(retObj, new[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
                                 }
                             }
                         }
@@ -329,7 +329,7 @@ namespace Frameset.Core.Dao
             string pageSql = dataMeta.GeneratePageSql(querySql, query);
             Type retType = typeof(V);
             bool ifRetMap = false;
-            Dictionary<string, MethodParam> methodMap =[];
+            Dictionary<string, MethodParam> methodMap = [];
 
             if (retType.Equals(typeof(Dictionary<string, object>)))
             {
@@ -465,7 +465,7 @@ namespace Frameset.Core.Dao
                             object value = reader[col];
                             if (!Convert.IsDBNull(value))
                             {
-                                param.SetMethod.Invoke(entity,new object[] { ConvertUtil.ParseByType(param.ParamType, value) });
+                                param.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(param.ParamType, value) });
                             }
                         }
                     }
@@ -633,7 +633,7 @@ namespace Frameset.Core.Dao
                         {
                             if (!Convert.IsDBNull(reader[col]))
                             {
-                                ((MethodParam)null).SetMethod.Invoke(entity,[ConvertUtil.ParseByType(((MethodParam)null).ParamType, reader[col])]);
+                                ((MethodParam)null).SetMethod.Invoke(entity, [ConvertUtil.ParseByType(((MethodParam)null).ParamType, reader[col])]);
                             }
                         }
                     }
@@ -722,7 +722,7 @@ namespace Frameset.Core.Dao
             {
                 methodMap = AnnotationUtils.ReflectObject(retType);
             }
-            Trace.Assert(retType!=null,"");
+            Trace.Assert(retType != null, "");
 
             if (!paramMap.IsNullOrEmpty())
             {
@@ -756,7 +756,7 @@ namespace Frameset.Core.Dao
                     {
                         dict[reader.GetName(col)] = reader[col];
                     }
-                    else if (map!=null && map.MappingColumns.TryGetValue(name,out string keyVal) && !string.IsNullOrWhiteSpace(keyVal) && methodMap.TryGetValue(keyVal, out MethodParam param))
+                    else if (map != null && map.MappingColumns.TryGetValue(name, out string keyVal) && !string.IsNullOrWhiteSpace(keyVal) && methodMap.TryGetValue(keyVal, out MethodParam param))
                     {
                         if (!Convert.IsDBNull(reader[col]))
                         {

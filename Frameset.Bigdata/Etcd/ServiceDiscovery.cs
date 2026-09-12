@@ -13,7 +13,7 @@ namespace Frameset.Bigdata.Etcd
         internal string EndPoint
         {
             get; set;
-        }
+        } = string.Empty;
         internal ServiceDiscovery()
         {
 

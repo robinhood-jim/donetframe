@@ -2,13 +2,13 @@
 using Frameset.Core.Context;
 using Frameset.Core.Dao.Meta;
 using Frameset.Core.Exceptions;
+using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Text;
-using Frameset.Core.FileSystem;
 using YamlDotNet.Serialization;
 using YamlDotNet.Serialization.NamingConventions;
 
@@ -18,6 +18,7 @@ namespace Frameset.Core.Dao
     {
         private readonly static Dictionary<string, IJdbcDao> containner = [];
         private static Dictionary<string, object> keyValues = [];
+        internal static char endSuffix = ';';
         /// <summary>
         /// Dao Accessor Factory init
         /// </summary>
@@ -45,7 +46,7 @@ namespace Frameset.Core.Dao
                         string key = entry.Key.ToString();
                         Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
                         Dictionary<string, object> tmpDict = [];
-                        foreach (KeyValuePair<object,object> pair in dict1)
+                        foreach (KeyValuePair<object, object> pair in dict1)
                         {
                             tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
                         }
@@ -64,10 +65,10 @@ namespace Frameset.Core.Dao
                 }
             }
         }
-        
-        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict,ISqlDialect sqlDialect, bool autoConstructDbContext = true)
+
+        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict, ISqlDialect sqlDialect, bool autoConstructDbContext = true)
         {
-            IJdbcDao dao = ConstructWithDict(dict,sqlDialect);
+            IJdbcDao dao = ConstructWithDict(dict, sqlDialect);
             containner.Add(key, dao);
             if (autoConstructDbContext)
             {
@@ -142,28 +143,29 @@ namespace Frameset.Core.Dao
                 int port = IsNull(portObj) ? AbstractSqlDialect.GetDefaultPort(dbType) : Int32.Parse(portObj.ToString());
                 int maxSize = IsNull(maxSizeStr) ? 0 : Int32.Parse(dict["maxSize"].ToString());
                 int minSize = IsNull(minSizeStr) ? 0 : Int32.Parse(dict["minSize"].ToString());
+
                 switch (dbType1)
                 {
                     case Constants.DbType.Mysql:
                     case Constants.DbType.SqlServer:
-                        builder.Append("Server=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
-                        builder.Append("User ID=").Append(userName).Append(";");
-                        builder.Append("Password=").Append(password).Append(";");
+                        builder.Append("Server=").Append(host).Append(";Port=").Append(port).Append(endSuffix);
+                        builder.Append("User ID=").Append(userName).Append(endSuffix);
+                        builder.Append("Password=").Append(password).Append(endSuffix);
                         break;
                     case Constants.DbType.Postgres:
-                        builder.Append("Host=").Append(host).Append(";Port=").Append(port.ToString()).Append(";");
-                        builder.Append("Username=").Append(userName).Append(";");
-                        builder.Append("Password=").Append(password).Append(";");
+                        builder.Append("Host=").Append(host).Append(";Port=").Append(port).Append(endSuffix);
+                        builder.Append("Username=").Append(userName).Append(endSuffix);
+                        builder.Append("Password=").Append(password).Append(endSuffix);
                         break;
                     case Constants.DbType.Oracle:
-                        builder.Append("DataSource=").Append(host).Append(":").Append(port.ToString()).Append("/").Append(schema).Append(";");
-                        builder.Append("User ID=").Append(userName).Append(";");
-                        builder.Append("Password=").Append(password).Append(";");
+                        builder.Append("DataSource=").Append(host).Append(':').Append(port).Append('/').Append(schema).Append(endSuffix);
+                        builder.Append("User ID=").Append(userName).Append(endSuffix);
+                        builder.Append("Password=").Append(password).Append(endSuffix);
                         break;
                     case Constants.DbType.DB2:
-                        builder.Append("Server=").Append(host).Append(":").Append(port.ToString()).Append(";");
-                        builder.Append("UID=").Append(userName).Append(";");
-                        builder.Append("PWD=").Append(password).Append(";");
+                        builder.Append("Server=").Append(host).Append(endSuffix).Append(port).Append(endSuffix);
+                        builder.Append("UID=").Append(userName).Append(endSuffix);
+                        builder.Append("PWD=").Append(password).Append(endSuffix);
                         break;
                 }
 
@@ -171,11 +173,11 @@ namespace Frameset.Core.Dao
                 {
                     if (Constants.DbType.SqlServer.Equals(dbType1))
                     {
-                        builder.Append("Initial Catalog=").Append(schema).Append(";");
+                        builder.Append("Initial Catalog=").Append(schema).Append(endSuffix);
                     }
                     else if (Constants.DbType.Mysql.Equals(dbType1) || Constants.DbType.Postgres.Equals(dbType1) || Constants.DbType.DB2.Equals(dbType1))
                     {
-                        builder.Append("Database=").Append(schema).Append(";");
+                        builder.Append("Database=").Append(schema).Append(endSuffix);
                     }
 
                 }
@@ -190,22 +192,22 @@ namespace Frameset.Core.Dao
                     {
                         if (!Constants.DbType.Postgres.Equals(dbType1))
                         {
-                            builder.Append("Max Pool Size=").Append(maxSize).Append(";");
+                            builder.Append("Max Pool Size=").Append(maxSize).Append(endSuffix);
                         }
                         else
                         {
-                            builder.Append("MaxPoolSize=").Append(maxSize).Append(";");
+                            builder.Append("MaxPoolSize=").Append(maxSize).Append(endSuffix);
                         }
                     }
                     if (minSize > 0)
                     {
                         if (!Constants.DbType.Postgres.Equals(dbType1))
                         {
-                            builder.Append("Min Pool Size=").Append(maxSize).Append(";");
+                            builder.Append("Min Pool Size=").Append(maxSize).Append(endSuffix);
                         }
                         else
                         {
-                            builder.Append("MinPoolSize=").Append(maxSize).Append(";");
+                            builder.Append("MinPoolSize=").Append(maxSize).Append(endSuffix);
                         }
 
                     }
@@ -217,7 +219,7 @@ namespace Frameset.Core.Dao
             }
             else
             {
-                builder.Append(connStr).Append(";");
+                builder.Append(connStr).Append(endSuffix);
             }
 
             return builder;
@@ -247,13 +249,13 @@ namespace Frameset.Core.Dao
         public static IJdbcDao ConstructWithMeta(DataCollectionDefine collectionDefine)
         {
             Dictionary<string, object> configDit = [];
-            foreach (KeyValuePair<string,string> pair in collectionDefine.ResourceConfig)
+            foreach (KeyValuePair<string, string> pair in collectionDefine.ResourceConfig)
             {
                 configDit.TryAdd(pair.Key, pair.Value);
             }
             return ConstructWithDict(configDit);
         }
-        
+
         public static void Register(string dsName, Dictionary<string, object> configMap, bool autoConstructDbContext = false)
         {
             if (containner.ContainsKey(dsName))

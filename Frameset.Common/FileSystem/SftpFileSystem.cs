@@ -64,7 +64,7 @@ namespace Frameset.Common.FileSystem
                 }
                 client.Dispose();
             }
-            
+
         }
 
         public override bool Exist(string resourcePath)

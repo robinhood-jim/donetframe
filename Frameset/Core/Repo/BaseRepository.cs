@@ -26,7 +26,7 @@ using System.Threading;
 
 namespace Frameset.Core.Repo
 {
-    public class BaseRepository<V, P> : IBaseRepository<V, P> where V : BaseEntity
+    public class BaseRepository<V, P> : IBaseRepository<V, P> where V : BaseEntity where P : notnull
     {
         //DataSource Tag
         internal string dsName = "core";
@@ -82,7 +82,7 @@ namespace Frameset.Core.Repo
             LogUtils.Debug($"save Enity Sql {segment.InsertSql}");
             return RepositoryHelper.ExecuteInTransaction(GetDao(), segment.InsertSql, entity, (command, v) =>
             {
-                bool executeRs ;
+                bool executeRs;
 
                 insertBeforeAction?.Invoke(v);
                 executeRs = GetDao().SaveEntity(command, v, segment);
@@ -112,7 +112,7 @@ namespace Frameset.Core.Repo
             LogUtils.Debug($"update Sql {segment.UpdateSql}");
             return RepositoryHelper.ExecuteInTransaction(GetDao(), segment.UpdateSql, entity, (command, v) =>
             {
-                bool executeRs ;
+                bool executeRs;
                 updateBeforeAction?.Invoke(v);
                 executeRs = GetDao().UpdateEntity(command, segment);
                 if (executeRs && updateAfterAction != null)
@@ -185,7 +185,7 @@ namespace Frameset.Core.Repo
         public int RemoveByFields(string fieldName, Constants.SqlOperator sqlOperator, object[] values)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
-            Dictionary<string,FieldContent> fieldContents= EntityReflectUtils.GetFieldsMap(entityType);
+            Dictionary<string, FieldContent> fieldContents = EntityReflectUtils.GetFieldsMap(entityType);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
             try
             {
@@ -268,6 +268,10 @@ namespace Frameset.Core.Repo
                 Dictionary<string, object> map = list[0];
                 foreach (FieldContent fieldContent in fieldContents)
                 {
+                    if (fieldContent.IsOneToMany || !fieldContent.IsManyToOne || fieldContent.IsOneToMany)
+                    {
+                        continue;
+                    }
                     object value = map[fieldContent.PropertyName];
                     if (Convert.IsDBNull(value) && map.ContainsKey(fieldContent.PropertyName.ToLower()))
                     {

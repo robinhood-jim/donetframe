@@ -12,17 +12,32 @@ namespace Frameset.Bigdata.RocketMq
     {
         private readonly string SecretKey;
         private readonly string AccessKey;
-        private readonly string EndPoint;
+        private readonly string EndPoint = null!;
         private SimpleConsumer Consumer;
         private string Topics;
         private readonly string ConsumerGroup;
         public RocketMqConsumer(DataCollectionDefine define) : base(define)
         {
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQSECRETKEY, out SecretKey);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQACCESSKEY, out AccessKey);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQENDPOINT, out EndPoint);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMTOPICS, out Topics);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQCONSUMERGROUPID, out ConsumerGroup);
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQSECRETKEY, out string? SecretKeyStr))
+            {
+                SecretKey = SecretKeyStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQACCESSKEY, out string? AccessKeyStr))
+            {
+                AccessKey = AccessKeyStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQENDPOINT, out string? EndPointStr))
+            {
+                EndPoint = EndPointStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMTOPICS, out string? TopicsStr))
+            {
+                Topics = TopicsStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQCONSUMERGROUPID, out string? ConsumerGroupStr))
+            {
+                ConsumerGroup = ConsumerGroupStr;
+            }
             var credentialProvider = new StaticSessionCredentialsProvider(AccessKey, SecretKey);
             var clientConfig = new ClientConfig.Builder().SetEndpoints(EndPoint)
                 .SetCredentialsProvider(credentialProvider).Build();

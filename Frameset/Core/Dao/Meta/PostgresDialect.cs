@@ -117,9 +117,9 @@ namespace Frameset.Core.Dao.Meta
         {
             return new NpgsqlCommand(sql, (NpgsqlConnection)connection);
         }
-        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
         {
-            return new NpgsqlCommand(sql, (NpgsqlConnection)connection,(NpgsqlTransaction) transaction);
+            return new NpgsqlCommand(sql, (NpgsqlConnection)connection, (NpgsqlTransaction)transaction);
         }
         public override DbCommand GetDbCommand(DbConnection connection)
         {

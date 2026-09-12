@@ -47,7 +47,7 @@ namespace Frameset.Common.Data.Utils
                             break;
                         case Constants.MetaType.TIMESTAMP:
                             Schema originSchema = PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap());
-                            LogicalSchema logical = (LogicalSchema)logicConstructor?.Invoke(new object[] { originSchema, "timestamp-millis", new PropertyMap() });
+                            LogicalSchema? logical = logicConstructor?.Invoke(new object[] { originSchema, "timestamp-millis", new PropertyMap() }) as LogicalSchema;
                             baseSchema = logical;
                             break;
                         case Constants.MetaType.STRING:
@@ -125,7 +125,8 @@ namespace Frameset.Common.Data.Utils
         private static Schema GetDateTimeFormat()
         {
             Schema originSchema = PrimitiveSchema.Create(Schema.Type.Long, new PropertyMap());
-            return (LogicalSchema)logicConstructor.Invoke(new object[] { originSchema, "timestamp-millis", new PropertyMap() });
+            LogicalSchema? schema = logicConstructor?.Invoke(new object[] { originSchema, "timestamp-millis", new PropertyMap() }) as LogicalSchema;
+            return schema != null ? schema : throw new NotSupportedException("");
         }
 
 

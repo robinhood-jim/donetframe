@@ -1,6 +1,8 @@
 ﻿using ClickHouse.Client.ADO;
+using ClickHouse.Client.ADO.Adapters;
 using ClickHouse.Client.ADO.Parameters;
 using ClickHouse.Client.Copy;
+using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Query;
 using Microsoft.IdentityModel.Tokens;
@@ -11,8 +13,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
-using ClickHouse.Client.ADO.Adapters;
-using Frameset.Core.Common;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -66,7 +66,7 @@ namespace Frameset.Core.Dao.Meta
             }
             return command;
         }
-        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
         {
             ClickHouseCommand command = new ClickHouseCommand((ClickHouseConnection)connection);
             command.Transaction = transaction;

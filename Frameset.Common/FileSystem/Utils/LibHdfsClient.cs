@@ -60,7 +60,10 @@ namespace Frameset.Common.FileSystem.Utils
                         long fileSize = info.mSize;
                         HdfsFileStatus status = new();
                         status.Size = fileSize;
-                        status.Path = name;
+                        if (!string.IsNullOrWhiteSpace(name))
+                        {
+                            status.Path = name;
+                        }
                         status.IsDirectory = info.mKind == 0;
                         status.LastAccess = info.mLastAccess;
                         list.Add(status);

@@ -15,11 +15,15 @@ namespace Frameset.Bigdata.Redis
         private string redisUrl;
         public RedisUtils(DataCollectionDefine define)
         {
-            if (!define.ResourceConfig.TryGetValue(ResourceConstants.REDISURL, out redisUrl))
+            if (!define.ResourceConfig.TryGetValue(ResourceConstants.REDISURL, out string? redisUrlStr))
             {
                 redisUrl = "localhost:6379";
             }
-            if (define.ResourceConfig.TryGetValue(ResourceConstants.REDISDBID, out string dbIdStr))
+            else
+            {
+                redisUrl = redisUrlStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.REDISDBID, out string? dbIdStr))
             {
                 dbId = Convert.ToInt32(dbIdStr);
             }
@@ -102,7 +106,7 @@ namespace Frameset.Bigdata.Redis
             database.SortedSetAdd(key, sortedSetEntries.ToArray());
         }
 
-        public async Task<V> Rpop<V>(string key)
+        public async Task<V?> Rpop<V>(string key)
         {
             Type retType = typeof(V);
             RedisValue redisValue;

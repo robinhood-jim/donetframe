@@ -15,12 +15,12 @@ namespace Frameset.Core.Common
 {
     public static class ConvertUtil
     {
-        private static string[] DEFAULTFORMATTER = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "MM-dd-yy" };
+        private static readonly string[] DEFAULTFORMATTER = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "MM-dd-yy" };
         public static object ParseByType(Type targetType, object input)
         {
             object retVal = null;
             AssertUtils.ArgumentNotNull(input, "must not be null!");
-            
+
             if (targetType.Equals(input.GetType()))
             {
                 retVal = input;
@@ -28,7 +28,7 @@ namespace Frameset.Core.Common
             else
             {
                 //adjust if is Nullable property
-                if (targetType.IsGenericType || targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+                if (targetType.IsGenericType || (!targetType.IsPrimitive && !targetType.Equals(typeof(string)) && targetType.GetGenericTypeDefinition() == typeof(Nullable<>)))
                 {
                     targetType = targetType.GetGenericArguments()[0];
                 }
@@ -68,13 +68,14 @@ namespace Frameset.Core.Common
                         case TypeCode.Boolean:
                             retVal = string.Equals(input.ToString(), Constants.VALID,
                                          StringComparison.OrdinalIgnoreCase) ||
-                                     string.Equals(input.ToString(), Constants.TRUEVALUE,StringComparison.OrdinalIgnoreCase);
+                                     string.Equals(input.ToString(), Constants.TRUEVALUE, StringComparison.OrdinalIgnoreCase);
                             break;
                         default:
                             if (targetType.Equals(typeof(byte[])))
                             {
                                 retVal = Encoding.UTF8.GetBytes(input.ToString());
-                            } else if (targetType.Equals(typeof(DateTimeOffset)))
+                            }
+                            else if (targetType.Equals(typeof(DateTimeOffset)))
                             {
                                 TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
                                 if (input.GetType().Equals(typeof(DateTime)))
@@ -152,8 +153,7 @@ namespace Frameset.Core.Common
         }
         public static Tuple<bool, DateTime> GuessTimeFormat(string dateStr, string pattern)
         {
-            DateTime parseDate;
-            if (DateTime.TryParseExact(dateStr, pattern, null, DateTimeStyles.None, out parseDate))
+            if (DateTime.TryParseExact(dateStr, pattern, null, DateTimeStyles.None, out DateTime parseDate))
             {
                 return new Tuple<bool, DateTime>(true, parseDate);
             }

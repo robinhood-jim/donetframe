@@ -132,7 +132,7 @@ namespace Frameset.Core.Context
             return (T)GetBean(typeof(T));
         }
         /// <summary>
-        /// Customer IOC Scanner
+        /// Customer IOC(Dependency Injection) Scanner
         /// </summary>
         /// <param name="type">Attribute Type</param>
         /// <param name="action">User Defined Action</param>

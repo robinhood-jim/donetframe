@@ -53,11 +53,11 @@ namespace Frameset.Bigdata.Dao
             builder.Append(entityContent.TableName).Append(" set ");
             foreach (FieldContent content in fields)
             {
-                object realVal = content.GetMethod.Invoke(update, null);
+                object? realVal = content.GetMethod.Invoke(update, null);
                 //GetDirty不为空，代表修改字段名在Dirty中，避免非空类型初始化有值导致判断失效
                 if ((update.GetDirties().IsNullOrEmpty() || update.GetDirties().Contains(content.PropertyName)) && realVal != null && !string.IsNullOrWhiteSpace(realVal.ToString()))
                 {
-                    object originVal = content.GetMethod.Invoke(origin, null);
+                    object? originVal = content.GetMethod.Invoke(origin, null);
                     if (!content.IfPrimary)
                     {
                         if (!realVal.Equals(originVal))

@@ -63,14 +63,14 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             if (Exist(resourcePath))
             {
-                var deleteresponse=client.DeleteObjectAsync(GetBucketName(), resourcePath).GetAwaiter().GetResult();
+                var deleteresponse = client.DeleteObjectAsync(GetBucketName(), resourcePath).GetAwaiter().GetResult();
                 return deleteresponse.HttpStatusCode == HttpStatusCode.OK;
             }
 
             return false;
         }
 
-       
+
 
         internal override bool BucketExists(string bucketName)
         {
@@ -118,6 +118,6 @@ namespace Frameset.Common.FileSystem.CloudStorage
             return new AmazonS3OutputStream(client, define, bucketName, resourcePath);
         }
 
-        
+
     }
 }

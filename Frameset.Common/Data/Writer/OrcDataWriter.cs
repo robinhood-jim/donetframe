@@ -1,8 +1,8 @@
 ﻿using ApacheOrcDotNet;
 using Frameset.Common.FileSystem;
-using Frameset.Core.Scripts;
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
+using Frameset.Core.Scripts;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
 using System.Reflection;
@@ -93,7 +93,7 @@ namespace Frameset.Common.Data.Writer
                             }
                             else
                             {
-                                ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal?.ToString())).LocalDateTime;
+                                ts = DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(retVal?.ToString())).LocalDateTime;
                             }
 
                             info?.SetMethod?.Invoke(targetObject, new object[] { ts });

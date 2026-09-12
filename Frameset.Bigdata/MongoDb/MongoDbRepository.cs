@@ -80,7 +80,7 @@ namespace Frameset.Bigdata.MongoDb
         public override bool SaveEntity(V entity)
         {
             var collection = database.GetCollection<BsonDocument>(content.TableName);
-            object pk = pkColumn.GetMethod.Invoke(entity, null);
+            object? pk = pkColumn.GetMethod.Invoke(entity, null);
             if (collection != null)
             {
                 Dictionary<string, object> dict = [];
@@ -110,7 +110,7 @@ namespace Frameset.Bigdata.MongoDb
         public override bool UpdateEntity(V entity)
         {
             var collection = database.GetCollection<BsonDocument>(content.TableName);
-            object pk = pkColumn.GetMethod.Invoke(entity, null);
+            object? pk = pkColumn.GetMethod.Invoke(entity, null);
             if (collection != null)
             {
                 Dictionary<string, object> dict = [];
@@ -118,7 +118,7 @@ namespace Frameset.Bigdata.MongoDb
                 {
                     if (!fieldContent.IfPrimary)
                     {
-                        var obj = fieldContent.GetMethod.Invoke(entity, null);
+                        object? obj = fieldContent.GetMethod.Invoke(entity, null);
                         if (obj != null || entity.GetDirties().Contains(fieldContent.PropertyName))
                         {
                             dict.TryAdd(fieldContent.PropertyName, obj);

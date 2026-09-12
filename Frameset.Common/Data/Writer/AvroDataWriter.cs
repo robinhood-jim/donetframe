@@ -81,7 +81,7 @@ namespace Frameset.Common.Data.Writer
                         }
                         else
                         {
-                            ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal?.ToString())).LocalDateTime;
+                            ts = DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(retVal?.ToString())).LocalDateTime;
                         }
 
                         record.Add(MetaDefine.ColumnList[i].ColumnCode, ts);

@@ -10,10 +10,10 @@ namespace Frameset.Common.Data.Reader
 {
     public class XlsxIterator<T> : AbstractDataIterator<T>
     {
-        private SingleWorkBook workBook=null!;
-        private ExcelSheetProp sheetProp=null!;
-        private SheetPropBuilder propBuilder=null!;
-        private MapEnumerator enumerator=null!;
+        private SingleWorkBook workBook = null!;
+        private ExcelSheetProp sheetProp = null!;
+        private SheetPropBuilder propBuilder = null!;
+        private MapEnumerator enumerator = null!;
         private int sheetNums;
         private int sheetPos;
         public XlsxIterator(DataCollectionDefine define) : base(define)

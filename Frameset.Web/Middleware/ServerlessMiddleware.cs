@@ -2,7 +2,6 @@
 using Frameset.Web.Utils;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Http;
-using Microsoft.IdentityModel.Tokens;
 
 namespace Frameset.Web.Middleware
 {
@@ -14,7 +13,7 @@ namespace Frameset.Web.Middleware
         {
             _next = next;
             string? serverlessPrefix = AppConfigurtaionServices.Configuration["serverlessPrefix"];
-            if (!serverlessPrefix.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(serverlessPrefix))
             {
                 monitorPathPrefix = serverlessPrefix;
             }
@@ -41,7 +40,7 @@ namespace Frameset.Web.Middleware
             int pos = path.IndexOf('?');
             if (pos > 0)
             {
-                relativePath = path.Substring(0, pos);
+                relativePath = path[..pos];
             }
             return relativePath;
         }

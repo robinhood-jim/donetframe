@@ -130,6 +130,14 @@ namespace Frameset.Core.Common
             }
             return resType;
         }
-
+        public enum ResourceType
+        {
+            DIR = 1,
+            MENU,
+            BUTTON
+        }
+        public static readonly string RESOURCE_DIR = "1";
+        public static readonly string RESOURCE_MENU = "2";
+        public static readonly string RESOURCE_BUTTON = "3";
     }
 }

@@ -1,5 +1,5 @@
-﻿using System.Text.Json;
-using Microsoft.AspNetCore.Http;
+﻿using Microsoft.AspNetCore.Http;
+using System.Text.Json;
 
 namespace Frameset.Web.Utils;
 
@@ -15,5 +15,5 @@ public static class SessionExtension
         var value = session.GetString(key);
         return value == null ? default : JsonSerializer.Deserialize<T>(value);
     }
-    
+
 }

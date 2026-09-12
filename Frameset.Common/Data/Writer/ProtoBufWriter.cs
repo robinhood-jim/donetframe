@@ -34,7 +34,7 @@ namespace Frameset.Common.Data.Writer
                 builder.AddField("required", ProtobufUtils.GetTypeStr(columnMeta.ColumnType), columnMeta.ColumnCode, i + 1);
             }
             definition = builder.Build();
-            message = new DynamicMessage(definition,MetaDefine.ColumnList);
+            message = new DynamicMessage(definition, MetaDefine.ColumnList);
 
         }
 
@@ -64,7 +64,7 @@ namespace Frameset.Common.Data.Writer
                         }
                         else
                         {
-                            ts = DateTimeOffset.FromUnixTimeMilliseconds(long.Parse(retVal?.ToString())).LocalDateTime;
+                            ts = DateTimeOffset.FromUnixTimeMilliseconds(Convert.ToInt64(retVal?.ToString())).LocalDateTime;
                         }
 
                         message.DataContent.TryAdd(MetaDefine.ColumnList[i].ColumnCode, ts);

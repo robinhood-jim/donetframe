@@ -177,7 +177,7 @@ namespace Frameset.Core.Dao.Utils
                 TargetEntity = targetEntity,
                 ColumnType = content.ParamType,
                 Operator = sqlOperator,
-                Values = [objects]
+                Values = new(objects)
             });
             return this;
         }
@@ -190,7 +190,7 @@ namespace Frameset.Core.Dao.Utils
                 LeftArith = true,
                 ColumnType = valueType,
                 Operator = sqlOperator,
-                Values = [objects]
+                Values = new(objects)
             });
             return this;
         }
@@ -226,7 +226,7 @@ namespace Frameset.Core.Dao.Utils
                 ColumnName = content.FieldName,
                 Operator = sqlOperator,
                 ColumnType = content.ParamType,
-                Values = [objects]
+                Values = new(objects)
             };
         }
         public FilterCondition Combine(Func<SingleFilterConditionBuilder, FilterCondition> action)
@@ -244,7 +244,7 @@ namespace Frameset.Core.Dao.Utils
             action.Invoke(condition);
             return this;
         }
-        
+
         public FilterCondition Or(List<FilterCondition> conditions)
         {
             return new FilterCondition()

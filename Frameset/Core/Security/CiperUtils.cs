@@ -1,10 +1,10 @@
-﻿using System.IO;
-using System.Security.Cryptography;
-using Org.BouncyCastle.Crypto;
+﻿using Org.BouncyCastle.Crypto;
 using Org.BouncyCastle.Crypto.Engines;
 using Org.BouncyCastle.Crypto.Modes;
 using Org.BouncyCastle.Crypto.Paddings;
 using Org.BouncyCastle.Crypto.Parameters;
+using System.IO;
+using System.Security.Cryptography;
 using System.Text;
 
 namespace Frameset.Core.Security
@@ -53,7 +53,7 @@ namespace Frameset.Core.Security
                 algorithm.Mode = cipherMode;
             }
 
-            using var outputStream = new MemoryStream(); 
+            using var outputStream = new MemoryStream();
             using var stream = new CryptoStream(outputStream, algorithm.CreateEncryptor(),
                 CryptoStreamMode.Write);
             stream.Write(rawBytes, 0, rawBytes.Length);
@@ -70,7 +70,7 @@ namespace Frameset.Core.Security
             return outputStream.ToArray();
         }
 
-        public static byte[] Decrypt(this SymmetricAlgorithm algorithm, byte[] encrypteBytes, byte[] key,CipherMode cipherMode = CipherMode.CBC, PaddingMode paddingMode = PaddingMode.PKCS7)
+        public static byte[] Decrypt(this SymmetricAlgorithm algorithm, byte[] encrypteBytes, byte[] key, CipherMode cipherMode = CipherMode.CBC, PaddingMode paddingMode = PaddingMode.PKCS7)
         {
             if (key != null && key.Length > 0)
             {
@@ -83,10 +83,10 @@ namespace Frameset.Core.Security
             using var cryptStream = new CryptoStream(rawStream, algorithm.CreateDecryptor(), CryptoStreamMode.Read);
             using var outStream = new MemoryStream();
             byte[] tempBytes = new byte[200];
-            int i ;
+            int i;
             while ((i = cryptStream.Read(tempBytes, 0, tempBytes.Length)) > 0)
             {
-                outStream.Write(tempBytes,0,i);
+                outStream.Write(tempBytes, 0, i);
             }
             return outStream.ToArray();
         }

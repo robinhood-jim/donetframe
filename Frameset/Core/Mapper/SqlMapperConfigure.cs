@@ -21,7 +21,7 @@ namespace Frameset.Core.Mapper
         private static Dictionary<string, MapperConfig> configMap = new();
         private static Dictionary<string, Dictionary<string, AbstractSegment>> executeMap = new();
 
-        private static List<string> operType = new [] { "select", "update", "delete", "insert" }.ToList();
+        private static List<string> operType = new[] { "select", "update", "delete", "insert" }.ToList();
 
         public static void DoInit(string mapperPath)
         {
@@ -98,7 +98,7 @@ namespace Frameset.Core.Mapper
         }
         public static AbstractSegment GetExecuteSegment(string nameSpace, string id)
         {
-            if (executeMap.TryGetValue(nameSpace, out Dictionary<string, AbstractSegment> segmentMap) && segmentMap!=null && !segmentMap.IsNullOrEmpty() && segmentMap.TryGetValue(id, out AbstractSegment segment))
+            if (executeMap.TryGetValue(nameSpace, out Dictionary<string, AbstractSegment> segmentMap) && segmentMap != null && !segmentMap.IsNullOrEmpty() && segmentMap.TryGetValue(id, out AbstractSegment segment))
             {
                 return segment;
             }
@@ -106,7 +106,7 @@ namespace Frameset.Core.Mapper
         }
         public static ResultMap GetResultMap(string nameSpace, string id)
         {
-            if (configMap.TryGetValue(nameSpace, out MapperConfig config) && config!=null && config.ReslutMap.TryGetValue(id,out ResultMap map))
+            if (configMap.TryGetValue(nameSpace, out MapperConfig config) && config != null && config.ReslutMap.TryGetValue(id, out ResultMap map))
             {
                 return map;
             }
@@ -114,7 +114,7 @@ namespace Frameset.Core.Mapper
         }
         public static string GetSqlPart(string nameSpace, string id)
         {
-            if (configMap.TryGetValue(nameSpace, out MapperConfig config) && config!=null && config.SqlMap.TryGetValue(id,out string retstr) && !string.IsNullOrWhiteSpace(retstr))
+            if (configMap.TryGetValue(nameSpace, out MapperConfig config) && config != null && config.SqlMap.TryGetValue(id, out string retstr) && !string.IsNullOrWhiteSpace(retstr))
             {
                 return retstr;
             }

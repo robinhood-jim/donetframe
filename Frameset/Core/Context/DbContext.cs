@@ -53,7 +53,7 @@ namespace Frameset.Core.Context
             if (IsAutoCommit())
             {
                 InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entity);
-                return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.InsertSql, entity, (command, v) =>DoInsert(command, segment, v)> 0);
+                return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.InsertSql, entity, (command, v) => DoInsert(command, segment, v) > 0);
             }
             else
             {
@@ -79,7 +79,7 @@ namespace Frameset.Core.Context
                 UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), origin, entity);
                 if (segment.UpdateRequired)
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.UpdateSql, entity, (command, v) =>DoUpdate(command, segment, entity)> 0);
+                    return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.UpdateSql, entity, (command, v) => DoUpdate(command, segment, entity) > 0);
                 }
                 return false;
             }
@@ -97,7 +97,7 @@ namespace Frameset.Core.Context
             {
                 if (IsAutoCommit())
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", null, (command, v) =>  DoDelete(command, entityType, pks.Cast<object>().ToList()));
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", null, (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
                 }
                 GetCurrrentUpdateEntry().Delete<V, P>(pks);
                 return pks.Count;
@@ -121,8 +121,8 @@ namespace Frameset.Core.Context
             GetCurrrentUpdateEntry().Delete<V, P>([.. pkList.Cast<P>()]);
             return pkList.Count;
         }
-                
-        
+
+
 
         public override int RemoveLogic<V, P>(IList<P> pks, string logicColumn, int status)
         {
@@ -135,7 +135,7 @@ namespace Frameset.Core.Context
             }
             if (!pks.IsNullOrEmpty())
             {
-                StringBuilder builder = new StringBuilder("update ").Append(SqlUtils.GetTableWithSchema(tuple.Item1)).Append(" set ").Append(logicColumn).Append("=").Append(status).Append(" where ").Append(pkColumn.FieldName).Append(" in (");
+                StringBuilder builder = new StringBuilder("update ").Append(SqlUtils.GetTableWithSchema(tuple.Item1)).Append(" set ").Append(logicColumn).Append('=').Append(status).Append(" where ").Append(pkColumn.FieldName).Append(" in (");
 
                 StringBuilder idsBuilder = new();
                 DbParameter[] parameters = new DbParameter[pks.Count];
@@ -349,9 +349,9 @@ namespace Frameset.Core.Context
                 UpdateEntry entry = GetCurrrentUpdateEntry();
                 if (entry != null && !entry.EffectEntrys.IsNullOrEmpty())
                 {
-                    int effectRow = RepositoryHelper.ExecuteInTransaction(GetDao(), (connection,transaction) =>
+                    int effectRow = RepositoryHelper.ExecuteInTransaction(GetDao(), (connection, transaction) =>
                     {
-                        DbCommand command = GetDao().GetDialect().GetDbCommand(connection,"",transaction);
+                        DbCommand command = GetDao().GetDialect().GetDbCommand(connection, "", transaction);
                         int takeAffect = 0;
                         foreach (EffectEntry entry in entry.EffectEntrys)
                         {
@@ -455,7 +455,7 @@ namespace Frameset.Core.Context
             while (refreshTag.Get())
             {
                 Log.Information("refesh thread running,Waiting");
-                await Task.Delay(300).ConfigureAwait(false);
+                await Task.Delay(100).ConfigureAwait(false);
             }
         }
         private int TakeAction(DbCommand command, EffectEntry entry)
@@ -578,11 +578,11 @@ namespace Frameset.Core.Context
                 for (int i = 0; i < pkList.Count; i++)
                 {
                     string paramName = "@" + (i + 1).ToString();
-                    idsBuilder.Append(paramName).Append(",");
+                    idsBuilder.Append(paramName).Append(',');
                     parameters[i] = GetDao().GetDialect().WrapParameter(i + 1, pkList[i]);
                 }
             }
-            string removeSql = removeBuilder.Append(idsBuilder.ToString()[..(idsBuilder.Length - 1)]).Append(")").ToString();
+            string removeSql = removeBuilder.Append(idsBuilder.ToString()[..(idsBuilder.Length - 1)]).Append(')').ToString();
 
             effectRow += GetDao().Execute(command, removeSql, parameters);
 

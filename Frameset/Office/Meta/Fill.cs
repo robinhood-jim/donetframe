@@ -1,6 +1,6 @@
-﻿using System;
-using Frameset.Office.Core;
+﻿using Frameset.Office.Core;
 using Frameset.Office.Element;
+using System;
 
 namespace Frameset.Office.Meta
 {
@@ -21,7 +21,7 @@ namespace Frameset.Office.Meta
             this.colorRgb = colorRgb;
             this.fg = fg;
         }
-        Fill(string patternType,int _indexed, bool fg)
+        Fill(string patternType, int _indexed, bool fg)
         {
             this.patternType = patternType;
             this.indexed = _indexed;

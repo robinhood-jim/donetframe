@@ -91,7 +91,7 @@ namespace Frameset.Core.Repo
             paramMap = new Dictionary<string, object>();
             CompositeSegment csegment = (CompositeSegment)segment;
             string rsMap = csegment.Parametertype;
-            Type retType ;
+            Type retType;
             if (!csegment.Parametertype.IsNullOrEmpty())
             {
                 ConvertUtil.ToDict(input, paramMap);
@@ -147,10 +147,11 @@ namespace Frameset.Core.Repo
             try
             {
                 command.Transaction = transaction;
-                int ret= function.Invoke(command);
+                int ret = function.Invoke(command);
                 transaction.Commit();
                 return ret;
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 transaction.Rollback();
                 throw new BaseSqlException(ex.Message);
@@ -181,7 +182,7 @@ namespace Frameset.Core.Repo
         {
             List<FieldContent> contents = fields.Where(x =>
                 string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
-            FieldContent fielContent = contents.Count>0?contents[0]:null;
+            FieldContent fielContent = contents.Count > 0 ? contents[0] : null;
             if (fielContent == null)
             {
                 List<FieldContent> contents1 = fields.Where(x =>
@@ -221,7 +222,7 @@ namespace Frameset.Core.Repo
                 DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
-                    DbCommand command = dao.GetDialect().GetDbCommand(connection, sql,transaction);
+                    DbCommand command = dao.GetDialect().GetDbCommand(connection, sql, transaction);
                     T ret = func.Invoke(command, entity);
                     transaction.Commit();
                     return ret;
@@ -237,7 +238,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbConnection,DbTransaction, int> func)
+        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbConnection, DbTransaction, int> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
@@ -245,7 +246,7 @@ namespace Frameset.Core.Repo
                 DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
-                    int ret = func.Invoke(connection,transaction);
+                    int ret = func.Invoke(connection, transaction);
                     transaction.Commit();
                     return ret;
                 }

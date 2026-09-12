@@ -3,6 +3,7 @@ using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.Extensions.Configuration;
 using Microsoft.Extensions.DependencyInjection;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using System.Globalization;
 using System.Text;
 
@@ -19,6 +20,7 @@ namespace Frameset.Web.Utils
             var ExpireDays = Convert.ToInt32(section["ExpireDays"], CultureInfo.InvariantCulture);
 
             services.AddAuthorization();
+            Trace.Assert(!string.IsNullOrWhiteSpace(Secret), "");
             var tokenValidationParameters = new TokenValidationParameters
             {
                 ValidateIssuerSigningKey = true,

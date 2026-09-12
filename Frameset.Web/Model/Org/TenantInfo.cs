@@ -14,11 +14,11 @@ namespace Frameset.Web.Model.Org
         public string TeanatName
         {
             get; set;
-        }
+        } = string.Empty;
         public string TeanatCode
         {
             get; set;
-        }
+        } = string.Empty;
         public long OrgId
         {
             get; set;
@@ -26,7 +26,7 @@ namespace Frameset.Web.Model.Org
         public string Logo
         {
             get; set;
-        }
+        } = string.Empty;
         public DateTime RegTime
         {
             get; set;

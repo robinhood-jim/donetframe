@@ -10,15 +10,15 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
 {
     public class QiniuOutputStream : UploadPartSupportStream
     {
-        private ResumableUploader resumableUploader;
-        private string token;
-        private MethodInfo? method = typeof(ResumableUploader).GetMethod("intReq", BindingFlags.NonPublic, new Type[] { typeof(string), typeof(string) });
+        private readonly ResumableUploader resumableUploader;
+        private readonly string token;
+        private readonly MethodInfo? method = typeof(ResumableUploader).GetMethod("intReq", BindingFlags.NonPublic, new Type[] { typeof(string), typeof(string) });
 
-        private ResumeInfo resumeInfo;
+        private ResumeInfo resumeInfo = null!;
         private List<Dictionary<string, object>> etags = [];
-        private HttpManager manager;
-        private string encodeName;
-        private Config config;
+        private readonly HttpManager manager;
+        private readonly string encodeName;
+        private readonly Config config;
         public QiniuOutputStream(DataCollectionDefine define, string bucketName, string key, Config config, string token) : base(define, bucketName, key)
         {
             this.config = config;
@@ -49,24 +49,30 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             if (httpResult.Code == 200)
             {
                 Dictionary<string, string>? resultMap = JsonConvert.DeserializeObject<Dictionary<string, string>>(httpResult.Text);
-                return resultMap?["hash"];
+                if (resultMap != null)
+                {
+                    return resultMap["hash"];
+                }
             }
             throw new OperationFailedException("failed to complete upload");
         }
 
         protected override void initiateUpload()
         {
-            HttpResult result = (HttpResult)method.Invoke(resumableUploader, new object[] { encodeName, token });
+            HttpResult? result = method?.Invoke(resumableUploader, new object[] { encodeName, token }) as HttpResult;
             if (result != null && result.Code == 200)
             {
-                Dictionary<string, string> dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(result.Text);
-                UploadId = dict["uploadId"];
-                resumeInfo = new ResumeInfo
+                Dictionary<string, string>? dict = JsonConvert.DeserializeObject<Dictionary<string, string>>(result.Text);
+                if (dict != null)
                 {
-                    Uploaded = 0L,
-                    ExpiredAt = long.Parse(dict["expireAt"]),
-                    UploadId = UploadId
-                };
+                    UploadId = dict["uploadId"];
+                    resumeInfo = new ResumeInfo
+                    {
+                        Uploaded = 0L,
+                        ExpiredAt = long.Parse(dict["expireAt"]),
+                        UploadId = UploadId
+                    };
+                }
             }
             else
             {
@@ -95,7 +101,10 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             {
                 Dictionary<string, string>? resultMap = JsonConvert.DeserializeObject<Dictionary<string, string>>(httpResult.Text);
                 Dictionary<string, object> etagDict = new Dictionary<string, object>();
-                etagDict.Add("etag", resultMap["etag"]);
+                if (resultMap != null)
+                {
+                    etagDict.Add("etag", resultMap["etag"]);
+                }
                 etagDict.Add("partNumber", partNum + 1);
                 etags.Add(etagDict);
             }

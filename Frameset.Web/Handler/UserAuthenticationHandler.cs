@@ -5,6 +5,7 @@ using Microsoft.Extensions.Caching.Distributed;
 using Microsoft.Extensions.Logging;
 using Microsoft.Extensions.Primitives;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 using System.Security.Claims;
 using System.Text;
 using System.Text.Json;
@@ -16,9 +17,10 @@ namespace Frameset.Web.Handler
         private readonly ILogger _logger;
         private readonly IDistributedCache _distributedCache;
         private HttpContext _context;
-        private AuthenticationScheme _scheme;
-        public UserAuthenticationHandler(ILogger<UserAuthenticationHandler> logger, IDistributedCache distributedCache)
+        private AuthenticationScheme _scheme = null!;
+        public UserAuthenticationHandler(HttpContext _context, ILogger<UserAuthenticationHandler> logger, IDistributedCache distributedCache)
         {
+            this._context = _context;
             _logger = logger;
             _distributedCache = distributedCache;
         }
@@ -40,9 +42,10 @@ namespace Frameset.Web.Handler
             if (!token.IsNullOrEmpty())
             {
                 var tokenStr = _distributedCache.GetString(string.Format("{0}:{1}", "userToken", token));
-                if (!tokenStr.IsNullOrEmpty())
+                if (!string.IsNullOrWhiteSpace(tokenStr))
                 {
                     LoginUser? loginUser = JsonSerializer.Deserialize<LoginUser>(tokenStr);
+                    Trace.Assert(loginUser != null, "");
                     ClaimsIdentity identity = new ClaimsIdentity("Ctm");
                     Dictionary<string, object> userDataDict = [];
                     userDataDict.TryAdd("permissions", loginUser.Permissions);

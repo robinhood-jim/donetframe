@@ -81,7 +81,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return BatchInsert(dao, dbConnection, entitys, (adpater, filecontents) =>
             {
-                MySqlDataAdapter mySqlDataAdapter=adpater as MySqlDataAdapter;
+                MySqlDataAdapter mySqlDataAdapter = adpater as MySqlDataAdapter;
                 foreach (FieldContent content in filecontents)
                 {
                     switch (content.DataType)
@@ -173,9 +173,9 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
-            return new MySqlCommand(sql, (MySqlConnection)connection);  
+            return new MySqlCommand(sql, (MySqlConnection)connection);
         }
-        public override DbCommand GetDbCommand(DbConnection connection,string sql,DbTransaction transaction)
+        public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
         {
             return new MySqlCommand(sql, (MySqlConnection)connection, (MySqlTransaction)transaction);
         }

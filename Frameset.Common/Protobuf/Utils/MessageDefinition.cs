@@ -18,8 +18,8 @@ namespace Frameset.Common.Protobuf.Utils
         }
         public class Builder
         {
-            private DescriptorProto proto=null!;
-            private MessageDefinition definition=null!;
+            private DescriptorProto proto = null!;
+            private MessageDefinition definition = null!;
 
             internal Builder(string msgTypeName)
             {
@@ -27,7 +27,7 @@ namespace Frameset.Common.Protobuf.Utils
                 proto = new DescriptorProto();
                 proto.Name = msgTypeName;
             }
-            public Builder AddField(string label, string type, string name, int num, string defaultValue = null)
+            public Builder AddField(string label, string type, string name, int num, string defaultValue = "")
             {
                 FieldDescriptorProto.Types.Type fieldType = GetTypeByName(type);
                 FieldDescriptorProto.Types.Label fieldLabel = GetLabel(label);

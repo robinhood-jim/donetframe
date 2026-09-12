@@ -38,8 +38,8 @@ namespace Frameset.Common.Data.Writer
         internal bool useDictOutput = true;
         internal Dictionary<string, MethodParam> methodMap = [];
 
-        internal string dateFormatter = null!;
-        internal string timestampFormatter = null!;
+        internal string dateFormatter = ResourceConstants.DEFAULTDATEFORMAT;
+        internal string timestampFormatter = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
         protected Action<AbstractDataWriter<T>>? initFunction = null!;
         public void Dispose()
         {
@@ -114,20 +114,14 @@ namespace Frameset.Common.Data.Writer
 
         private void ConstructDateFormatter()
         {
-            string? dateFormatStr = null;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out dateFormatStr);
-            if (dateFormatStr.IsNullOrEmpty())
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTDATEFORMATTER, out string? dateFormatStr))
             {
-                dateFormatStr = ResourceConstants.DEFAULTDATEFORMAT;
+                dateFormatter = dateFormatStr;
             }
-            string? timestampFormatStr = null;
-            MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out timestampFormatStr);
-            if (timestampFormatStr.IsNullOrEmpty())
+            if (MetaDefine.ResourceConfig.TryGetValue(ResourceConstants.OUTPUTTIMESTAMPFORMATTER, out string? timestampFormatStr))
             {
-                timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
+                timestampFormatter = timestampFormatStr;
             }
-            dateFormatter = dateFormatStr;
-            timestampFormatter = timestampFormatStr;
         }
 
         internal virtual void Initalize()
@@ -149,9 +143,11 @@ namespace Frameset.Common.Data.Writer
                 else
                 {
                     Tuple<Stream, StreamWriter>? tuple = FileSystem.GetWriter(MetaDefine.Path);
-                    Trace.Assert(tuple!=null,"");
-                    outputStream = tuple?.Item1;
-                    writer = tuple?.Item2;
+                    if (tuple != null)
+                    {
+                        outputStream = tuple.Item1;
+                        writer = tuple.Item2;
+                    }
                 }
                 if (initFunction != null)
                 {
@@ -193,27 +189,35 @@ namespace Frameset.Common.Data.Writer
         {
             if (value != null)
             {
-                if (meta.ColumnType == Constants.MetaType.TIMESTAMP || meta.ColumnType == Constants.MetaType.DATE)
+                string? valueStr = value.ToString();
+                if (!string.IsNullOrWhiteSpace(valueStr))
                 {
-                    if (value is DateTime || value is DateTimeOffset)
+                    if (meta.ColumnType == Constants.MetaType.TIMESTAMP || meta.ColumnType == Constants.MetaType.DATE)
                     {
-                        if (meta.ColumnType == Constants.MetaType.DATE)
+                        if (value is DateTime || value is DateTimeOffset)
                         {
-                            return ConvertUtil.DatetimeToString(value, dateFormatter);
+                            if (meta.ColumnType == Constants.MetaType.DATE)
+                            {
+                                return ConvertUtil.DatetimeToString(value, dateFormatter);
+                            }
+                            else
+                            {
+                                return ConvertUtil.DatetimeToString(value, timestampFormatter);
+                            }
                         }
                         else
                         {
-                            return ConvertUtil.DatetimeToString(value, timestampFormatter);
+                            return valueStr;
                         }
                     }
                     else
                     {
-                        return value?.ToString();
+                        return valueStr;
                     }
                 }
                 else
                 {
-                    return value?.ToString();
+                    return "";
                 }
             }
             else

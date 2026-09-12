@@ -11,10 +11,10 @@ namespace Frameset.Common.Data.Reader
 {
     public class ArrowIterator<T> : AbstractDataIterator<T>
     {
-        private ArrowStreamReader arrowStreamReader=null!;
-        private Schema schema=null!;
-        private MemoryAllocator allocator=null!;
-        private RecordBatch recordBatch=null!;
+        private ArrowStreamReader arrowStreamReader = null!;
+        private Schema schema = null!;
+        private MemoryAllocator allocator = null!;
+        private RecordBatch recordBatch = null!;
         private int maxrows;
         private int currentbatchRow;
 
@@ -35,6 +35,7 @@ namespace Frameset.Common.Data.Reader
         {
             base.Initalize(filePath);
             schema = ArrowUtils.GetSchema(MetaDefine);
+
             allocator = MemoryAllocator.Default.Value;
             arrowStreamReader = new ArrowStreamReader(inputStream, allocator);
         }
@@ -72,7 +73,7 @@ namespace Frameset.Common.Data.Reader
         internal void WrapValue(Field field, string columnName, Constants.MetaType columnType, int column, int row)
         {
             IArrowArray array = recordBatch.Column(column);
-            object? value=null ;
+            object? value = null;
             switch (columnType)
             {
                 case Constants.MetaType.LONG:
@@ -97,11 +98,19 @@ namespace Frameset.Common.Data.Reader
                     break;
                 case Constants.MetaType.TIMESTAMP:
                     Int64Array tArr = (Int64Array)array;
-                    value = new DateTime(tArr.GetValue(row).Value);
+                    long? timeTs = tArr.GetValue(row);
+                    if (timeTs != null)
+                    {
+                        value = DateTimeOffset.FromUnixTimeMilliseconds((long)timeTs).LocalDateTime;
+                    }
                     break;
                 case Constants.MetaType.DATE:
                     Int64Array daArr = (Int64Array)array;
-                    value = new DateTime(daArr.GetValue(row).Value);
+                    long? timeTs1 = daArr.GetValue(row);
+                    if (timeTs1 != null)
+                    {
+                        value = DateTimeOffset.FromUnixTimeMilliseconds((long)timeTs1).LocalDateTime;
+                    }
                     break;
                 case Constants.MetaType.STRING:
                     StringArray sArr = (StringArray)array;

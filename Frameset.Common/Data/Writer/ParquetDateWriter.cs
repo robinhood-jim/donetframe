@@ -13,7 +13,7 @@ namespace Frameset.Common.Data.Writer
     public class ParquetDateWriter<T> : AbstractDataWriter<T>
     {
         private ParquetWriter pwriter = null!;
-        private ParquetRowGroupWriter? groupWriter ;
+        private ParquetRowGroupWriter? groupWriter;
         private ParquetSchema schema = null!;
         private List<DataField> fields = new();
         private Dictionary<int, ArrayList> chunckMap = new();
@@ -83,19 +83,19 @@ namespace Frameset.Common.Data.Writer
 
         public override void FinishWrite()
         {
-            if (groupWriter != null && writeRow>0)
+            if (groupWriter != null && writeRow > 0)
             {
                 FlushGroup();
             }
-            groupWriter.Dispose();
+            groupWriter?.Dispose();
             pwriter.Dispose();
         }
 
         public override void WriteRecord(T value)
         {
-            if (groupWriter == null || writeRow==0)
+            if (groupWriter == null || writeRow == 0)
             {
-                groupWriter= pwriter.CreateRowGroup();
+                groupWriter = pwriter.CreateRowGroup();
             }
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
@@ -118,7 +118,7 @@ namespace Frameset.Common.Data.Writer
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 Array array = chunckMap[i].ToArray(fields[i].ClrType);
-                tasks.Add(groupWriter.WriteColumnAsync(new Parquet.Data.DataColumn(fields[i], array)));
+                tasks.Add(groupWriter?.WriteColumnAsync(new Parquet.Data.DataColumn(fields[i], array)));
             }
             foreach (var item in tasks)
             {

@@ -1,14 +1,13 @@
-﻿using Frameset.Core.Dao.Utils;
+﻿using Frameset.Core.Common;
+using Frameset.Core.Dao.Utils;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Query;
 using IBM.Data.Db2;
-using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
 using System.Text;
 using System.Threading;
-using Frameset.Core.Common;
-using Frameset.Core.FileSystem;
 
 namespace Frameset.Core.Dao.Meta
 {
@@ -58,7 +57,7 @@ namespace Frameset.Core.Dao.Meta
         public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
             CancellationToken token, int batchSize = 10000)
         {
-            using (DB2BulkCopy copy=new DB2BulkCopy((DB2Connection)connection, DB2BulkCopyOptions.Default))
+            using (DB2BulkCopy copy = new DB2BulkCopy((DB2Connection)connection, DB2BulkCopyOptions.Default))
             {
                 copy.DestinationTableName = tableName;
                 var dataReader =
@@ -67,7 +66,7 @@ namespace Frameset.Core.Dao.Meta
                 copy.WriteToServer(dataReader);
                 return 0;
             }
-            
+
         }
 
         public override DbConnection GetDbConnection(string connectStr)
@@ -82,13 +81,13 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbCommand GetDbCommand(DbConnection connection, string sql)
         {
-            return new DB2Command(sql,(DB2Connection)connection);
-            
+            return new DB2Command(sql, (DB2Connection)connection);
+
         }
-        public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+        public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
         {
-            return new DB2Command(sql,(DB2Connection)connection,(DB2Transaction)transaction);
-           
+            return new DB2Command(sql, (DB2Connection)connection, (DB2Transaction)transaction);
+
         }
         public override DbParameter WrapParameter(int pos, object value)
         {
@@ -120,7 +119,7 @@ namespace Frameset.Core.Dao.Meta
 
         public override string GetTruncateTableStatement(string tableName)
         {
-            return Constants.ALTER_TABLE+tableName+" ACTIVATE NOT LOGGED INITIALLY WITH EMPTY TABLE";
+            return Constants.ALTER_TABLE + tableName + " ACTIVATE NOT LOGGED INITIALLY WITH EMPTY TABLE";
         }
 
         public override DbDataAdapter GetDataAdapter()

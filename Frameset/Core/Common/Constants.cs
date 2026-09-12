@@ -125,7 +125,7 @@ namespace Frameset.Core.Common
 
         public static MetaType MetaTypeOfType(Type targetType)
         {
-            MetaType metaType ;
+            MetaType metaType;
             if (targetType.IsGenericType || targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 targetType = targetType.GetGenericArguments()[0];
@@ -162,7 +162,8 @@ namespace Frameset.Core.Common
                     if (targetType.Equals(typeof(byte[])))
                     {
                         metaType = MetaType.BLOB;
-                    } else if (targetType.Equals(typeof(DateTimeOffset)))
+                    }
+                    else if (targetType.Equals(typeof(DateTimeOffset)))
                     {
                         metaType = MetaType.TIMESTAMP;
                     }

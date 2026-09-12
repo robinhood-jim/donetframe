@@ -49,12 +49,12 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             if (Exist(resourcePath))
             {
-                DeleteObjectResult result= server.DeleteObject(new DeleteObjectRequest(GetBucketName(), resourcePath));
+                DeleteObjectResult result = server.DeleteObject(new DeleteObjectRequest(GetBucketName(), resourcePath));
                 return result.IsSuccessful();
             }
             return false;
         }
-        
+
 
         internal override bool BucketExists(string bucketName)
         {

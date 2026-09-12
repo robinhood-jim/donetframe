@@ -5,7 +5,7 @@ namespace Frameset.Common.FileSystem
     /// <summary>
     /// United Data File Access FileSystem Interface
     /// </summary>
-    public interface IFileSystem: IDisposable
+    public interface IFileSystem : IDisposable
     {
         /// <summary>
         /// Read CSV JSON 

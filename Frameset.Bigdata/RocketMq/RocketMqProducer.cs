@@ -12,15 +12,30 @@ namespace Frameset.Bigdata.RocketMq
         private readonly string AccessKey;
         private readonly string EndPoint;
         private Producer producer;
-        private string Topics;
-        private string MessageGroup;
+        private readonly string Topics;
+        private readonly string MessageGroup;
         public RocketMqProducer(DataCollectionDefine define) : base(define)
         {
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQSECRETKEY, out SecretKey);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQACCESSKEY, out AccessKey);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQENDPOINT, out EndPoint);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMTOPICS, out Topics);
-            define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQMESSAGEGROUP, out MessageGroup);
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQSECRETKEY, out string? SecretKeyStr))
+            {
+                SecretKey = SecretKeyStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQACCESSKEY, out string? AccessKeyStr))
+            {
+                AccessKey = AccessKeyStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQENDPOINT, out string? EndPointStr))
+            {
+                EndPoint = EndPointStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMTOPICS, out string? TopicsStr))
+            {
+                Topics = TopicsStr;
+            }
+            if (define.ResourceConfig.TryGetValue(ResourceConstants.ROCKETMQMESSAGEGROUP, out string? MessageGroupStr))
+            {
+                MessageGroup = MessageGroupStr;
+            }
             Trace.Assert(!string.IsNullOrWhiteSpace(SecretKey) && !string.IsNullOrWhiteSpace(AccessKey) && !string.IsNullOrWhiteSpace(EndPoint), "");
             var credentialProvider = new StaticSessionCredentialsProvider(AccessKey, SecretKey);
             var clientConfig = new ClientConfig.Builder().SetEndpoints(EndPoint)

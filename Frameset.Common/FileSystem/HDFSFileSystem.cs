@@ -1,9 +1,9 @@
-﻿using System.Diagnostics;
-using Frameset.Common.FileSystem.utils;
+﻿using Frameset.Common.FileSystem.utils;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 
 namespace Frameset.Common.FileSystem
 {
@@ -65,7 +65,7 @@ namespace Frameset.Common.FileSystem
         public override Stream GetInputStream(string resourcePath)
         {
             Stream stream = new MemoryStream();
-            Trace.Assert(client!=null,"");
+            Trace.Assert(client != null, "");
             bool oktag = client.ReadStream(stream, resourcePath).Result;
             if (oktag)
             {
@@ -92,13 +92,13 @@ namespace Frameset.Common.FileSystem
         }
         internal bool FlushOut(Stream outputStream, string resourcePath)
         {
-            Trace.Assert(client!=null,"");
+            Trace.Assert(client != null, "");
             return client.WriteStream(outputStream, resourcePath).Result;
         }
         public override Stream GetRawInputStream(string resourcePath)
         {
             Stream outputStream = new MemoryStream();
-            Trace.Assert(client!=null,"");
+            Trace.Assert(client != null, "");
             bool okTag = client.ReadStream(outputStream, resourcePath).Result;
             if (okTag)
             {
@@ -119,14 +119,14 @@ namespace Frameset.Common.FileSystem
         public override Tuple<Stream, StreamReader> GetReader(string resourcePath)
         {
             Stream input = GetInputStream(resourcePath);
-            
+
             return Tuple.Create(input, new StreamReader(input));
-           
+
         }
 
         public override long GetStreamSize(string resourcePath)
         {
-            Trace.Assert(client!=null,"");
+            Trace.Assert(client != null, "");
             Dictionary<string, object> contentMap = client.ContentSummary(resourcePath).Result;
             if (!contentMap.IsNullOrEmpty())
             {
@@ -143,7 +143,7 @@ namespace Frameset.Common.FileSystem
 
         public override bool IsDirectory(string resourcePath)
         {
-            Trace.Assert(client!=null,"");
+            Trace.Assert(client != null, "");
             return client.IsDirectory(resourcePath).Result;
         }
 

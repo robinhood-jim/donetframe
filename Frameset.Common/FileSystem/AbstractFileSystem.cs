@@ -124,7 +124,7 @@ namespace Frameset.Common.FileSystem
 
         public abstract bool Delete(string resourcePath);
         public abstract bool CreateFile(string resourcePath);
-        
+
         public virtual List<string> List(string resourcePath)
         {
             throw new NotSupportedException();

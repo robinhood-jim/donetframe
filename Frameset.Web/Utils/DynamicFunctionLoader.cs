@@ -138,7 +138,10 @@ namespace Frameset.Web.Utils
                                 return OutputErrMsg("init method " + function.InitFunc + " not found!");
                             }
                         }
-                        noStaticObjectMap.TryAdd(funcName, tmpObj);
+                        if (tmpObj != null)
+                        {
+                            noStaticObjectMap.TryAdd(funcName, tmpObj);
+                        }
                     }
                     retObj = function.TargetMethod.Invoke(tmpObj, reqParams.ToArray());
                 }
@@ -164,7 +167,11 @@ namespace Frameset.Web.Utils
             {
                 foreach (var entry in collections)
                 {
-                    querMap.TryAdd(entry.Key, entry.Value);
+                    string? value = entry.Value.First();
+                    if (!string.IsNullOrWhiteSpace(value))
+                    {
+                        querMap.TryAdd(entry.Key, value);
+                    }
                 }
             }
             return querMap;
@@ -227,20 +234,20 @@ namespace Frameset.Web.Utils
                         if (selAttribute != null)
                         {
                             attribute = selAttribute as ServerlessFuncAttribute;
-                            funcName = attribute.Value ?? method.Name;
-                            allowMethods = attribute.AllowMethods ?? DEFAULTALLOWMETHODS;
-                            initFunc = attribute.InitFunc;
-                            initParam = attribute.InitParameter;
+                            funcName = attribute?.Value ?? method.Name;
+                            allowMethods = attribute?.AllowMethods ?? DEFAULTALLOWMETHODS;
+                            initFunc = attribute?.InitFunc;
+                            initParam = attribute?.InitParameter;
                         }
                         if (!funcName.IsNullOrEmpty())
                         {
                             funcs.Add(funcName);
                             DynamicFunction function = new(funcName, type, method, allowMethods, method.IsStatic);
-                            if (!initFunc.IsNullOrEmpty())
+                            if (!string.IsNullOrWhiteSpace(initFunc))
                             {
                                 function.InitFunc = initFunc;
                             }
-                            if (!initParam.IsNullOrEmpty())
+                            if (!string.IsNullOrWhiteSpace(initParam))
                             {
                                 function.InitParam = initParam;
                             }

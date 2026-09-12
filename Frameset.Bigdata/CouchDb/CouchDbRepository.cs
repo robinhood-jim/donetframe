@@ -75,8 +75,11 @@ namespace Frameset.Bigdata.CouchDb
             ConvertUtil.ToDictRef(entity, out Dictionary<string, object> dict);
             if (!dict.TryGetValue("_id", out _))
             {
-                object pkValue = pkColumn.GetMethod.Invoke(entity, null);
-                dict.TryAdd("_id", pkValue);
+                object? pkValue = pkColumn.GetMethod.Invoke(entity, null);
+                if (pkValue != null)
+                {
+                    dict.TryAdd("_id", pkValue);
+                }
             }
             var jsonConent = JsonSerializer.Serialize(dict);
             var httpContent = new StringContent(jsonConent, Encoding.UTF8, "application/json");
@@ -91,21 +94,24 @@ namespace Frameset.Bigdata.CouchDb
         public override bool UpdateEntity(V entity)
         {
             var httpClient = GetSecureHttpClient();
-            object pkId = pkColumn.GetMethod.Invoke(entity, null);
-            V origin = GetById(pkId.ToString());
-            ConvertUtil.WrapUpdate(origin, entity);
-            ConvertUtil.ToDictRef(entity, out Dictionary<string, object> dict);
-            if (!dict.TryGetValue("_id", out _))
+            object? pkId = pkColumn.GetMethod.Invoke(entity, null);
+            if (pkId != null && !string.IsNullOrWhiteSpace(pkId.ToString()))
             {
-                object? pkValue = pkColumn.GetMethod.Invoke(entity, null);
-                dict.TryAdd("_id", pkValue);
-            }
-            var jsonConent = JsonSerializer.Serialize(dict);
-            var httpContent = new StringContent(jsonConent, Encoding.UTF8, "application/json");
-            var requestResult = httpClient.PutAsync(dbName + "/" + pkId, httpContent).Result;
-            if (requestResult.IsSuccessStatusCode)
-            {
-                return true;
+                V origin = GetById(pkId.ToString());
+                ConvertUtil.WrapUpdate(origin, entity);
+                ConvertUtil.ToDictRef(entity, out Dictionary<string, object> dict);
+                if (!dict.TryGetValue("_id", out _))
+                {
+                    object? pkValue = pkColumn.GetMethod.Invoke(entity, null);
+                    dict.TryAdd("_id", pkValue);
+                }
+                var jsonConent = JsonSerializer.Serialize(dict);
+                var httpContent = new StringContent(jsonConent, Encoding.UTF8, "application/json");
+                var requestResult = httpClient.PutAsync(dbName + "/" + pkId, httpContent).Result;
+                if (requestResult.IsSuccessStatusCode)
+                {
+                    return true;
+                }
             }
             return false;
         }

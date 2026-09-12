@@ -1,7 +1,9 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.FileSystem;
+using Frameset.Core.Model;
 using Frameset.Core.Query;
+using Frameset.Core.Reflect;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
@@ -13,8 +15,6 @@ using System.Data.Common;
 using System.Diagnostics;
 using System.Text;
 using System.Threading;
-using Frameset.Core.Model;
-using Frameset.Core.Reflect;
 
 
 namespace Frameset.Core.Dao.Meta
@@ -22,16 +22,16 @@ namespace Frameset.Core.Dao.Meta
     public abstract class AbstractSqlDialect : ISqlDialect
     {
         internal static string ORDERSTR = "order by";
-        
+
         public virtual string GetDecimalScript(int scale, int precise)
         {
 
-            return new StringBuilder("DECIMAL(").Append(scale).Append(",").Append(precise).Append(")").ToString();
+            return new StringBuilder("DECIMAL(").Append(scale).Append(',').Append(precise).Append(')').ToString();
         }
         public virtual string GetDecimalScript(FieldContent content)
         {
 
-            return new StringBuilder("DECIMAL(").Append(content.Scale).Append(",").Append(content.Precise).Append(")").ToString();
+            return new StringBuilder("DECIMAL(").Append(content.Scale).Append(',').Append(content.Precise).Append(')').ToString();
         }
         public virtual string GenerateSequenceFunc(string sequenceName)
         {
@@ -57,7 +57,8 @@ namespace Frameset.Core.Dao.Meta
             if (content.IfPrimary)
             {
                 builder.Append(" NOT NULL PRIMARY KEY");
-            }else if (content.Required)
+            }
+            else if (content.Required)
             {
                 builder.Append((" NOT NULL"));
             }
@@ -78,14 +79,14 @@ namespace Frameset.Core.Dao.Meta
             return builder.ToString();
         }
         public abstract string GeneratePageSql(string baseSql, PageQuery query);
-        public virtual string getVarcharFormat(int length)
+        public virtual string GetVarcharFormat(int length)
         {
-            return new StringBuilder("VARCHAR(").Append(length).Append(")").ToString();
+            return new StringBuilder("VARCHAR(").Append(length).Append(')').ToString();
         }
-        public virtual string getVarcharFormat(FieldContent content)
+        public virtual string GetVarcharFormat(FieldContent content)
         {
             int length = content.Length == 0 ? 32 : content.Length;
-            return new StringBuilder("VARCHAR(").Append(length).Append(")").ToString();
+            return new StringBuilder("VARCHAR(").Append(length).Append(')').ToString();
         }
         public virtual string GetCharFormat(int length)
         {
@@ -163,7 +164,7 @@ namespace Frameset.Core.Dao.Meta
         public virtual string GetFieldDefineScript(FieldContent content)
         {
             StringBuilder builder = new StringBuilder(0);
-            builder.Append(StringUtils.CamelCaseLowConvert(content.FieldName)).Append(" ");
+            builder.Append(StringUtils.CamelCaseLowConvert(content.FieldName)).Append(' ');
             switch (content.DataType)
             {
                 case Constants.MetaType.INTEGER:
@@ -197,12 +198,12 @@ namespace Frameset.Core.Dao.Meta
                     builder.Append(GetBlobFormat(content));
                     break;
                 case Constants.MetaType.STRING:
-                    builder.Append(getVarcharFormat(content));
+                    builder.Append(GetVarcharFormat(content));
                     break;
             }
             if (content.IfIncrement)
             {
-                builder.Append(" ").Append(AppendAutoIncrement());
+                builder.Append(' ').Append(AppendAutoIncrement());
             }
             if (content.Required)
             {
@@ -210,27 +211,27 @@ namespace Frameset.Core.Dao.Meta
             }
             if (content.IfPrimary)
             {
-                builder.Append(" ").Append(" PRIMARY KEY");
+                builder.Append(' ').Append(" PRIMARY KEY");
             }
             //builder.Append(",");
             return builder.ToString();
         }
 
-        protected int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys,Func<DbDataAdapter,IList<FieldContent>,int> addParameterFunc,int batchSize=1000)
+        protected int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys, Func<DbDataAdapter, IList<FieldContent>, int> addParameterFunc, int batchSize = 1000)
         {
             CheckTypeExists(typeof(T));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(T));
-            DataTable table=new DataTable(entityContent.GetTableName());
+            DataTable table = new DataTable(entityContent.GetTableName());
             IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(typeof(T));
             Dictionary<string, MethodParam> methodParams = AnnotationUtils.ReflectObject(typeof(T));
             foreach (var entity in entitys)
             {
                 DataRow row = table.NewRow();
-                foreach(FieldContent content in fieldContents)
+                foreach (FieldContent content in fieldContents)
                 {
                     if (methodParams.TryGetValue(content.PropertyName, out MethodParam param))
                     {
-                        object value = param.GetMethod.Invoke(entity,[]);
+                        object value = param.GetMethod.Invoke(entity, []);
                         if (value != null)
                         {
                             row[content.FieldName] = value;
@@ -244,15 +245,15 @@ namespace Frameset.Core.Dao.Meta
             }
             DbDataAdapter dataAdapter = GetDataAdapter();
             //dataAdapter.Fill(table);
-            
+
             String insertBatchSql = SqlUtils.GetInsertBactchSql(dao, typeof(T));
             dataAdapter.InsertCommand = GetDbCommand(dbConnection, insertBatchSql);
-            addParameterFunc.Invoke(dataAdapter,fieldContents);
+            addParameterFunc.Invoke(dataAdapter, fieldContents);
             dataAdapter.InsertCommand.UpdatedRowSource = UpdateRowSource.None;
             dataAdapter.UpdateBatchSize = batchSize;
             return dataAdapter.Update(table);
         }
-       
+
 
         public abstract DbDataAdapter GetDataAdapter();
 
@@ -428,6 +429,6 @@ namespace Frameset.Core.Dao.Meta
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)), "Type must sub class of BaseEntity");
         }
-        
+
     }
 }

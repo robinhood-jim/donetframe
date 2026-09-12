@@ -19,13 +19,13 @@ namespace Frametest.FileSystem
                 .Path("f:/testlocal.proto").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.orc.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY, "jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME, "test")
                 //.Path("testftp.json.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.FTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING).AddColumnDefine("type",Constants.MetaType.INTEGER)
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING).AddColumnDefine("type", Constants.MetaType.INTEGER)
                 .AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE).AddColumnDefine("time", Constants.MetaType.TIMESTAMP);
             Dictionary<string, object> cachedMap = new Dictionary<string, object>();
             Random random = new Random(1231313);
             long startTs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 3600 * 24 * 1000;
-            DateTime dateTime = new DateTime(1970,1,1,0,0,0);
-            
+            DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0);
+
             using (AbstractDataWriter<Dictionary<string, object>> writer = builder.Build().GetDataWriter<Dictionary<string, object>>())
             {
                 for (int i = 0; i < 1000000; i++)
@@ -75,7 +75,7 @@ namespace Frametest.FileSystem
                 .Path("f:/testlocal.proto").FsType(Constants.FileSystemType.LOCAL)
                 //.Path("tmp/testminio.csv.gz").FsType(Constants.FileSystemType.MINIO).AddConfig(StorageConstants.CLOUDFSACCESSKEY,"jeason").AddConfig(StorageConstants.CLOUDFSSECRETKEY, "Jeason@1234").AddConfig(StorageConstants.CLOUDFSENDPOINT, "http://36.158.32.29:18889").AddConfig(StorageConstants.BUCKET_NAME,"test")
                 //.Path("testftp.csv.gz").FsType(Constants.FileSystemType.FTP).AddConfig(ResourceConstants.FTPUSERNAME, "test").AddConfig(ResourceConstants.SFTPPASSWD, "test")
-                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING).AddColumnDefine("type",Constants.MetaType.INTEGER)
+                .AddColumnDefine("id", Constants.MetaType.LONG).AddColumnDefine("name", Constants.MetaType.STRING).AddColumnDefine("type", Constants.MetaType.INTEGER)
                                 .AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE).AddColumnDefine("time", Constants.MetaType.TIMESTAMP);
             DataCollectionDefine define = builder.Build();
             using (AbstractDataIterator<Dictionary<string, object>> iterator = define.GetDataReader<Dictionary<string, object>>())

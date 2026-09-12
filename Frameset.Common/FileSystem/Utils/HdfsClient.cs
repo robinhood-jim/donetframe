@@ -98,13 +98,21 @@ namespace Frameset.Common.FileSystem.utils
         }
         private void SetParameter(Dictionary<string, string> paramMap, string name, object? value, object? defaultValue = null)
         {
-            if (value != null && !string.IsNullOrWhiteSpace(value.ToString()))
+            if (value != null)
             {
-                paramMap.TryAdd(name, value?.ToString());
+                string? valueStr = value.ToString();
+                if (!string.IsNullOrWhiteSpace(valueStr))
+                {
+                    paramMap.TryAdd(name, valueStr);
+                }
             }
             else if (defaultValue != null)
             {
-                paramMap.TryAdd(name, defaultValue.ToString());
+                string? defaultValueStr = defaultValue.ToString();
+                if (!string.IsNullOrWhiteSpace(defaultValueStr))
+                {
+                    paramMap.TryAdd(name, defaultValueStr);
+                }
             }
         }
         public async Task<bool> Exists(string path)

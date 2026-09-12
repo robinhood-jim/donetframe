@@ -208,7 +208,7 @@ namespace Frameset.Core.Sql
                 builder.Append(" ELSE ").Append(defaultValue);
             }
             builder.Append(" END");
-            newColumns.Add(Tuple.Create(newColumnName, new [] { builder.ToString() }));
+            newColumns.Add(Tuple.Create(newColumnName, new[] { builder.ToString() }));
             newColumnMap.TryAdd(newColumnName, 1);
             return this;
         }

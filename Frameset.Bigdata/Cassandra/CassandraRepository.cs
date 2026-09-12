@@ -16,7 +16,7 @@ using System.Text;
 
 namespace Frameset.Bigdata.Cassandra
 {
-    public class CassandraRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity
+    public class CassandraRepository<V, P> : NoSqlRepository<V, P> where V : BaseEntity where P : notnull
     {
         private readonly Cluster cluster;
         private readonly ISession session;
@@ -122,7 +122,7 @@ namespace Frameset.Bigdata.Cassandra
             PreparedStatement prepared = session.Prepare(segment.InsertSql);
             BoundStatement bound = prepared.Bind(segment.ParamObjects.ToArray());
             var rowset = session.Execute(bound);
-            
+
             return true;
         }
 
@@ -130,12 +130,16 @@ namespace Frameset.Bigdata.Cassandra
         {
             FieldContent content = EntityReflectUtils.GetPrimaryKey(modelType);
             object? pkId = content.GetMethod.Invoke(entity, null);
-            V origin = GetById((P)pkId);
-            UpdateSegment updateSegment = SqlGenUtils.GetUpdateSegment(origin, entity);
-            PreparedStatement statement = session.Prepare(updateSegment.UpdateSql);
-            BoundStatement boundStatement = statement.Bind(updateSegment.ParameterObjects.ToArray());
-            session.Execute(boundStatement);
-            return true;
+            if (pkId != null)
+            {
+                V origin = GetById((P)pkId);
+                UpdateSegment updateSegment = SqlGenUtils.GetUpdateSegment(origin, entity);
+                PreparedStatement statement = session.Prepare(updateSegment.UpdateSql);
+                BoundStatement boundStatement = statement.Bind(updateSegment.ParameterObjects.ToArray());
+                session.Execute(boundStatement);
+                return true;
+            }
+            return false;
         }
         public override IList<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = "")
         {

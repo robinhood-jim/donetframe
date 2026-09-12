@@ -11,11 +11,25 @@ namespace Frameset.Core.Utils
                 Log.Debug(message);
             }
         }
+        public static void Debug(string messageTemplate, object[] parameters)
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
+                Log.Debug(messageTemplate, parameters);
+            }
+        }
         public static void Info(string message)
         {
             if (Log.IsEnabled(Serilog.Events.LogEventLevel.Information))
             {
-                Log.Debug(message);
+                Log.Information(message);
+            }
+        }
+        public static void Info(string messageTemplate, object[] parameters)
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Information))
+            {
+                Log.Information(messageTemplate, parameters);
             }
         }
         public static void Error(string message)

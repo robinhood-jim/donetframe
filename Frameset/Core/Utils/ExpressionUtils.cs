@@ -7,7 +7,7 @@ namespace Frameset.Core.Utils
 {
     public static class ExpressionUtils
     {
-        private static readonly Dictionary<Type, Func<dynamic>> funcMap = [];
+        private static readonly WeakLruDictionary<Type, Func<dynamic>> funcMap = new(100);
         public static Func<O> GetExpressionFunction<O>()
         {
             Type returnType = typeof(O);

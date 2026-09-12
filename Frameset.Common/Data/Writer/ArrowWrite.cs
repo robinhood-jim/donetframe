@@ -6,14 +6,13 @@ using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Microsoft.IdentityModel.Tokens;
 using System.Globalization;
-using Apache.Arrow.Memory;
 
 namespace Frameset.Common.Data.Writer
 {
     public class ArrowWrite<T> : AbstractDataWriter<T>
     {
-        private Schema schema=null!;
-        private ArrowStreamWriter arrowWriter=null!;
+        private Schema schema = null!;
+        private ArrowStreamWriter arrowWriter = null!;
         private int chunckCapcity = 10000;
         private long totalRow = 0;
         private int groupRow = 0;
@@ -97,7 +96,7 @@ namespace Frameset.Common.Data.Writer
                     ((Int64Array.Builder)buiders[columnPos]).Append(Convert.ToInt64(value));
                     break;
                 case Constants.MetaType.FLOAT:
-                    ((FloatArray.Builder)buiders[columnPos]).Append(float.Parse(value.ToString(), CultureInfo.InvariantCulture));
+                    ((FloatArray.Builder)buiders[columnPos]).Append(Convert.ToInt64(value.ToString(), CultureInfo.InvariantCulture));
                     break;
                 case Constants.MetaType.DOUBLE:
                     ((DoubleArray.Builder)buiders[columnPos]).Append(Convert.ToDouble(value));

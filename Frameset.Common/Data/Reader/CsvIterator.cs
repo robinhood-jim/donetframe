@@ -85,9 +85,9 @@ namespace Frameset.Common.Data.Reader
         private bool doProcess(string? readStr)
         {
             bool hasNext = false;
-            if (!readStr.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(readStr))
             {
-                string[] arr = readStr?.Split(Splitter);
+                string[] arr = readStr.Split(Splitter);
                 if (arr?.Length >= MetaDefine.ColumnList.Count)
                 {
                     for (int i = 0; i < MetaDefine.ColumnList.Count; i++)

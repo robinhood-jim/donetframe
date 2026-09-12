@@ -194,7 +194,7 @@ namespace Frameset.Core.Dao
         public bool Nullable
         {
             get; set;
-        } 
+        }
         public string Comment
         {
             get; set;

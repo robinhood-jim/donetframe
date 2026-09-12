@@ -30,7 +30,7 @@ namespace Frameset.Web.Controller
         protected JsonResult SaveEntity(object input)
         {
             Trace.Assert(input != null);
-            bool saveOk = false;
+            bool saveOk;
             if (input.GetType().Equals(typeof(V)))
             {
                 V entity = (V)input;
@@ -48,7 +48,7 @@ namespace Frameset.Web.Controller
         protected JsonResult UpdateEntity(object input)
         {
             Trace.Assert(input != null);
-            bool saveOk = false;
+            bool saveOk;
             if (input.GetType().Equals(typeof(V)))
             {
                 V entity = (V)input;
@@ -126,7 +126,7 @@ namespace Frameset.Web.Controller
                     {
                         param.SetMethod.Invoke(retObj, new[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
                         retObj.AddDirtys(entry.Key);
-                    } 
+                    }
                 }
             }
             return retObj;

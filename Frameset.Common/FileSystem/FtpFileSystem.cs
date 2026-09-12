@@ -1,8 +1,8 @@
-﻿using System.Diagnostics;
-using FluentFTP;
+﻿using FluentFTP;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
+using System.Diagnostics;
 
 namespace Frameset.Common.FileSystem
 {
@@ -40,7 +40,7 @@ namespace Frameset.Common.FileSystem
                 define.ResourceConfig.TryGetValue(ResourceConstants.FTPPASSWD, out password);
 
                 client = new FtpClient(host, userName, password, port);
-                Trace.Assert(client!=null,"");
+                Trace.Assert(client != null, "");
                 busyTag = false;
             }
         }
@@ -305,7 +305,7 @@ namespace Frameset.Common.FileSystem
                 }
                 client.Dispose();
             }
-            
+
         }
         public override void FinishWrite(Stream outputStream)
         {

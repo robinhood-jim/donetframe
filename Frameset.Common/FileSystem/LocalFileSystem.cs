@@ -125,14 +125,14 @@ namespace Frameset.Common.FileSystem
                     return new(lists);
                 }
             }
-            return null;
+            return [];
         }
 
         public override bool CreateFile(string resourcePath)
         {
             if (!Directory.Exists(resourcePath) && !File.Exists(resourcePath))
             {
-                using var stream=File.Create(resourcePath);
+                using var stream = File.Create(resourcePath);
                 return true;
             }
             return false;

@@ -1,10 +1,10 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Configuration;
 using Frameset.Core.Context;
+using Frameset.Core.Dao.Meta;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System.Reflection;
-using Frameset.Core.Dao.Meta;
 
 namespace Frameset.Web.Utils
 {
@@ -21,24 +21,27 @@ namespace Frameset.Web.Utils
                 Type[] interfaces = impl.GetInterfaces();
                 //获取该类注入的生命周期
                 ServiceAttribute? attribute = impl.GetCustomAttribute<ServiceAttribute>();
-                ServiceLifetime lifetime = attribute.LifeTime;
-                interfaces.ToList().ForEach(i =>
+                if (attribute != null)
                 {
-                    switch (lifetime)
+                    ServiceLifetime lifetime = attribute.LifeTime;
+                    interfaces.ToList().ForEach(i =>
                     {
-                        case ServiceLifetime.Singleton:
-                            object targetObject = RegServiceContext.GetBean(i);
-                            services.AddSingleton(i, targetObject);
-                            break;
-                        case ServiceLifetime.Scoped:
-                            services.AddScoped(i, impl);
-                            break;
-                        case ServiceLifetime.Transient:
-                            services.AddTransient(i, impl);
-                            break;
+                        switch (lifetime)
+                        {
+                            case ServiceLifetime.Singleton:
+                                object targetObject = RegServiceContext.GetBean(i);
+                                services.AddSingleton(i, targetObject);
+                                break;
+                            case ServiceLifetime.Scoped:
+                                services.AddScoped(i, impl);
+                                break;
+                            case ServiceLifetime.Transient:
+                                services.AddTransient(i, impl);
+                                break;
 
-                    }
-                });
+                        }
+                    });
+                }
             });
         }
         /// <summary>
@@ -53,10 +56,10 @@ namespace Frameset.Web.Utils
             services.AddSingleton(typeof(ProjectConfiguration), configuration);
             return configuration;
         }
-        
-        public static ProjectConfiguration UsingConfiguration(this IServiceCollection services, string? configYaml,Func<string,AbstractSqlDialect> proxyFunc)
+
+        public static ProjectConfiguration UsingConfiguration(this IServiceCollection services, string? configYaml, Func<string, AbstractSqlDialect> proxyFunc)
         {
-            ProjectConfiguration configuration = new(configYaml,proxyFunc);
+            ProjectConfiguration configuration = new(configYaml, proxyFunc);
             configuration.DoInit();
             services.AddSingleton(typeof(ProjectConfiguration), configuration);
             return configuration;

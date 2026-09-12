@@ -11,7 +11,7 @@ namespace Frameset.Common.Streaming.Consumer
     {
         private IConsumer<string, byte[]> consumer;
         private readonly string groupId = null!;
-        private readonly string brokerUrl;
+        private readonly string brokerUrl = null!;
 
         private readonly string queueName;
         public KafkaConsumer(DataCollectionDefine define) : base(define)

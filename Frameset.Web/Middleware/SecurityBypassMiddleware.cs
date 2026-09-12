@@ -1,8 +1,8 @@
-﻿using System.IdentityModel.Tokens.Jwt;
-using Microsoft.AspNetCore.Authorization;
+﻿using Microsoft.AspNetCore.Authorization;
 using Microsoft.AspNetCore.Http;
 using Microsoft.AspNetCore.StaticFiles;
 using Microsoft.Extensions.Configuration;
+using System.IdentityModel.Tokens.Jwt;
 
 namespace Frameset.Web.Middleware;
 
@@ -14,7 +14,7 @@ public class SecurityBypassMiddleware
     private JwtSecurityTokenHandler tokenHandler;
     private FileExtensionContentTypeProvider provider;
 
-    public SecurityBypassMiddleware(RequestDelegate next,IConfiguration configuration)
+    public SecurityBypassMiddleware(RequestDelegate next, IConfiguration configuration)
     {
         _next = next;
         this.configuration = configuration;
@@ -26,7 +26,7 @@ public class SecurityBypassMiddleware
     public async Task InvokeAsync(HttpContext context)
     {
         string requestPath = GetRequestPath(context.Request);
-        bool isStaticResource=provider.TryGetContentType(context.Request.Path.Value ?? "", out _);
+        bool isStaticResource = provider.TryGetContentType(context.Request.Path.Value ?? "", out _);
         bool isPermitPaths = !isStaticResource && ignoreUrls.Any(p => requestPath.StartsWith(p, StringComparison.OrdinalIgnoreCase));
         if (isStaticResource || isPermitPaths)
         {

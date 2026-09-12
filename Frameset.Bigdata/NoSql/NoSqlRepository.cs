@@ -8,7 +8,7 @@ using Spring.Util;
 
 namespace Frameset.Bigdata.NoSql
 {
-    public abstract class NoSqlRepository<V, P> : IDisposable, INoSqlRepository<V, P> where V : BaseEntity
+    public abstract class NoSqlRepository<V, P> : IDisposable, INoSqlRepository<V, P> where V : BaseEntity where P : notnull
     {
         protected EntityContent content;
         protected FieldContent pkColumn;

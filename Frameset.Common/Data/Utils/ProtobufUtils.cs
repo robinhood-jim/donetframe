@@ -1,10 +1,10 @@
 ﻿using Frameset.Common.Annotation;
 using Frameset.Common.Protobuf.Utils;
 using Frameset.Core.Common;
+using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
 using System.Reflection;
-using Frameset.Core.FileSystem;
 
 namespace Frameset.Common.Data.Utils
 {
@@ -60,7 +60,7 @@ namespace Frameset.Common.Data.Utils
             }
 
             DataCollectionDefine define = collectionBuilder.Build();
-            return new DynamicMessage(builder.Build(),define.ColumnList);
+            return new DynamicMessage(builder.Build(), define.ColumnList);
         }
     }
 }

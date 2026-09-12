@@ -64,7 +64,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
         {
             if (Exist(resourcePath))
             {
-                var response=client.DeleteObjectAsync(GetBucketName(),resourcePath).GetAwaiter().GetResult();
+                var response = client.DeleteObjectAsync(GetBucketName(), resourcePath).GetAwaiter().GetResult();
                 return response.HttpStatusCode == HttpStatusCode.OK;
             }
             return false;
