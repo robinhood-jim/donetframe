@@ -29,7 +29,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "SELECT NEXT VALUE FOR " + sequenceName + " FROM SYSIBM.SYSDUMMY1";
         }
-        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        public override long QuerySequenceValue(IAdoDao dao, DbConnection connection, string sequenceName)
         {
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (DB2Command command = new DB2Command(executeSql, (DB2Connection)connection))
@@ -40,7 +40,7 @@ namespace Frameset.Core.Dao.Meta
         internal DB2Dialect()
         {
         }
-        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
@@ -54,7 +54,7 @@ namespace Frameset.Core.Dao.Meta
             }
         }
 
-        public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
+        public override long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
             CancellationToken token, int batchSize = 10000)
         {
             using (DB2BulkCopy copy = new DB2BulkCopy((DB2Connection)connection, DB2BulkCopyOptions.Default))

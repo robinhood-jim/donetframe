@@ -461,7 +461,7 @@ namespace Frameset.Core.Context
         private int TakeAction(DbCommand command, EffectEntry entry)
         {
             int effectRow = 0;
-            IJdbcDao dao = GetDao();
+            IAdoDao dao = GetDao();
             switch (entry.EffectType)
             {
                 case EFFECTTYPE.Insert:

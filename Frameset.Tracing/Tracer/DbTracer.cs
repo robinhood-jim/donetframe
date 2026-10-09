@@ -1,8 +1,8 @@
-﻿using System.Data;
+﻿using OpenTelemetry.Trace;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Text.Json;
-using OpenTelemetry.Trace;
 
 namespace Frameset.Tracing.Tracer;
 
@@ -13,8 +13,8 @@ public class DbTracer
     public static Activity? StartTrace(IDbCommand command)
     {
         var activity = DbSource.StartActivity(command.CommandText.Split(' ')[0], ActivityKind.Client);
-        DbParameterCollection collection= (DbParameterCollection)command.Parameters;
-        
+        DbParameterCollection collection = (DbParameterCollection)command.Parameters;
+
         if (activity != null)
         {
             activity.SetTag("db.params", JsonSerializer.Serialize(GetParametersByPos(collection)));

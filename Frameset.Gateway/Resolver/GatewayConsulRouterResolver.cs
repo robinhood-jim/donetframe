@@ -1,34 +1,37 @@
-﻿using System.Collections.Concurrent;
-using Consul;
+﻿using Consul;
 using Frameset.Gateway.Models;
 using Nacos.V2;
+using System.Collections.Concurrent;
+using System.Diagnostics;
 
 namespace Frameset.Gateway.Resolver;
 
 public class GatewayConsulRouterResolver
 {
-    private IConsulClient consulClient;
+    private IConsulClient? consulClient;
     private IConfiguration configuration;
-    private INacosNamingService namingService;
-    private bool useConsulDiscovery ;
-    private bool useNacosDiscovery ;
+    private INacosNamingService? namingService;
+    private bool useConsulDiscovery;
+    private bool useNacosDiscovery;
     private static readonly ConcurrentDictionary<string, int> _serviceIndexCache = new();
 
-    public GatewayConsulRouterResolver(IConsulClient consulClient,INacosNamingService namingService,IConfiguration configuration)
+    public GatewayConsulRouterResolver(IConsulClient consulClient, IConfiguration configuration)
     {
         this.consulClient = consulClient;
         this.configuration = configuration;
+        useConsulDiscovery = true;
+        
+    }
+    public GatewayConsulRouterResolver(INacosNamingService namingService, IConfiguration configuration)
+    {
+        this.configuration = configuration;
         this.namingService = namingService;
-        if (consulClient != null)
-        {
-            useConsulDiscovery = true;
-        }else if (namingService != null)
-        {
-            useNacosDiscovery = true;
-        }
+       
+        useNacosDiscovery = true;
+        
     }
 
-    public async Task<string> ResolveUrlAsync(RouteDefine routeDefine,string url)
+    public async Task<string> ResolveUrlAsync(RouteDefine routeDefine, string url)
     {
         if (string.IsNullOrWhiteSpace(url) || !routeDefine.Uri.StartsWith("lb://"))
         {
@@ -38,6 +41,7 @@ public class GatewayConsulRouterResolver
         string serviceName = uri.Host;
         if (useConsulDiscovery)
         {
+            Trace.Assert(consulClient != null, "");
             var healthResult = await consulClient.Health.Service(serviceName, tag: null, passingOnly: true);
             var instances = healthResult.Response;
 
@@ -47,14 +51,16 @@ public class GatewayConsulRouterResolver
                     $"[Consul Discovery] cant not found any instance of : {serviceName}");
             }
             var selectedNodeIndex = instances.Length == 1 ? 0 : SelectNextNodeRoundRobin(serviceName, instances.Length);
-            var selectedNode=instances[selectedNodeIndex];
+            var selectedNode = instances[selectedNodeIndex];
             var service = selectedNode.Service;
             string targetIp = string.IsNullOrEmpty(service.Address) ? selectedNode.Node.Address : service.Address;
             int targetPort = service.Port;
             //Router to Consul Service
             return $"http://{targetIp}:{targetPort}{url}";
-        }else if (useNacosDiscovery)
+        }
+        else if (useNacosDiscovery)
         {
+            Trace.Assert(namingService != null, "");
             var instances = await namingService.SelectInstances(serviceName, true);
             if (instances == null || !instances.Any())
             {
@@ -75,8 +81,8 @@ public class GatewayConsulRouterResolver
     {
         // 使用原子操作更新計數器，並對當前健康的總節點數取模 (%)，防止索引越界
         int nextIndex = _serviceIndexCache.AddOrUpdate(
-            serviceName, 
-            0, 
+            serviceName,
+            0,
             (key, currentVal) => (currentVal + 1) % totalNodes
         );
 

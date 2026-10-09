@@ -1,24 +1,24 @@
-﻿using System.Diagnostics;
-using Frameset.Core.Exceptions;
+﻿using Frameset.Core.Exceptions;
 using Frameset.Gateway.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
 using Nacos.V2;
 using Nacos.V2.Naming.Dtos;
 using Serilog;
+using System.Diagnostics;
 
 namespace Frameset.Gateway.Worker;
 
-public class NacosRegisterWorker :IHostedService
+public class NacosRegisterWorker : IHostedService
 {
     private readonly INacosNamingService namingService;
     private readonly IConfiguration configuration;
     private IOptionsMonitor<GatewayConfig> optionsMonitor;
-    private GatewayConfig activeConfig;
-    private string gatewayId;
+    private GatewayConfig activeConfig=null!;
+    private string gatewayId=null!;
     private IDisposable? changeToken;
 
-    public NacosRegisterWorker(INacosNamingService namingService, 
+    public NacosRegisterWorker(INacosNamingService namingService,
         IConfiguration configuration, IOptionsMonitor<GatewayConfig> optionsMonitor)
     {
         this.namingService = namingService;
@@ -30,7 +30,7 @@ public class NacosRegisterWorker :IHostedService
     {
         activeConfig = optionsMonitor.CurrentValue;
         gatewayId = activeConfig.ServiceId;
-        Trace.Assert(namingService!=null,"");
+        Trace.Assert(namingService != null, "");
         Instance gatewayInstance = new Instance()
         {
             ServiceName = activeConfig.ServiceName,
@@ -48,10 +48,10 @@ public class NacosRegisterWorker :IHostedService
             throw new ConfigIncorrectException("unable to register gateway node");
         }
         List<ServicesModel> list = activeConfig.Services;
-       
+
         if (!list.IsNullOrEmpty())
         {
-            foreach(ServicesModel model in list)
+            foreach (ServicesModel model in list)
             {
                 if (!model.Nodes.IsNullOrEmpty() && !token.CanBeCanceled)
                 {
@@ -63,7 +63,8 @@ public class NacosRegisterWorker :IHostedService
             }
         }
         ConsulRegisterWorker.ScanRouters(activeConfig);
-        changeToken = optionsMonitor.OnChange(async newConfig => {
+        changeToken = optionsMonitor.OnChange(async newConfig =>
+        {
             bool equals = activeConfig.Equals(newConfig);
             if (!equals)
             {
@@ -88,7 +89,7 @@ public class NacosRegisterWorker :IHostedService
                         {
                             break;
                         }
-                        await namingService.DeregisterInstance(node.Id,node.Address,node.Port);
+                        await namingService.DeregisterInstance(node.Id, node.Address, node.Port);
                         await RegisterService(node);
                     }
                 }
@@ -100,7 +101,7 @@ public class NacosRegisterWorker :IHostedService
                         {
                             break;
                         }
-                        await namingService.DeregisterInstance(node.Id,node.Address,node.Port);
+                        await namingService.DeregisterInstance(node.Id, node.Address, node.Port);
                     }
                 }
                 activeConfig = newConfig;
@@ -122,7 +123,7 @@ public class NacosRegisterWorker :IHostedService
             {
                 foreach (ServicesModel.Node node in model.Nodes)
                 {
-                    namingService.DeregisterInstance(node.Id,node.Address,node.Port);
+                    namingService.DeregisterInstance(node.Id, node.Address, node.Port);
                 }
             }
         }
@@ -132,7 +133,7 @@ public class NacosRegisterWorker :IHostedService
     {
         try
         {
-            namingService.RegisterInstance(node.Id, node.Address,node.Port);
+            namingService.RegisterInstance(node.Id, node.Address, node.Port);
             return Task.CompletedTask;
         }
         catch (Exception ex)

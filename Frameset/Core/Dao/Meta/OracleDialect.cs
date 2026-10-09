@@ -43,7 +43,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "selece " + sequenceName + ".NEXTVAL from dual";
         }
-        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        public override long QuerySequenceValue(IAdoDao dao, DbConnection connection, string sequenceName)
         {
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (OracleCommand command = new OracleCommand(executeSql, (OracleConnection)connection))
@@ -51,7 +51,7 @@ namespace Frameset.Core.Dao.Meta
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
             }
         }
-        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
@@ -68,7 +68,7 @@ namespace Frameset.Core.Dao.Meta
             }
         }
 
-        public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
+        public override long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models,
             CancellationToken token, int batchSize = 10000)
         {
             using (OracleBulkCopy copy = new OracleBulkCopy((OracleConnection)connection, OracleBulkCopyOptions.UseInternalTransaction))

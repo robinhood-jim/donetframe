@@ -10,10 +10,10 @@ public class ConsulConfigurationProvider : ConfigurationProvider
     private readonly string configKey;
     private ulong lastIndex = 0;
     private readonly string configType;
-    
+
     private IConsulClient consulClient;
 
-    public ConsulConfigurationProvider(IConsulClient consulClient, string configKey,string configType="json")
+    public ConsulConfigurationProvider(IConsulClient consulClient, string configKey, string configType = "json")
     {
         this.consulClient = consulClient;
         this.configKey = configKey;
@@ -35,7 +35,7 @@ public class ConsulConfigurationProvider : ConfigurationProvider
         }
         catch (Exception ex)
         {
-            
+
         }
         Task.Run(() => WatchConfigAsync());
     }
@@ -55,7 +55,7 @@ public class ConsulConfigurationProvider : ConfigurationProvider
                     //ParseAndDataUpdate(res.Response.Value);
                     await LoadConfigAsync();
                     // Triggers Microsoft.Extensions.Configuration system to reload memory maps
-                    OnReload(); 
+                    OnReload();
                     LogUtils.Info("[Consul Config]: Configuration refreshed successfully.");
                 }
                 await Task.Delay(3000);
@@ -77,7 +77,7 @@ public class ConsulConfigurationProvider : ConfigurationProvider
                 lastIndex = res.LastIndex;
                 using (var stream = new MemoryStream(res.Response.Value))
                 {
-                    Data = JsonConfigurationFileParser.Parse(stream);
+                    Data = JsonConfigurationFileParser.Parse(stream) as IDictionary<string, string?>;
                 }
             }
         }
@@ -86,7 +86,7 @@ public class ConsulConfigurationProvider : ConfigurationProvider
             Console.WriteLine($"[Consul Config] 讀取配置失敗: {ex.Message}");
         }
     }
-   
+
     internal static class JsonConfigurationFileParser
     {
         public static IDictionary<string, string> Parse(Stream stream)
@@ -97,4 +97,4 @@ public class ConsulConfigurationProvider : ConfigurationProvider
         }
     }
 }
-    
+

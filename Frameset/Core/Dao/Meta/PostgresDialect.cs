@@ -41,7 +41,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "int8";
         }
-        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        public override long QuerySequenceValue(IAdoDao dao, DbConnection connection, string sequenceName)
         {
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (NpgsqlCommand command = new NpgsqlCommand(executeSql, (NpgsqlConnection)connection))
@@ -49,7 +49,7 @@ namespace Frameset.Core.Dao.Meta
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
             }
         }
-        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             List<FieldContent> fields = (List<FieldContent>)EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));

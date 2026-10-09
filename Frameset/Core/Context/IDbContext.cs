@@ -50,7 +50,7 @@ namespace Frameset.Core.Context
         List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
         List<O> QueryByFields<V, O>(QueryParameter queryParams) where V : BaseEntity;
-        bool ExecuteOperation(Action<IJdbcDao, DbCommand> action);
+        bool ExecuteOperation(Action<IAdoDao, DbCommand> action);
         List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter);
         void SaveChanges();
         int RemoveByFields<V, P>(string fieldName, Constants.SqlOperator sqlOperator, object[] values) where V : BaseEntity;

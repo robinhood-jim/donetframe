@@ -1,15 +1,15 @@
-﻿using System.Text;
-using Nacos.V2;
+﻿using Nacos.V2;
 using Serilog;
+using System.Text;
 
 namespace Frameset.Gateway.Provider;
 
-public class NacosConfigurationProvider:ConfigurationProvider
+public class NacosConfigurationProvider : ConfigurationProvider
 {
     private readonly INacosConfigService configService;
     private readonly string dataId;
     private readonly string groupId;
-    public NacosConfigurationProvider(INacosConfigService configService,string dataId,string groupId)
+    public NacosConfigurationProvider(INacosConfigService configService, string dataId, string groupId)
     {
         this.configService = configService;
         this.dataId = dataId;
@@ -22,7 +22,7 @@ public class NacosConfigurationProvider:ConfigurationProvider
         {
             string config = configService.GetConfig(dataId, groupId, 5000).GetAwaiter().GetResult();
             LoadConfiguration(config);
-            configService.AddListener(dataId,groupId,new NacosConfigListener(this)).GetAwaiter().GetResult();
+            configService.AddListener(dataId, groupId, new NacosConfigListener(this)).GetAwaiter().GetResult();
         }
         catch (Exception ex)
         {
@@ -40,7 +40,7 @@ public class NacosConfigurationProvider:ConfigurationProvider
         {
             using var stream = new MemoryStream(Encoding.UTF8.GetBytes(content));
             var config = new ConfigurationBuilder().AddJsonStream(stream).Build();
-            Data = config.AsEnumerable().ToDictionary(k => k.Key, v => v.Value ?? string.Empty);
+            Data = config.AsEnumerable().ToDictionary(k => k.Key, v => v.Value ?? string.Empty) as IDictionary<string, string?>;
             OnReload();
         }
         catch (Exception ex)

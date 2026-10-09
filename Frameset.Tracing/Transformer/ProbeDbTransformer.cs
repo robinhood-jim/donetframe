@@ -1,18 +1,18 @@
-﻿using System.Reflection;
-using System.Runtime.Loader;
-using Frameset.Tracing.Tracer;
+﻿using Frameset.Tracing.Tracer;
 using Microsoft.IdentityModel.Tokens;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Frameset.Tracing.Transformer;
 
 public class ProbeDbTransformer
 {
-    
+
     public ProbeDbTransformer()
     {
-        
+
     }
     public void Initialize()
     {
@@ -23,7 +23,7 @@ public class ProbeDbTransformer
     private Assembly OnAssemblyResolving(AssemblyLoadContext context, AssemblyName assemblyName)
     {
         string detectedName = assemblyName.Name ?? "";
-        
+
         if (!IsAssmblyDb(detectedName))
         {
             return null;
@@ -47,7 +47,7 @@ public class ProbeDbTransformer
     private bool InjectADOTracing(ModuleDefinition module)
     {
         bool modified = false;
-        
+
         var dbCommandTypes = module.Types
             .Where(t => t.BaseType != null && t.BaseType.FullName == "System.Data.Common.DbCommand").ToList();
         if (!dbCommandTypes.IsNullOrEmpty())
@@ -68,7 +68,7 @@ public class ProbeDbTransformer
                     if (!method.HasBody) continue;
 
                     var processor = method.Body.GetILProcessor();
-                     // 宣告區域變數：index 0 為 Activity, index 1 為 Exception
+                    // 宣告區域變數：index 0 為 Activity, index 1 為 Exception
                     var activityVar = new VariableDefinition(activityType);
                     var exceptionVar = new VariableDefinition(exceptionType);
                     method.Body.Variables.Add(activityVar);
@@ -121,7 +121,7 @@ public class ProbeDbTransformer
                         HandlerEnd = method.Body.Instructions.Last().Next,
                         CatchType = exceptionType
                     };
-                    method.Body.ExceptionHandlers.Add(handler); 
+                    method.Body.ExceptionHandlers.Add(handler);
                 }
             }
             modified = true;

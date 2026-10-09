@@ -16,7 +16,7 @@ namespace Frameset.Core.Dao
 {
     public static class DAOFactory
     {
-        private readonly static Dictionary<string, IJdbcDao> containner = [];
+        private readonly static Dictionary<string, IAdoDao> containner = [];
         private static Dictionary<string, object> keyValues = [];
         internal static char endSuffix = ';';
         /// <summary>
@@ -50,7 +50,7 @@ namespace Frameset.Core.Dao
                         {
                             tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
                         }
-                        IJdbcDao dao = ConstructWithDict(tmpDict);
+                        IAdoDao dao = ConstructWithDict(tmpDict);
                         containner.Add(key, dao);
                         if (autoConstructDbContext)
                         {
@@ -66,9 +66,9 @@ namespace Frameset.Core.Dao
             }
         }
 
-        internal static IJdbcDao RegisterJdbcDao(string key, Dictionary<string, object> dict, ISqlDialect sqlDialect, bool autoConstructDbContext = true)
+        internal static IAdoDao RegisterJdbcDao(string key, Dictionary<string, object> dict, ISqlDialect sqlDialect, bool autoConstructDbContext = true)
         {
-            IJdbcDao dao = ConstructWithDict(dict, sqlDialect);
+            IAdoDao dao = ConstructWithDict(dict, sqlDialect);
             containner.Add(key, dao);
             if (autoConstructDbContext)
             {
@@ -82,19 +82,19 @@ namespace Frameset.Core.Dao
             return keyValues;
         }
 
-        internal static IJdbcDao ConstructWithDict(Dictionary<string, object> dict, ISqlDialect sqlDialect = null)
+        internal static IAdoDao ConstructWithDict(Dictionary<string, object> dict, ISqlDialect sqlDialect = null)
         {
             var builder = GetConnectString(dict, out var dbType, out var schema, out var logicColumnStr, out var validValue, out var invalidValue);
-            IJdbcDao dao = null;
+            IAdoDao dao = null;
             if (sqlDialect == null)
             {
                 if (string.IsNullOrEmpty(logicColumnStr))
                 {
-                    dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
+                    dao = new AdoDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1));
                 }
                 else
                 {
-                    dao = new JdbcDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1),
+                    dao = new AdoDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1),
                         logicColumnStr, validValue, invalidValue);
                 }
             }
@@ -102,11 +102,11 @@ namespace Frameset.Core.Dao
             {
                 if (string.IsNullOrEmpty(logicColumnStr))
                 {
-                    dao = new JdbcDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1));
+                    dao = new AdoDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1));
                 }
                 else
                 {
-                    dao = new JdbcDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1),
+                    dao = new AdoDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1),
                         logicColumnStr, validValue, invalidValue);
                 }
             }
@@ -229,24 +229,24 @@ namespace Frameset.Core.Dao
         {
             return input == null || string.IsNullOrWhiteSpace(input.ToString());
         }
-        public static IJdbcDao GetJdbcDao(string key)
+        public static IAdoDao GetJdbcDao(string key)
         {
-            containner.TryGetValue(key, out IJdbcDao dao);
+            containner.TryGetValue(key, out IAdoDao dao);
 
             return dao;
         }
-        public static JdbcDao Construct(string dbType, string schema, string connectionString)
+        public static AdoDao Construct(string dbType, string schema, string connectionString)
         {
-            JdbcDao dao = new JdbcDao(dbType, schema, connectionString);
+            AdoDao dao = new AdoDao(dbType, schema, connectionString);
             return dao;
         }
 
-        public static IJdbcDao Construct(Dictionary<string, object> dictParameter)
+        public static IAdoDao Construct(Dictionary<string, object> dictParameter)
         {
             return ConstructWithDict(dictParameter);
         }
 
-        public static IJdbcDao ConstructWithMeta(DataCollectionDefine collectionDefine)
+        public static IAdoDao ConstructWithMeta(DataCollectionDefine collectionDefine)
         {
             Dictionary<string, object> configDit = [];
             foreach (KeyValuePair<string, string> pair in collectionDefine.ResourceConfig)
@@ -265,7 +265,7 @@ namespace Frameset.Core.Dao
             }
             else
             {
-                IJdbcDao dao = ConstructWithDict(configMap);
+                IAdoDao dao = ConstructWithDict(configMap);
                 if (dao == null)
                 {
                     Log.Error("register  {Dsname} config error!", dsName);

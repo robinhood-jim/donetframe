@@ -1,11 +1,11 @@
-﻿using System.Data.Common;
-using Frameset.Core.Common;
+﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Meta;
 using Frameset.Core.Query;
+using System.Data.Common;
 
 namespace Frameset.Tracing.Plugins.Datasource;
 
-public class ProxySqlDialect : AbstractSqlDialect,ISqlDialect
+public class ProxySqlDialect : AbstractSqlDialect, ISqlDialect
 {
     private AbstractSqlDialect proxyDialect;
 
@@ -47,12 +47,12 @@ public class ProxySqlDialect : AbstractSqlDialect,ISqlDialect
 
     public override DbCommand GetDbCommand(DbConnection connection, string sql)
     {
-        DbCommand command = proxyDialect.GetDbCommand(((ProxyDbConnection)connection).GetTargetConnection(),sql);
+        DbCommand command = proxyDialect.GetDbCommand(((ProxyDbConnection)connection).GetTargetConnection(), sql);
         return new ProxyDbCommand(connection, command);
     }
-    public override DbCommand GetDbCommand(DbConnection connection, string sql,DbTransaction transaction)
+    public override DbCommand GetDbCommand(DbConnection connection, string sql, DbTransaction transaction)
     {
-        DbCommand command = proxyDialect.GetDbCommand(((ProxyDbConnection)connection).GetTargetConnection(),sql,transaction);
+        DbCommand command = proxyDialect.GetDbCommand(((ProxyDbConnection)connection).GetTargetConnection(), sql, transaction);
         return new ProxyDbCommand(connection, command);
     }
 
@@ -64,7 +64,7 @@ public class ProxySqlDialect : AbstractSqlDialect,ISqlDialect
 
     public override DbParameter WrapParameter(int pos, object value)
     {
-        DbParameter parameter= proxyDialect.WrapParameter(pos, value);
+        DbParameter parameter = proxyDialect.WrapParameter(pos, value);
         return parameter;
     }
 

@@ -25,7 +25,7 @@ using System.Threading;
 
 namespace Frameset.Core.Dao
 {
-    public class JdbcDao : IJdbcDao
+    public class AdoDao : IAdoDao
     {
         protected readonly string connectionStr;
         protected readonly string dbTypeStr = "Mysql";
@@ -36,21 +36,21 @@ namespace Frameset.Core.Dao
         protected int validValue = Constants.VALID_INT;
         protected int invalidValue = Constants.INVALID_INT;
 
-        internal JdbcDao(string connectionStr)
+        internal AdoDao(string connectionStr)
         {
             this.connectionStr = connectionStr;
         }
-        internal JdbcDao(string dbTypeStr, string connectionStr) : this(connectionStr)
+        internal AdoDao(string dbTypeStr, string connectionStr) : this(connectionStr)
         {
             this.dbTypeStr = dbTypeStr;
             this.dbType = Constants.DbTypeOf(dbTypeStr);
             this.dataMeta = DbDialectFactory.GetInstance(dbType);
         }
-        internal JdbcDao(string dbTypeStr, string schema, string connectionStr) : this(dbTypeStr, connectionStr)
+        internal AdoDao(string dbTypeStr, string schema, string connectionStr) : this(dbTypeStr, connectionStr)
         {
             this.schema = schema;
         }
-        internal JdbcDao(string dbTypeStr, string schema, string connectionStr, string logicColumn, object validValue, object invalidValue) : this(dbTypeStr, schema, connectionStr)
+        internal AdoDao(string dbTypeStr, string schema, string connectionStr, string logicColumn, object validValue, object invalidValue) : this(dbTypeStr, schema, connectionStr)
         {
             this.logicColumn = logicColumn;
             if (validValue != null)
@@ -63,20 +63,20 @@ namespace Frameset.Core.Dao
             }
         }
 
-        internal JdbcDao(ISqlDialect sqlDialect, string connectionStr)
+        internal AdoDao(ISqlDialect sqlDialect, string connectionStr)
         {
             this.dbType = sqlDialect.GetDbType();
             this.connectionStr = connectionStr;
             this.dbTypeStr = this.dbType.ToString();
             dataMeta = sqlDialect;
         }
-        internal JdbcDao(ISqlDialect sqlDialect, string schema, string connectionStr) : this(sqlDialect, connectionStr)
+        internal AdoDao(ISqlDialect sqlDialect, string schema, string connectionStr) : this(sqlDialect, connectionStr)
         {
             this.schema = schema;
         }
 
 
-        internal JdbcDao(ISqlDialect sqlDialect, string schema, string connectionStr, string logicColumn, object validValue, object invalidValue) : this(sqlDialect, schema, connectionStr)
+        internal AdoDao(ISqlDialect sqlDialect, string schema, string connectionStr, string logicColumn, object validValue, object invalidValue) : this(sqlDialect, schema, connectionStr)
         {
             this.logicColumn = logicColumn;
             if (validValue != null)

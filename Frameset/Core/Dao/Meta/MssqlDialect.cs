@@ -38,7 +38,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "SELECT NEXT VALUE for " + sequenceName + " as seqValue";
         }
-        public override long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        public override long QuerySequenceValue(IAdoDao dao, DbConnection connection, string sequenceName)
         {
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (SqlCommand command = new SqlCommand(executeSql, (SqlConnection)connection))
@@ -46,7 +46,7 @@ namespace Frameset.Core.Dao.Meta
                 return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
             }
         }
-        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));

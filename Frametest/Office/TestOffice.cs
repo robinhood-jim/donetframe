@@ -35,7 +35,7 @@ namespace Frametest.Office
             }
         }
 
-        public static void TestExcelReaderWrite(IJdbcDao dao)
+        public static void TestExcelReaderWrite(IAdoDao dao)
         {
             dao.DoWithQuery("select * from t_batch_test", null, (reader) =>
             {

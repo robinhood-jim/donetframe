@@ -12,10 +12,10 @@ public class ProxyDbConnection : DbConnection
     {
         this.proxyConnection = proxyConnection;
     }
-    
+
     protected override DbTransaction BeginDbTransaction(IsolationLevel isolationLevel)
     {
-        transaction=proxyConnection.BeginTransaction(isolationLevel);
+        transaction = proxyConnection.BeginTransaction(isolationLevel);
         return transaction;
     }
 

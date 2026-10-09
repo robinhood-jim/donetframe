@@ -1,9 +1,9 @@
-﻿using System.Data;
+﻿using Frameset.Core.Utils;
+using Frameset.Tracing.Tracer;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Text.Json;
-using Frameset.Core.Utils;
-using Frameset.Tracing.Tracer;
 
 namespace Frameset.Tracing.Plugins.Datasource;
 
@@ -12,7 +12,7 @@ public class ProxyDbCommand : DbCommand
     private readonly DbCommand proxyCommand;
     private readonly DbConnection? dbConnection;
     private string proxyClassName;
-    
+
     public ProxyDbCommand(DbConnection? connection, DbCommand proxyCommand)
     {
         this.proxyCommand = proxyCommand;
@@ -38,8 +38,8 @@ public class ProxyDbCommand : DbCommand
 
     public override int ExecuteNonQuery()
     {
-        
-        Activity? activity=null;
+
+        Activity? activity = null;
         try
         {
             activity = (Activity)GlobalTracer.StartTrace(proxyClassName + ".ExecuteNonQuery");
@@ -61,7 +61,7 @@ public class ProxyDbCommand : DbCommand
 
     protected override DbDataReader ExecuteDbDataReader(CommandBehavior behavior)
     {
-        Activity? activity=null;
+        Activity? activity = null;
         try
         {
             activity = (Activity)GlobalTracer.StartTrace(proxyClassName + ".ExecuteReader");
@@ -96,7 +96,7 @@ public class ProxyDbCommand : DbCommand
     public override string CommandText
     {
         get => proxyCommand.CommandText;
-        set => proxyCommand.CommandText = value; 
+        set => proxyCommand.CommandText = value;
     }
     public override int CommandTimeout
     {
@@ -115,7 +115,7 @@ public class ProxyDbCommand : DbCommand
     }
     protected override DbConnection? DbConnection
     {
-        get =>dbConnection;
+        get => dbConnection;
         set { throw new NotSupportedException("proxy connection can not set!"); }
     }
 
@@ -133,7 +133,7 @@ public class ProxyDbCommand : DbCommand
 
     public override object? ExecuteScalar()
     {
-        Activity? activity=null;
+        Activity? activity = null;
         try
         {
             activity = (Activity)GlobalTracer.StartTrace(proxyClassName + ".ExecuteScalar");

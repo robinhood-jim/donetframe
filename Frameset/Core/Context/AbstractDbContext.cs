@@ -39,7 +39,7 @@ namespace Frameset.Core.Context
         internal ThreadLocal<bool> autoCommitStatus;
 
         internal ConcurrentDictionary<Thread, UpdateEntry> requestChanges = [];
-        internal IJdbcDao dao;
+        internal IAdoDao dao;
         protected MethodInfo queryByFieldsMethod = typeof(AbstractDbContext).GetMethod("QueryModelsByFieldSimple", BindingFlags.NonPublic | BindingFlags.Instance);
         public string ContextName
         {
@@ -47,7 +47,7 @@ namespace Frameset.Core.Context
         } = DbContextFactory.CONTEXTDEFAULTNAME;
 
 
-        public bool ExecuteOperation(Action<IJdbcDao, DbCommand> action)
+        public bool ExecuteOperation(Action<IAdoDao, DbCommand> action)
         {
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
@@ -243,7 +243,7 @@ namespace Frameset.Core.Context
         }
         public void ChangeDs(string _dsName)
         {
-            IJdbcDao selectDao = DAOFactory.GetJdbcDao(_dsName);
+            IAdoDao selectDao = DAOFactory.GetJdbcDao(_dsName);
             if (selectDao == null)
             {
                 throw new BaseSqlException("dsName " + _dsName + " not registered!");
@@ -262,11 +262,11 @@ namespace Frameset.Core.Context
                 return dsName;
             }
         }
-        protected IJdbcDao GetDao()
+        protected IAdoDao GetDao()
         {
             if (temporaryDsName != null && temporaryDsName.IsValueCreated)
             {
-                IJdbcDao tempDao = DAOFactory.GetJdbcDao(temporaryDsName.Value);
+                IAdoDao tempDao = DAOFactory.GetJdbcDao(temporaryDsName.Value);
                 if (tempDao == null)
                 {
                     throw new BaseSqlException("dsName " + dsName + " not registered!");
@@ -328,7 +328,7 @@ namespace Frameset.Core.Context
         }
         public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
-            IJdbcDao queryDao = GetDao();
+            IAdoDao queryDao = GetDao();
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
                 connection.Open();

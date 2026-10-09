@@ -303,7 +303,10 @@ namespace Frameset.Core.Configuration
 
         public void Dispose()
         {
-            client.Dispose();
+            if (client != null)
+            {
+                client.Dispose();
+            }
 
             if (cancellation != null)
             {

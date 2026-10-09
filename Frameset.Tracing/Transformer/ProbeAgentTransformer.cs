@@ -1,15 +1,15 @@
-﻿using System.Reflection;
-using System.Runtime.Loader;
-using Frameset.Tracing.Tracer;
+﻿using Frameset.Tracing.Tracer;
 using Mono.Cecil;
 using Mono.Cecil.Cil;
 using Mono.Cecil.Rocks;
+using System.Reflection;
+using System.Runtime.Loader;
 
 namespace Frameset.Tracing.Transformer;
 
 public class ProbeAgentTransformer
 {
-    private readonly List<string> metionedNamespaces=[];
+    private readonly List<string> metionedNamespaces = [];
     public ProbeAgentTransformer(string enhancedNamespaces)
     {
         metionedNamespaces = new List<string>(enhancedNamespaces.Split(' '));
@@ -26,7 +26,7 @@ public class ProbeAgentTransformer
         if (!File.Exists(expectedPath)) return null;
         using var testDefinition = AssemblyDefinition.ReadAssembly(expectedPath);
         bool hasTargetNamespace = testDefinition.MainModule.Types
-            .Any(t => t.Namespace != null && CanNamespaceScan(metionedNamespaces,t.Namespace));
+            .Any(t => t.Namespace != null && CanNamespaceScan(metionedNamespaces, t.Namespace));
         if (!hasTargetNamespace)
         {
             return null;
@@ -35,8 +35,8 @@ public class ProbeAgentTransformer
         using var memoryStream = new MemoryStream(originalBytes);
         using var assemblyDef = AssemblyDefinition.ReadAssembly(memoryStream);
         var module = assemblyDef.MainModule;
-        
-        foreach (var type in module.Types.Where(t => t.Namespace != null && CanNamespaceScan(metionedNamespaces,t.Namespace)))
+
+        foreach (var type in module.Types.Where(t => t.Namespace != null && CanNamespaceScan(metionedNamespaces, t.Namespace)))
         {
             foreach (var method in type.Methods)
             {
@@ -61,16 +61,16 @@ public class ProbeAgentTransformer
         var firstInstruction = method.Body.Instructions.First();
         var activityVar = new VariableDefinition(method.Module.TypeSystem.Object);
         method.Body.Variables.Add(activityVar);
-       
+
         var startMethod = typeof(GlobalTracer).GetMethod(nameof(GlobalTracer.StartTrace));
         var endMethod = typeof(GlobalTracer).GetMethod(nameof(GlobalTracer.EndTrace));
         var startMethodRef = module.ImportReference(startMethod);
         var endMethodRef = module.ImportReference(endMethod);
         // 建立 IL 指令
-        var ldstr = ilProcessor.Create(OpCodes.Ldstr,  $"{method.DeclaringType.FullName}.{method.Name}");
+        var ldstr = ilProcessor.Create(OpCodes.Ldstr, $"{method.DeclaringType.FullName}.{method.Name}");
         var callStartInst = ilProcessor.Create(OpCodes.Call, startMethodRef);
         var stlocInst = ilProcessor.Create(OpCodes.Stloc, activityVar);
-        
+
         ilProcessor.InsertBefore(firstInstruction, ldstr);
         ilProcessor.InsertAfter(ldstr, callStartInst);
         ilProcessor.InsertAfter(callStartInst, stlocInst);

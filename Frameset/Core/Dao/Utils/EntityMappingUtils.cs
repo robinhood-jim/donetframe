@@ -6,7 +6,7 @@ namespace Frameset.Core.Dao.Utils
 {
     public class EntityMappingUtils
     {
-        public static void parseInsert(JdbcDao dao, BaseEntity entity)
+        public static void parseInsert(AdoDao dao, BaseEntity entity)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entity.GetType());
             AssertUtils.ArgumentNotNull(entityContent, "");

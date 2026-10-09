@@ -11,7 +11,7 @@ using System.Threading;
 
 namespace Frameset.Core.Repo
 {
-    public interface IBaseRepository<V, P> where V : BaseEntity
+    public interface IBaseRepository<V, P> where V : BaseEntity where P : notnull
     {
         /// <summary>
         /// Single Table Insert
@@ -125,7 +125,7 @@ namespace Frameset.Core.Repo
         /// <param name="queryParams">Query Parameter Object</param>
         /// <returns></returns>
         List<O> QueryByFields<O>(QueryParameter queryParams);
-        bool ExecuteOperation(Action<IJdbcDao, DbCommand> action);
+        bool ExecuteOperation(Action<IAdoDao, DbCommand> action);
         List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter);
     }
 }

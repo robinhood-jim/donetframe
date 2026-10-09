@@ -27,14 +27,14 @@ namespace Frameset.Core.Dao.Utils
         private bool active = true;
         protected ISqlDialect sqlDialect;
         protected DbConnection connection;
-        protected IJdbcDao dao;
+        protected IAdoDao dao;
         protected EntityContent entityContent;
         protected string[] memberNames = [];
         private string schema;
         private string tableName;
         private Dictionary<string, string> mappingField = [];
 
-        public EnumerableDataReader(IJdbcDao dao, DbConnection connection, EntityContent entityContent, IList<FieldContent> fieldContents, IEnumerable<T> enums)
+        public EnumerableDataReader(IAdoDao dao, DbConnection connection, EntityContent entityContent, IList<FieldContent> fieldContents, IEnumerable<T> enums)
         {
             modelType = typeof(T);
             methodMap = AnnotationUtils.ReflectObject(modelType);
@@ -60,7 +60,7 @@ namespace Frameset.Core.Dao.Utils
             mappingField = fields.ToDictionary(x => x.FieldName, x => x.PropertyName);
             tableName = entityContent.TableName;
         }
-        public EnumerableDataReader(IJdbcDao dao, DbConnection connection, List<DataSetColumnMeta> columnMetas, string schema, string tableName, IEnumerable<T> records)
+        public EnumerableDataReader(IAdoDao dao, DbConnection connection, List<DataSetColumnMeta> columnMetas, string schema, string tableName, IEnumerable<T> records)
         {
             modelType = typeof(T);
             usingMap = modelType.Equals(typeof(Dictionary<string, object>));

@@ -222,7 +222,7 @@ namespace Frameset.Core.Dao.Utils
         /// <param name="dao"></param>
         /// <param name="entityType"></param>
         /// <returns> if not null,return LogicColumn config</returns>
-        public static TableLogicColumn GetLogicColumnAndValue(IJdbcDao dao, Type entityType)
+        public static TableLogicColumn GetLogicColumnAndValue(IAdoDao dao, Type entityType)
         {
             if (!logicMap.TryGetValue(entityType, out TableLogicColumn tableLogicColumn))
             {

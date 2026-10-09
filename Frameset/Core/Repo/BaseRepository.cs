@@ -38,7 +38,7 @@ namespace Frameset.Core.Repo
         internal Func<IList<P>, int> deleteFunc = null!;
 
         internal Func<DbConnection, DbTransaction> transcationFunc = null!;
-        internal IJdbcDao dao;
+        internal IAdoDao dao;
         protected readonly Type entityType;
         protected readonly Type pkType;
         protected IList<FieldContent> fieldContents;
@@ -293,7 +293,7 @@ namespace Frameset.Core.Repo
         }
         public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
-            IJdbcDao queryDao = GetDao();
+            IAdoDao queryDao = GetDao();
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
                 connection.Open();
@@ -305,7 +305,7 @@ namespace Frameset.Core.Repo
         }
         public List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter)
         {
-            IJdbcDao queryDao = GetDao();
+            IAdoDao queryDao = GetDao();
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
                 connection.Open();
@@ -400,7 +400,7 @@ namespace Frameset.Core.Repo
                 throw new ConfigMissingException("id " + queryId + " does not found in namespace " + nameSpace);
             }
         }
-        public bool ExecuteOperation(Action<IJdbcDao, DbCommand> action)
+        public bool ExecuteOperation(Action<IAdoDao, DbCommand> action)
         {
             return RepositoryHelper.ExecuteInTransaction(GetDao(), "", (cmd) =>
             {
@@ -500,7 +500,7 @@ namespace Frameset.Core.Repo
         }
         public void ChangeDs(string _dsName)
         {
-            IJdbcDao selectDao = DAOFactory.GetJdbcDao(_dsName);
+            IAdoDao selectDao = DAOFactory.GetJdbcDao(_dsName);
             if (selectDao == null)
             {
                 throw new BaseSqlException("dsName " + _dsName + " not registered!");
@@ -511,11 +511,11 @@ namespace Frameset.Core.Repo
         {
             temporaryDsName.Dispose();
         }
-        protected IJdbcDao GetDao()
+        protected IAdoDao GetDao()
         {
             if (temporaryDsName != null && temporaryDsName.IsValueCreated)
             {
-                IJdbcDao tempDao = DAOFactory.GetJdbcDao(temporaryDsName.Value);
+                IAdoDao tempDao = DAOFactory.GetJdbcDao(temporaryDsName.Value);
                 return tempDao ?? throw new BaseSqlException("dsName " + dsName + " not registered!");
             }
             return dao;

@@ -10,9 +10,9 @@ public class GatewayMiddleware
     private readonly IOptionsMonitor<GatewayConfig> optionsMonitor;
     private readonly HttpClient httpClient;
     private GatewayConsulRouterResolver resolver;
-    
+
     public GatewayMiddleware(RequestDelegate next, IOptionsMonitor<GatewayConfig> optionsMonitor,
-        GatewayConsulRouterResolver resolver,HttpClient httpClient)
+        GatewayConsulRouterResolver resolver, HttpClient httpClient)
     {
         _next = next;
         this.optionsMonitor = optionsMonitor;
@@ -26,14 +26,15 @@ public class GatewayMiddleware
         var requestPath = context.Request.Path.Value ?? "";
         if (requestPath.Equals("/health"))
         {
-            await _next(context); 
+            await _next(context);
             return;
         }
         var matchedRoute = optionsMonitor.CurrentValue.Routes
             .FirstOrDefault(r => requestPath.StartsWith(r.PathPattern, StringComparison.OrdinalIgnoreCase));
         if (matchedRoute == null)
         {
-            await _next(context); // 未命中路由規則，交由下一個 Middleware（如本地 /health 端點）
+            context.Response.StatusCode = StatusCodes.Status502BadGateway;
+            await context.Response.WriteAsync($"[Gateway Error] (502): Router not found");
             return;
         }
         try
@@ -54,7 +55,7 @@ public class GatewayMiddleware
         catch (Exception ex)
         {
             context.Response.StatusCode = StatusCodes.Status502BadGateway;
-            await context.Response.WriteAsync($"[Gateway Error] : {ex.Message}");
+            await context.Response.WriteAsync($"[Gateway Error] (502): {ex.Message}");
         }
     }
     private async Task ForwardProxyRequestAsync(HttpContext context, string targetUrl)
@@ -68,7 +69,7 @@ public class GatewayMiddleware
         }
         foreach (var header in context.Request.Headers)
         {
-            if (string.Equals(header.Key, "transfer-encoding", StringComparison.OrdinalIgnoreCase) || 
+            if (string.Equals(header.Key, "transfer-encoding", StringComparison.OrdinalIgnoreCase) ||
                 header.Key.Equals("host", StringComparison.OrdinalIgnoreCase))
             {
                 continue;
@@ -79,7 +80,7 @@ public class GatewayMiddleware
         proxyRequest.Headers.Host = targetUri.Authority;
         using var responseMessage = await httpClient.SendAsync(proxyRequest, HttpCompletionOption.ResponseHeadersRead, context.RequestAborted);
         context.Response.StatusCode = (int)responseMessage.StatusCode;
-        
+
         foreach (var header in responseMessage.Headers)
         {
             context.Response.Headers[header.Key] = header.Value.ToArray();

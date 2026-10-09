@@ -12,7 +12,7 @@ namespace Frameset.Core.Repo
 {
     public static class ParameterHelper
     {
-        public static IList<DbParameter> AddQueryParam(IJdbcDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
+        public static IList<DbParameter> AddQueryParam(IAdoDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
         {
             IList<DbParameter> parameters = new List<DbParameter>();
             AssertUtils.IsTrue(values.Count() > 0, "");

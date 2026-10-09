@@ -1,27 +1,27 @@
-﻿using System.Diagnostics;
-using Consul;
+﻿using Consul;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Frameset.Gateway.Common;
 using Nacos.V2;
+using System.Diagnostics;
 
 namespace Frameset.Gateway.Provider;
 
 public class GatewayConfigurationSource : IConfigurationSource
 {
     private readonly string discoveryType;
-    private IConsulClient consulClient;
-    private INacosConfigService nacosConfigService;
+    private IConsulClient? consulClient;
+    private INacosConfigService? nacosConfigService;
     private IConfigurationManager configuration;
     //using nacos as discovery
-    public GatewayConfigurationSource(INacosConfigService nacosConfigService,IConfigurationManager configuration)
+    public GatewayConfigurationSource(INacosConfigService nacosConfigService, IConfigurationManager configuration)
     {
         discoveryType = Constants.DISCOVERY_TYPE_NACOS;
         this.nacosConfigService = nacosConfigService;
         this.configuration = configuration;
     }
     //using consul as discovery
-    public GatewayConfigurationSource(IConsulClient consulClient,IConfigurationManager configuration)
+    public GatewayConfigurationSource(IConsulClient consulClient, IConfigurationManager configuration)
     {
         this.consulClient = consulClient;
         this.configuration = configuration;
@@ -32,14 +32,19 @@ public class GatewayConfigurationSource : IConfigurationSource
     {
         if (string.Equals(Constants.DISCOVERY_TYPE_CONSUL, discoveryType, StringComparison.OrdinalIgnoreCase))
         {
-            Trace.Assert(consulClient!=null,"missing consul config");
-            string configKey = configuration.GetValue<string>(GatewayConstants.CONSUL_CONFIG_KEY);
+            Trace.Assert(consulClient != null, "missing consul config");
+            string? configKey = configuration.GetValue<string>(GatewayConstants.CONSUL_CONFIG_KEY);
+            Trace.Assert(!string.IsNullOrWhiteSpace(configKey), "");
+            Trace.Assert(consulClient != null, "");
             return new ConsulConfigurationProvider(consulClient, configKey);
-        }else if (string.Equals(Constants.DISCOVERY_TYPE_NACOS, discoveryType, StringComparison.OrdinalIgnoreCase))
+        }
+        else if (string.Equals(Constants.DISCOVERY_TYPE_NACOS, discoveryType, StringComparison.OrdinalIgnoreCase))
         {
-            string dataId = configuration.GetValue<string>(GatewayConstants.NACOS_DATA_ID);
-            string groupId = configuration.GetValue<string>(GatewayConstants.NACOS_GROUP_ID);
-            return new NacosConfigurationProvider(nacosConfigService,dataId,groupId);
+            string? dataId = configuration.GetValue<string>(GatewayConstants.NACOS_DATA_ID);
+            string? groupId = configuration.GetValue<string>(GatewayConstants.NACOS_GROUP_ID);
+            Trace.Assert(!string.IsNullOrWhiteSpace(dataId) && !string.IsNullOrWhiteSpace(groupId), "");
+            Trace.Assert(nacosConfigService != null, "");
+            return new NacosConfigurationProvider(nacosConfigService, dataId, groupId);
         }
         else
         {

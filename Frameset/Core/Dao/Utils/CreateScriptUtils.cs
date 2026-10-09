@@ -11,7 +11,7 @@ namespace Frameset.Core.Dao.Utils
 {
     public class CreateScriptUtils
     {
-        public static string GenerateScript(IJdbcDao dao)
+        public static string GenerateScript(IAdoDao dao)
         {
             List<Type> scanTypes = ScanModelTypes();
             StringBuilder builder = new();
@@ -25,7 +25,7 @@ namespace Frameset.Core.Dao.Utils
             return builder.ToString();
 
         }
-        public static string GenerateDDM(IJdbcDao dao, EntityContent content, List<FieldContent> fields)
+        public static string GenerateDDM(IAdoDao dao, EntityContent content, List<FieldContent> fields)
         {
             StringBuilder builder = new();
             builder.Append("CREATE TABLE ").Append(content.GetTableName()).Append("(");

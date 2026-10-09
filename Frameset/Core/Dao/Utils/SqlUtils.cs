@@ -15,7 +15,7 @@ namespace Frameset.Core.Dao.Utils
 {
     public static class SqlUtils
     {
-        public static InsertSegment GetInsertSegment(IJdbcDao dao, BaseEntity vo)
+        public static InsertSegment GetInsertSegment(IAdoDao dao, BaseEntity vo)
         {
             int pos = 1;
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(vo.GetType());
@@ -87,7 +87,7 @@ namespace Frameset.Core.Dao.Utils
             segment.Parameters = parameters;
             return segment;
         }
-        public static string GetInsertBactchSql(IJdbcDao dao, Type modelType)
+        public static string GetInsertBactchSql(IAdoDao dao, Type modelType)
         {
             IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
@@ -110,7 +110,7 @@ namespace Frameset.Core.Dao.Utils
                 .Append(valuesBuilder.ToString().Substring(0, valuesBuilder.Length - 1)).Append(")");
             return builder.ToString();
         }
-        public static UpdateSegment GetUpdateSegment(IJdbcDao dao, BaseEntity origin, BaseEntity update)
+        public static UpdateSegment GetUpdateSegment(IAdoDao dao, BaseEntity origin, BaseEntity update)
         {
             Trace.Assert(origin.GetType().Equals(update.GetType()), "compare must be same type");
             int pos = 1;
@@ -195,7 +195,7 @@ namespace Frameset.Core.Dao.Utils
             removeBuilder.Append(entityContent.GetTableName()).Append(" where ");
             return removeBuilder.ToString();
         }
-        public static Tuple<string, IList<DbParameter>> GetRemoveCondition(IJdbcDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
+        public static Tuple<string, IList<DbParameter>> GetRemoveCondition(IAdoDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
@@ -250,7 +250,7 @@ namespace Frameset.Core.Dao.Utils
         }
 
 
-        public static Tuple<string, List<object>> GetSelectByIdSql(IJdbcDao dao, Type modelType, FieldContent content, object pk)
+        public static Tuple<string, List<object>> GetSelectByIdSql(IAdoDao dao, Type modelType, FieldContent content, object pk)
         {
             List<object> listObjects = [pk];
             StringBuilder selectBuilder = new StringBuilder(GetSelectSql(modelType));

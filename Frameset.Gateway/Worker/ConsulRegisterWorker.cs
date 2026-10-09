@@ -1,6 +1,7 @@
 ﻿using Consul;
 using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
+using Frameset.Core.Utils;
 using Frameset.Gateway.Models;
 using Microsoft.Extensions.Options;
 using Microsoft.IdentityModel.Tokens;
@@ -14,10 +15,10 @@ public class ConsulRegisterWorker : IHostedService
     private readonly IConfiguration configuration;
     private readonly IOptionsMonitor<GatewayConfig> configMointor;
     private IDisposable? changeToken;
-    private GatewayConfig activeConfig;
-    private string gatewayId;
+    private GatewayConfig activeConfig=null!;
+    private string gatewayId=null!;
 
-    public ConsulRegisterWorker(IConsulClient consulClient, IConfiguration configuration,IOptionsMonitor<GatewayConfig> configMointor)
+    public ConsulRegisterWorker(IConsulClient consulClient, IConfiguration configuration, IOptionsMonitor<GatewayConfig> configMointor)
     {
         this.consulClient = consulClient;
         this.configuration = configuration;
@@ -28,7 +29,7 @@ public class ConsulRegisterWorker : IHostedService
     {
         activeConfig = configMointor.CurrentValue;
         gatewayId = activeConfig.ServiceId;
-        
+
         var gatewayService = new AgentServiceRegistration()
         {
             ID = activeConfig.ServiceId,
@@ -55,7 +56,7 @@ public class ConsulRegisterWorker : IHostedService
         Dictionary<string, AgentService> dict = consulClient.Agent.Services().Result.Response;
         if (!list.IsNullOrEmpty())
         {
-            foreach(ServicesModel model in list)
+            foreach (ServicesModel model in list)
             {
                 string serviceName = model.Name;
                 if (!model.Nodes.IsNullOrEmpty())
@@ -64,16 +65,18 @@ public class ConsulRegisterWorker : IHostedService
                     {
                         if (dict.TryGetValue(node.Id, out AgentService? _) && !token.CanBeCanceled)
                         {
-                            consulClient.Agent.ServiceDeregister(node.Id, token);
+                            await consulClient.Agent.ServiceDeregister(node.Id, token);
                         }
-                        await RegisterService(node, serviceName,token);
+                        await RegisterService(node, serviceName, token);
                     }
                 }
             }
         }
         ScanRouters(activeConfig);
-        
-        changeToken = configMointor.OnChange(async newConfig => {
+
+        changeToken = configMointor.OnChange(async newConfig =>
+        {
+            LogUtils.Debug("receving config change!");
             bool equals = activeConfig.Equals(newConfig);
             if (!equals)
             {
@@ -87,7 +90,7 @@ public class ConsulRegisterWorker : IHostedService
                         {
                             break;
                         }
-                        await RegisterService(node,node.ServiceName ,token);
+                        await RegisterService(node, node.ServiceName, token);
                     }
                 }
                 if (diff.TryGetValue(ServicesModel.MODIFY, out List<ServicesModel.Node>? modifyNodes))
@@ -99,7 +102,7 @@ public class ConsulRegisterWorker : IHostedService
                             break;
                         }
                         await consulClient.Agent.ServiceDeregister(node.Id);
-                        await RegisterService(node,node.ServiceName ,token);
+                        await RegisterService(node, node.ServiceName, token);
                     }
                 }
                 if (diff.TryGetValue(ServicesModel.DELETE, out List<ServicesModel.Node>? deleteNodes))
@@ -123,7 +126,7 @@ public class ConsulRegisterWorker : IHostedService
         });
     }
 
-    private async Task RegisterService(ServicesModel.Node node, string serviceName,CancellationToken token)
+    private async Task RegisterService(ServicesModel.Node node, string serviceName, CancellationToken token)
     {
         var registration = new AgentServiceRegistration()
         {
@@ -131,7 +134,7 @@ public class ConsulRegisterWorker : IHostedService
             Name = serviceName,
             Address = node.Address,
             Port = node.Port,
-            Tags = node.Tags?? Array.Empty<string>(),
+            Tags = node.Tags ?? Array.Empty<string>(),
             Check = new AgentServiceCheck()
             {
                 HTTP = $"http://{node.Address}:{node.Port}/health",
@@ -144,7 +147,7 @@ public class ConsulRegisterWorker : IHostedService
     public Task StopAsync(CancellationToken cancellationToken)
     {
         changeToken?.Dispose();
-        consulClient.Agent.ServiceDeregister(gatewayId);
+        consulClient.Agent.ServiceDeregister(gatewayId, cancellationToken);
         if (!activeConfig.Services.IsNullOrEmpty())
         {
             foreach (ServicesModel model in activeConfig.Services)
@@ -176,7 +179,7 @@ public class ConsulRegisterWorker : IHostedService
                 }
                 if (!routeDefine.Filters.IsNullOrEmpty())
                 {
-                    foreach (string configTxt in routeDefine.Predicates)
+                    foreach (string configTxt in routeDefine.Filters)
                     {
                         if (configTxt.StartsWith("StripPrefix="))
                         {
@@ -187,5 +190,5 @@ public class ConsulRegisterWorker : IHostedService
             }
         }
     }
-    
+
 }

@@ -30,7 +30,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "AUTO_INCREMENT";
         }
-        public override long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             Type sourceType = typeof(V);
             bool isMap = sourceType.Equals(typeof(Dictionary<string, object>));
@@ -56,7 +56,7 @@ namespace Frameset.Core.Dao.Meta
                 throw new BaseSqlException(ex.Message);
             }
         }
-        public override long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
+        public override long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
         {
 
             using MySqlTransaction transaction = ((MySqlConnection)connection).BeginTransaction();
@@ -77,7 +77,7 @@ namespace Frameset.Core.Dao.Meta
             }
         }
 
-        public override int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys)
+        public override int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys)
         {
             return BatchInsert(dao, dbConnection, entitys, (adpater, filecontents) =>
             {
@@ -194,7 +194,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return new MySqlParameter(column, value);
         }
-        public override long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, string schema, string tableName)
+        public override long QueryIdentityByTable(IAdoDao dao, DbConnection connection, string schema, string tableName)
         {
             StringBuilder builder = new StringBuilder("SELECT auto_increment FROM information_schema.TABLES WHERE TABLE_SCHEMA ='").Append(schema).Append("' and TABLE_NAME='").Append(tableName).Append("'");
             using (MySqlCommand command = new MySqlCommand(builder.ToString(), (MySqlConnection)connection))

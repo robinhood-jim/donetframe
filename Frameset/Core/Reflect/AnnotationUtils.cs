@@ -31,7 +31,7 @@ namespace Frameset.Core.Reflect
             return dict;
 
         }
-        private static bool validateEntity(Type type)
+        private static bool ValidateEntity(Type type)
         {
             bool isEntityDef = Attribute.IsDefined(type.Module, typeof(MappingEntityAttribute));
             if (!isEntityDef)

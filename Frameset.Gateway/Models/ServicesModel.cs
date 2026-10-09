@@ -1,5 +1,5 @@
-﻿using System.Diagnostics;
-using Microsoft.IdentityModel.Tokens;
+﻿using Microsoft.IdentityModel.Tokens;
+using System.Diagnostics;
 
 namespace Frameset.Gateway.Models;
 
@@ -25,7 +25,7 @@ public class ServicesModel
         {
             get;
             set;
-        }=string.Empty;
+        } = string.Empty;
 
         public string Address
         {
@@ -53,7 +53,7 @@ public class ServicesModel
 
         public Node()
         {
-            
+
         }
         public Node(string id, string address, int port)
         {
@@ -61,26 +61,31 @@ public class ServicesModel
             Address = address;
             Port = port;
         }
-        public Node(string id, string address, int port,string[]? tags)
+        public Node(string id, string address, int port, string[]? tags)
         {
             Id = id;
             Address = address;
             Port = port;
             Tags = tags;
         }
-        
+
 
         public override bool Equals(object? obj)
         {
-            Trace.Assert(obj!=null && typeof(Node).Equals(obj.GetType()),"");
+            Trace.Assert(obj != null && typeof(Node).Equals(obj.GetType()), "");
             Node node = (Node)obj;
-            return Id.Equals(node.Id) && Address.Equals(node.Address) && Port == node.Port && ((Tags==null && node.Tags==null) || (Tags!=null && node.Tags!=null && Tags.Equals(node.Tags)));
+            return Id.Equals(node.Id) && Address.Equals(node.Address) && Port == node.Port && ((Tags == null && node.Tags == null) || (Tags != null && node.Tags != null && Tags.Equals(node.Tags)));
+        }
+        public override int GetHashCode()
+        {
+            return string.GetHashCode(this.Id);
         }
     }
     public override bool Equals(object? obj)
     {
-        Trace.Assert(obj!=null && typeof(ServicesModel).Equals(obj.GetType()),"");
-        ServicesModel newObj=obj as ServicesModel;
+        Trace.Assert(obj != null && typeof(ServicesModel).Equals(obj.GetType()), "");
+        ServicesModel? newObj = obj as ServicesModel;
+        Trace.Assert(newObj != null, "");
         bool equals = Name.Equals(newObj.Name) && Nodes.Count == newObj.Nodes.Count;
         if (equals)
         {
@@ -95,7 +100,7 @@ public class ServicesModel
                 newNodes.TryAdd(node.Id, node);
             }
 
-            foreach (KeyValuePair<string,Node> pair in originNodes)
+            foreach (KeyValuePair<string, Node> pair in originNodes)
             {
                 if (!newNodes.TryGetValue(pair.Key, out Node? newNodeinfo) || !pair.Value.Equals(newNodeinfo))
                 {
@@ -114,16 +119,20 @@ public class ServicesModel
                 equals = false;
             }
         }
-        
+
         return equals;
     }
-    public static Dictionary<int,List<Node>> Diff(List<ServicesModel> originModels, List<ServicesModel> addModels)
+    public override int GetHashCode()
+    {
+        return string.GetHashCode(this.Name);
+    }
+    public static Dictionary<int, List<Node>> Diff(List<ServicesModel> originModels, List<ServicesModel> addModels)
     {
         Dictionary<string, Dictionary<string, Node>> dict = [];
 
         Dictionary<string, Node> originNodes = [];
         Dictionary<string, Node> newNodes = [];
-        List<Node> deleteNodes=[];
+        List<Node> deleteNodes = [];
         List<Node> addNodes = [];
         List<Node> modifyNodes = [];
         bool equals = true;
@@ -144,14 +153,14 @@ public class ServicesModel
                 originNodes.TryAdd(node.Id, node);
             }
         }
-        foreach (KeyValuePair<string,Node> pair in originNodes)
+        foreach (KeyValuePair<string, Node> pair in originNodes)
         {
             if (!newNodes.TryGetValue(pair.Key, out Node? newNodeinfo))
             {
                 deleteNodes.Add(pair.Value);
                 equals = false;
             }
-            else if(!pair.Value.Equals(newNodeinfo))
+            else if (!pair.Value.Equals(newNodeinfo))
             {
                 modifyNodes.Add(newNodeinfo);
                 newNodes.Remove(pair.Key);
@@ -168,7 +177,7 @@ public class ServicesModel
             addNodes.AddRange(newNodes.Values);
             equals = false;
         }
-        
+
         Dictionary<int, List<Node>> modifyDict = [];
         if (!equals)
         {

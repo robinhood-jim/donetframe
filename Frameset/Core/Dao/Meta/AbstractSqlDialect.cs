@@ -96,11 +96,11 @@ namespace Frameset.Core.Dao.Meta
         {
             return "TIMESTAMP";
         }
-        public virtual long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public virtual long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
             throw new NotSupportedException();
         }
-        public virtual long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
+        public virtual long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
         {
             throw new NotSupportedException();
         }
@@ -217,7 +217,7 @@ namespace Frameset.Core.Dao.Meta
             return builder.ToString();
         }
 
-        protected int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys, Func<DbDataAdapter, IList<FieldContent>, int> addParameterFunc, int batchSize = 1000)
+        protected int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys, Func<DbDataAdapter, IList<FieldContent>, int> addParameterFunc, int batchSize = 1000)
         {
             CheckTypeExists(typeof(T));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(T));
@@ -265,7 +265,7 @@ namespace Frameset.Core.Dao.Meta
         public abstract DbParameter WrapParameter(int pos, object value);
         public abstract DbParameter WrapParameter(string column, object value);
         public abstract Constants.DbType GetDbType();
-        public virtual int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys)
+        public virtual int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys)
         {
             throw new NotImplementedException();
         }
@@ -284,11 +284,11 @@ namespace Frameset.Core.Dao.Meta
         }
 
 
-        public virtual long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, string schema, string tableName)
+        public virtual long QueryIdentityByTable(IAdoDao dao, DbConnection connection, string schema, string tableName)
         {
             throw new NotSupportedException();
         }
-        public virtual long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName)
+        public virtual long QuerySequenceValue(IAdoDao dao, DbConnection connection, string sequenceName)
         {
             throw new NotSupportedException();
         }
@@ -389,7 +389,7 @@ namespace Frameset.Core.Dao.Meta
             command.CommandText = sql;
             command.ExecuteNonQuery();
         }
-        protected void ParseDataColumnMap(IJdbcDao dao, DataTable table, List<DataSetColumnMeta> metas)
+        protected void ParseDataColumnMap(IAdoDao dao, DataTable table, List<DataSetColumnMeta> metas)
         {
             foreach (DataSetColumnMeta meta in metas)
             {

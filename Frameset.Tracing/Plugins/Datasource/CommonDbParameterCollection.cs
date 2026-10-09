@@ -12,14 +12,14 @@ public class CommonDbParameterCollection : DbParameterCollection
     public CommonDbParameterCollection(DbCommand dbCommand)
     {
         this.dbCommand = dbCommand;
-        proxyParameterCollection=dbCommand.Parameters;
+        proxyParameterCollection = dbCommand.Parameters;
     }
-    
+
     public override int Add(object value)
     {
         parameters.Add((DbParameter)value);
         proxyParameterCollection.Add((DbParameter)value);
-        return parameters.Count-1;
+        return parameters.Count - 1;
     }
 
     public override void Clear()
@@ -40,8 +40,8 @@ public class CommonDbParameterCollection : DbParameterCollection
 
     public override void Insert(int index, object value)
     {
-        parameters.Insert(index,(DbParameter)value);
-        proxyParameterCollection.Insert(index,(DbParameter)value);
+        parameters.Insert(index, (DbParameter)value);
+        proxyParameterCollection.Insert(index, (DbParameter)value);
     }
 
     public override void Remove(object value)
@@ -98,7 +98,7 @@ public class CommonDbParameterCollection : DbParameterCollection
         return IndexOf(value) > 0;
     }
 
-    public override void CopyTo(Array array, int index)=> ((ICollection)parameters).CopyTo(array, index);
+    public override void CopyTo(Array array, int index) => ((ICollection)parameters).CopyTo(array, index);
 
     public override IEnumerator GetEnumerator()
     {

@@ -6,29 +6,30 @@ using Frameset.Gateway.Models;
 using Frameset.Gateway.Provider;
 using Frameset.Gateway.Resolver;
 using Frameset.Gateway.Worker;
+using Serilog;
+using System.Diagnostics;
 
+Log.Logger = new LoggerConfiguration().MinimumLevel.Debug().WriteTo.Console(
+            outputTemplate: "{Timestamp:yyyy-MM-dd HH:mm:ss.fff zzz} [{Level:u3}] {Message:lj}{NewLine}{Exception}").CreateLogger();
 var builder = WebApplication.CreateBuilder(args);
 
 // Add services to the container.
 builder.Services.AddControllersWithViews();
 var consulUrl = builder.Configuration[GatewayConstants.CONSUL_URL] ?? "http://localhost:8500";
 ConsulClient consulClient = new ConsulClient(c => c.Address = new Uri(consulUrl));
-builder.Services.AddSingleton<IConsulClient, ConsulClient>(sp =>consulClient);
+builder.Services.AddSingleton<IConsulClient, ConsulClient>(sp => consulClient);
 builder.Services.Configure<GatewayConfig>(builder.Configuration.GetSection("GatewayConfig"));
 builder.Services.AddSingleton<GatewayConsulRouterResolver>();
 ((IConfigurationBuilder)builder.Configuration).Add(
-    new GatewayConfigurationSource(consulClient,builder.Configuration)
+    new GatewayConfigurationSource(consulClient, builder.Configuration)
 );
 
-// 2. Add dependencies 
-builder.Services.AddSingleton<IConsulClient>(sp => new ConsulClient(c =>
-{
-    c.Address = new Uri(consulUrl);
-}));
+
 builder.Services.AddHostedService<ConsulRegisterWorker>();
 builder.Services.AddHealthChecks();
 builder.Services.AddHttpClient();
-string urls = builder.Configuration.GetValue<string>("server.urls");
+string? urls = builder.Configuration.GetValue<string>("server.urls");
+Trace.Assert(!string.IsNullOrWhiteSpace(urls), "");
 builder.WebHost.UseUrls(urls);
 
 var app = builder.Build();
@@ -44,7 +45,7 @@ if (!app.Environment.IsDevelopment())
 app.UseMiddleware<GatewayMiddleware>();
 app.MapHealthChecks("/health");
 RegServiceContext.SetContext(app.Services);
-app.UseHttpsRedirection();
+//app.UseHttpsRedirection();
 app.UseStaticFiles();
 
 app.UseRouting();

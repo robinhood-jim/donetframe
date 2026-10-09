@@ -1,8 +1,8 @@
-﻿using System.Text;
-using System.Text.Json;
-using Consul;
+﻿using Consul;
 using Frameset.Gateway.Models;
 using Microsoft.AspNetCore.Mvc;
+using System.Text;
+using System.Text.Json;
 
 namespace Frameset.Gateway.Controllers;
 
@@ -20,7 +20,7 @@ public class ServiceRegisterController : ControllerBase
     [HttpPost("register")]
     public async Task<IActionResult> RegisterService([FromBody] MicroserviceRegModel model)
     {
-        string uniqueServiceId=$"{model.ServiceName}-{model.Address}-{model.Port}";
+        string uniqueServiceId = $"{model.ServiceName}-{model.Address}-{model.Port}";
         var registration = new AgentServiceRegistration
         {
             ID = uniqueServiceId,
@@ -77,6 +77,6 @@ public class ServiceRegisterController : ControllerBase
         // 將路由配置寫入 Consul 的核心配置庫
         await consulClient.KV.Put(kvPair);
     }
-    
+
 
 }

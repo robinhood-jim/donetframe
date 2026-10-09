@@ -1,6 +1,6 @@
-﻿using System.Collections.Concurrent;
-using Consul;
+﻿using Consul;
 using Microsoft.AspNetCore.Mvc;
+using System.Collections.Concurrent;
 
 namespace Frameset.Gateway.Controllers;
 
@@ -26,12 +26,12 @@ public class GatewayRedirectController : ControllerBase
         }
 
         // 
-        var targetInstance = healthyInstances.Count() == 1 
-            ? healthyInstances.First() 
+        var targetInstance = healthyInstances.Count() == 1
+            ? healthyInstances.First()
             : SelectNextInstanceRoundRobin(serviceName, healthyInstances);
 
         var service = targetInstance.Service;
-        
+
         // 處理節點地址（若 Address 為空則取 Node 的 Address）
         string targetAddress = string.IsNullOrEmpty(service.Address) ? targetInstance.Node.Address : service.Address;
         int targetPort = service.Port;
@@ -39,7 +39,7 @@ public class GatewayRedirectController : ControllerBase
         // 3. 組合出真實的後端微服務 URL
         // 擷取原始請求中的 QueryString (例如 ?id=123&type=json)
         string queryString = Request.QueryString.HasValue ? Request.QueryString.Value : string.Empty;
-        
+
         // 這裡將 catchAll (即 api/v1/**) 拼接到真實節點後面
         string realTargetUrl = $"http://{targetAddress}:{targetPort}/{catchAll}{queryString}";
 
@@ -54,11 +54,11 @@ public class GatewayRedirectController : ControllerBase
     private ServiceEntry SelectNextInstanceRoundRobin(string serviceName, System.Collections.Generic.IList<ServiceEntry> instances)
     {
         int totalInstances = instances.Count;
-        
+
         // 原子操作：遞增索引值並防止溢位
         int nextIndex = _serviceIndexCache.AddOrUpdate(
-            serviceName, 
-            0, 
+            serviceName,
+            0,
             (key, currentVal) => (currentVal + 1) % totalInstances
         );
 

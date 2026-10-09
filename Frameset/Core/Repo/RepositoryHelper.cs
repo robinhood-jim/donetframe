@@ -18,7 +18,7 @@ namespace Frameset.Core.Repo
 {
     public static class RepositoryHelper
     {
-        public static void GetQueryParam(IJdbcDao dao, PageQuery query, Dictionary<string, FieldContent> fieldMap, List<DbParameter> dbParameters, StringBuilder builder)
+        public static void GetQueryParam(IAdoDao dao, PageQuery query, Dictionary<string, FieldContent> fieldMap, List<DbParameter> dbParameters, StringBuilder builder)
         {
             int currentParamCount = 0;
             foreach (var item in query.Parameters)
@@ -85,7 +85,7 @@ namespace Frameset.Core.Repo
                 builder.Append(" ORDER BY ").Append(fieldContent.FieldName).Append(query.OrderAsc ? " ASC" : " DESC");
             }
         }
-        public static void ExecuteMapperBefore(IJdbcDao dao, AbstractSegment segment, string nameSpace, object input, out StringBuilder builder,
+        public static void ExecuteMapperBefore(IAdoDao dao, AbstractSegment segment, string nameSpace, object input, out StringBuilder builder,
             out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam> methodMap)
         {
             paramMap = new Dictionary<string, object>();
@@ -138,7 +138,7 @@ namespace Frameset.Core.Repo
             }
             Trace.Assert(!paramMap.IsNullOrEmpty(), "all property is null");
         }
-        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbCommand, int> function)
+        public static int ExecuteInTransaction(IAdoDao dao, Func<DbCommand, int> function)
         {
             using DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString());
             connection.Open();
@@ -157,7 +157,7 @@ namespace Frameset.Core.Repo
                 throw new BaseSqlException(ex.Message);
             }
         }
-        public static int ExecuteInTransaction(IJdbcDao dao, string sql, Func<DbCommand, int> func)
+        public static int ExecuteInTransaction(IAdoDao dao, string sql, Func<DbCommand, int> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
@@ -178,7 +178,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public static Tuple<StringBuilder, IList<DbParameter>> QueryModelByFieldBefore(Type entityType, IJdbcDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        public static Tuple<StringBuilder, IList<DbParameter>> QueryModelByFieldBefore(Type entityType, IAdoDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
             List<FieldContent> contents = fields.Where(x =>
                 string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -214,7 +214,7 @@ namespace Frameset.Core.Repo
             return Tuple.Create(builder, parameters);
         }
 
-        public static T ExecuteInTransaction<V, T>(IJdbcDao dao, string sql, V entity, Func<DbCommand, V, T> func)
+        public static T ExecuteInTransaction<V, T>(IAdoDao dao, string sql, V entity, Func<DbCommand, V, T> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
@@ -238,7 +238,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public static int ExecuteInTransaction(IJdbcDao dao, Func<DbConnection, DbTransaction, int> func)
+        public static int ExecuteInTransaction(IAdoDao dao, Func<DbConnection, DbTransaction, int> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {

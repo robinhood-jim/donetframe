@@ -32,6 +32,20 @@ namespace Frameset.Core.Utils
                 Log.Information(messageTemplate, parameters);
             }
         }
+        public static void Warn(string message)
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Warning))
+            {
+                Log.Warning(message);
+            }
+        }
+        public static void Warn(string messageTemplate, object[] parameters)
+        {
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Warning))
+            {
+                Log.Warning(messageTemplate, parameters);
+            }
+        }
         public static void Error(string message)
         {
             if (Log.IsEnabled(Serilog.Events.LogEventLevel.Error))

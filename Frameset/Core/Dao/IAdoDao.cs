@@ -13,7 +13,7 @@ using System.Threading;
 
 namespace Frameset.Core.Dao
 {
-    public interface IJdbcDao
+    public interface IAdoDao
     {
         string GetConnectString();
         string GetDbTypeStr();

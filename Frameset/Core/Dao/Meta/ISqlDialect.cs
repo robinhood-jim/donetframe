@@ -20,8 +20,8 @@ public interface ISqlDialect
     DbParameter WrapParameter(string column, object value);
     bool SupportAutoIncrement();
     bool SupportSequence();
-    long QueryIdentityByTable(IJdbcDao dao, DbConnection connection, string schema, string tableName);
-    long QuerySequenceValue(IJdbcDao dao, DbConnection connection, string sequenceName);
+    long QueryIdentityByTable(IAdoDao dao, DbConnection connection, string schema, string tableName);
+    long QuerySequenceValue(IAdoDao dao, DbConnection connection, string sequenceName);
     string GetDecimalScript(int scale, int precise);
     string GetDecimalScript(FieldContent content);
     string GenerateSequenceFunc(string sequenceName);
@@ -33,8 +33,8 @@ public interface ISqlDialect
     string GetVarcharFormat(FieldContent content);
     string GetCharFormat(int length);
     string GetTimestampFormat(FieldContent content);
-    long BatchInsert<V>(IJdbcDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000);
-    long BatchInsert(IJdbcDao dao, DbConnection connection, string schema, string tableName,
+    long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000);
+    long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName,
         List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token,
         int batchSize = 10000);
     string GetIntegerFormat(FieldContent content);
@@ -54,5 +54,5 @@ public interface ISqlDialect
     void ExecuteNoQuery(DbConnection connection, string sql);
     Constants.DbType GetDbType();
     string GetTruncateTableStatement(string tableName);
-    int BatchInsert<T>(IJdbcDao dao, DbConnection dbConnection, List<T> entitys);
+    int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys);
 }
