@@ -20,11 +20,11 @@ namespace Frameset.Web.Model.User
         {
             get; set;
         }
-        [OneToMany(typeof(SysUser), "UserId")]
-        public IList<SysUser> SysUsers
+        [ManyToOne(typeof(SysUser), "UserId")]
+        public SysUser SysUser
         {
             get; set;
-        } = [];
+        } = null!;
         public string Oper
         {
             get; set;

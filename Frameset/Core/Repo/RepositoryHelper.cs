@@ -58,7 +58,7 @@ namespace Frameset.Core.Repo
                     {
                         values.Add(item.Value.ToString());
                     }
-                    IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, currentParamCount, out int addCount, oper, values.ToArray());
+                    List<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, currentParamCount, out int addCount, oper, values.ToArray());
                     if (!parameters.IsNullOrEmpty())
                     {
                         dbParameters.AddRange(parameters);
@@ -178,7 +178,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
-        public static Tuple<StringBuilder, IList<DbParameter>> QueryModelByFieldBefore(Type entityType, IAdoDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        public static Tuple<StringBuilder, List<DbParameter>> QueryModelByFieldBefore(Type entityType, IAdoDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
             List<FieldContent> contents = fields.Where(x =>
                 string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
@@ -198,7 +198,7 @@ namespace Frameset.Core.Repo
             }
             StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
 
-            IList<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
+            List<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
             //add logicColumn in query
             if (logicColumn != null)

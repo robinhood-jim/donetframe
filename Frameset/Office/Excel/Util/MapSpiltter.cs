@@ -3,7 +3,6 @@ using Frameset.Core.Reflect;
 using Frameset.Office.Element;
 using Frameset.Office.Excel.Element;
 using Frameset.Office.Excel.Meta;
-using Spring.Context;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -38,7 +37,7 @@ namespace Frameset.Office.Excel.Util
         {
             if (!"row".Equals(r.GetLocalName()))
             {
-                throw new NoSuchMessageException();
+                throw new NotSupportedException();
             }
             int trackedColIndex = 0;
             while (r.GoTo(() => r.IsStartElement("c") || r.IsEndElement("row")))
@@ -127,7 +126,7 @@ namespace Frameset.Office.Excel.Util
         {
             if (!"row".Equals(r.GetLocalName()))
             {
-                throw new NoSuchMessageException();
+                throw new NotSupportedException();
             }
             int trackedColIndex = 0;
             while (r.GoTo(() => r.IsStartElement("c") || r.IsEndElement("row")))

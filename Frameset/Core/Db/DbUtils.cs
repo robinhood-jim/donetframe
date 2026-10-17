@@ -4,10 +4,10 @@ using Microsoft.Data.SqlClient;
 using MySqlConnector;
 using Npgsql;
 using Oracle.ManagedDataAccess.Client;
-using Spring.Util;
 using System;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 
 namespace Frameset.Core.Db
 {
@@ -49,23 +49,23 @@ namespace Frameset.Core.Db
             switch (dbTypes)
             {
                 case Constants.DbType.Mysql:
-                    AssertUtils.IsTrue(connection.GetType().Equals(typeof(MySqlConnection)));
+                    Trace.Assert(connection.GetType().Equals(typeof(MySqlConnection)));
                     command = new MySqlCommand(sql, (MySqlConnection)connection);
                     break;
                 case Constants.DbType.Oracle:
-                    AssertUtils.IsTrue(connection.GetType().Equals(typeof(OracleConnection)));
+                    Trace.Assert(connection.GetType().Equals(typeof(OracleConnection)));
                     command = new OracleCommand(sql, (OracleConnection)connection);
                     break;
                 case Constants.DbType.Postgres:
-                    AssertUtils.IsTrue(connection.GetType().Equals(typeof(NpgsqlConnection)));
+                    Trace.Assert(connection.GetType().Equals(typeof(NpgsqlConnection)));
                     command = new NpgsqlCommand(sql, (NpgsqlConnection)connection);
                     break;
                 case Constants.DbType.SqlServer:
-                    AssertUtils.IsTrue(connection.GetType().Equals(typeof(SqlConnection)));
+                    Trace.Assert(connection.GetType().Equals(typeof(SqlConnection)));
                     command = new SqlCommand(sql, (SqlConnection)connection);
                     break;
                 case Constants.DbType.DB2:
-                    AssertUtils.IsTrue(connection.GetType().Equals(typeof(DB2Connection)));
+                    Trace.Assert(connection.GetType().Equals(typeof(DB2Connection)));
                     command = new DB2Command(sql, (DB2Connection)connection);
                     break;
 

@@ -7,7 +7,6 @@ using Frameset.Office.Excel.Meta;
 using Frameset.Office.Meta;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Spring.Util;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -250,7 +249,7 @@ namespace Frameset.Office.Excel.Util
         }
         bool ValueAllEmpty()
         {
-            if (!CollectionUtils.IsEmpty(cells))
+            if (!cells.IsNullOrEmpty())
             {
                 bool emptyTag = true;
                 foreach (Cell cell in cells)
@@ -311,7 +310,7 @@ namespace Frameset.Office.Excel.Util
             string tmpVal = s;
             object retObj = null;
 
-            if (!CollectionUtils.IsEmpty(prop.CellProps) && prop.CellProps[column] != null)
+            if (!prop.CellProps.IsNullOrEmpty() && prop.CellProps[column] != null)
             {
                 ExcelCellProp columnProp = prop.CellProps[column];
                 switch (columnProp.ColumnType)

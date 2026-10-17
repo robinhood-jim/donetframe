@@ -19,9 +19,35 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         } = string.Empty;
-        private string OrgCode
+        public string OrgCode
         {
             get; set;
         } = string.Empty;
+        public long EntId
+        {
+            get; set;
+        }
+        public string OrgType
+        {
+            get; set;
+        }
+        public long Pid
+        {
+            get; set;
+        }
+        [MappingField("tree_level")]
+        public int Level
+        {
+            get; set;
+        }
+        [MappingField("tree_code")]
+        public string Code
+        {
+            get; set;
+        } = string.Empty;
+        public string OrderNo
+        {
+            get; set;
+        }
     }
 }

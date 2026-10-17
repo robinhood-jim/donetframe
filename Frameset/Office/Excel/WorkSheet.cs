@@ -9,8 +9,6 @@ using Frameset.Office.Excel.Util;
 using Frameset.Office.Meta;
 using Frameset.Office.Util;
 using Microsoft.IdentityModel.Tokens;
-using Spring.Collections;
-using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -51,15 +49,15 @@ namespace Frameset.Office.Excel
         {
             get; set;
         } = false;
-        public Set HiddenRows
+        public List<string> HiddenRows
         {
             get; internal set;
-        } = new HashedSet();
+        } = [];
 
-        public Set HiddenColumns
+        public List<string> HiddenColumns
         {
             get; internal set;
-        } = new HashedSet();
+        } = [];
         public IList<DataValidation> DataValidations
         {
             get; internal set;
@@ -349,7 +347,7 @@ namespace Frameset.Office.Excel
 
             w.Append("</sheetData>");
             //写入DataValidation
-            if (!CollectionUtils.IsEmpty(DataValidations))
+            if (!DataValidations.IsNullOrEmpty())
             {
                 foreach (DataValidation validation in DataValidations)
                 {
@@ -363,7 +361,7 @@ namespace Frameset.Office.Excel
         }
         internal void SetDefaultStyles(Action<WorkSheet> consumer)
         {
-            AssertUtils.ArgumentNotNull(Prop, "");
+            Trace.Assert(Prop!=null, "");
             Styles = new List<int>(Prop.CellProps.Count);
             if (consumer != null)
             {
@@ -422,7 +420,7 @@ namespace Frameset.Office.Excel
         }
         public static string GetFormatWithType(ExcelCellProp columnProp)
         {
-            AssertUtils.ArgumentNotNull(columnProp, "");
+            Trace.Assert(columnProp!=null, "");
             string numFmtStr = null;
             switch (columnProp.ColumnType)
             {

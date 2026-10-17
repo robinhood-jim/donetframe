@@ -13,6 +13,7 @@ using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System;
+using System.Collections;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
@@ -43,8 +44,8 @@ namespace Frameset.Core.Dao
         internal AdoDao(string dbTypeStr, string connectionStr) : this(connectionStr)
         {
             this.dbTypeStr = dbTypeStr;
-            this.dbType = Constants.DbTypeOf(dbTypeStr);
-            this.dataMeta = DbDialectFactory.GetInstance(dbType);
+            dbType = Constants.DbTypeOf(dbTypeStr);
+            dataMeta = DbDialectFactory.GetInstance(dbType);
         }
         internal AdoDao(string dbTypeStr, string schema, string connectionStr) : this(dbTypeStr, connectionStr)
         {
@@ -65,9 +66,9 @@ namespace Frameset.Core.Dao
 
         internal AdoDao(ISqlDialect sqlDialect, string connectionStr)
         {
-            this.dbType = sqlDialect.GetDbType();
+            dbType = sqlDialect.GetDbType();
             this.connectionStr = connectionStr;
-            this.dbTypeStr = this.dbType.ToString();
+            dbTypeStr = dbType.ToString();
             dataMeta = sqlDialect;
         }
         internal AdoDao(ISqlDialect sqlDialect, string schema, string connectionStr) : this(sqlDialect, connectionStr)
@@ -90,7 +91,7 @@ namespace Frameset.Core.Dao
         }
         public void SetLogicColumn(string _logicColumn)
         {
-            this.logicColumn = _logicColumn;
+            logicColumn = _logicColumn;
 
         }
         public string GetLogicColumn()
@@ -150,7 +151,7 @@ namespace Frameset.Core.Dao
 
 
 
-        public IList<V> QueryModelsBySql<V>(DbCommand command, IList<DbParameter> parameters)
+        public List<V> QueryModelsBySql<V>(DbCommand command, List<DbParameter> parameters)
         {
             Type modelType = typeof(V);
             Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
@@ -158,7 +159,7 @@ namespace Frameset.Core.Dao
             {
                 command.Parameters.AddRange(parameters.ToArray());
             }
-            IList<V> retList = [];
+            List<V> retList = [];
             Dictionary<string, FieldContent> map = EntityReflectUtils.GetFieldsMap(modelType);
             using DbDataReader reader = command.ExecuteReader();
             while (reader.Read())
@@ -175,13 +176,38 @@ namespace Frameset.Core.Dao
             }
 
             return retList;
-
         }
-        public IList<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, IList<DbParameter> parameters)
+        public List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, List<DbParameter> parameters)
+        {
+            Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
+            if (!parameters.IsNullOrEmpty())
+            {
+                command.Parameters.AddRange(parameters.ToArray());
+            }
+            List<BaseEntity> retList = [];
+            Dictionary<string, FieldContent> map = EntityReflectUtils.GetFieldsMap(modelType);
+            using DbDataReader reader = command.ExecuteReader();
+            while (reader.Read())
+            {
+                dynamic entity = Activator.CreateInstance(modelType);
+                for (int col = 0; col < reader.FieldCount; col++)
+                {
+                    string propName = reader.GetName(col);
+                    object value = reader[col];
+                    FieldContent content = map[propName];
+                    WrapEntity(map, content, propName, entity, value);
+                }
+                retList.Add(entity);
+            }
+
+            return retList;
+        }
+
+        public List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, IList<DbParameter> parameters)
         {
             Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)));
             command.Parameters.AddRange(parameters.ToArray());
-            IList<BaseEntity> retList = [];
+            List<BaseEntity> retList = [];
             Dictionary<string, FieldContent> map = EntityReflectUtils.GetFieldsMap(modelType);
             using (DbDataReader reader = command.ExecuteReader())
             {
@@ -221,11 +247,11 @@ namespace Frameset.Core.Dao
             }
 
         }
-        public IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects)
+        public List<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects)
         {
             DbParameter[] parameters = ParseParameter(objects);
             command.Parameters.AddRange(parameters);
-            IList<Dictionary<string, object>> list = [];
+            List<Dictionary<string, object>> list = [];
             using (DbDataReader reader = command.ExecuteReader())
             {
                 while (reader.Read())
@@ -277,6 +303,7 @@ namespace Frameset.Core.Dao
             }
             return retList;
         }
+
         private DbParameter[] ParseParameter(object[] obj)
         {
             if (obj != null && obj.Length > 0)
@@ -418,22 +445,21 @@ namespace Frameset.Core.Dao
             command.CommandText = sql;
             return command.ExecuteNonQuery();
         }
-        public List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition)
+        public List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition, PageQuery query = null)
         {
-            Dictionary<string, object> queryParamter = [];
-            StringBuilder builder = new();
-            builder.Append(!condition.SelectParts.IsNullOrEmpty()
-                ? condition.SelectParts
-                : SqlUtils.GetSelectSql(typeof(V)));
-
-            builder.Append("where ");
-            builder.Append(condition.GeneratePreparedSql(queryParamter, [], []));
-            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
-            {
-                Log.Debug("using Query {Query}", builder.ToString());
-            }
+            GetSqlAndParameterByCondition<V>(condition, out StringBuilder builder, out Dictionary<string, object> queryParameter);
             string querySql = builder.ToString();
-            ParseParameter(command, queryParamter);
+            string countSql = string.Empty;
+
+            ParseParameter(command, queryParameter);
+            if (query != null)
+            {
+                querySql = GetDialect().GeneratePageSql(querySql, query);
+                countSql = GetDialect().GenerateCountSql(querySql);
+                command.CommandText = countSql;
+                long count = QueryByLong(command);
+                query.Total = count;
+            }
             command.CommandText = querySql;
             bool ifRetMap = false;
             Dictionary<string, MethodParam> methodMap = null;
@@ -474,6 +500,21 @@ namespace Frameset.Core.Dao
             }
 
             return retList;
+        }
+        public void GetSqlAndParameterByCondition<V>(FilterCondition condition, out StringBuilder builder, out Dictionary<string, object> queryParameter)
+        {
+            queryParameter = [];
+            builder = new();
+            builder.Append(!condition.SelectParts.IsNullOrEmpty()
+                ? condition.SelectParts
+                : SqlUtils.GetSelectSql(typeof(V)));
+
+            builder.Append("where ");
+            builder.Append(condition.GeneratePreparedSql(queryParameter, [], []));
+            if (Log.IsEnabled(Serilog.Events.LogEventLevel.Debug))
+            {
+                Log.Debug("using Query {Query}", builder.ToString());
+            }
         }
         public List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams)
         {
@@ -706,7 +747,7 @@ namespace Frameset.Core.Dao
             builder.Remove(builder.Length - linkOper.Length - 2, linkOper.Length + 2);
             builder.Append(')');
         }
-        public object QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject)
+        public List<dynamic> QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject)
         {
             string rsMap = sqlsegment.ResultMap;
             ResultMap map = SqlMapperConfigure.GetResultMap(nameSpace, rsMap);
@@ -775,7 +816,7 @@ namespace Frameset.Core.Dao
                 }
             }
 
-            return retList;
+            return ((IEnumerable)retList).Cast<dynamic>().ToList();
         }
         public int ExecuteMapper(CompositeSegment segment, string nameSpace, string executeId, DbCommand command, Dictionary<string, object> paramMap)
         {
@@ -786,6 +827,10 @@ namespace Frameset.Core.Dao
         public long InsertBatch(DbConnection connection, string _schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
         {
             return GetDialect().BatchInsert(this, connection, _schema, tableName, metas, models, token);
+        }
+        public int BatchInsert<T>(DbConnection connection, List<T> list, int batchSize = 1000)
+        {
+            return GetDialect().BatchInsert<T>(this, connection, list, batchSize);
         }
 
         public void DoWithQuery(string sql, object[] obj, Action<IDataReader> action)

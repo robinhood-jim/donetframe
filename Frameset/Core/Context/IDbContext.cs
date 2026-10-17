@@ -25,17 +25,18 @@ namespace Frameset.Core.Context
 
         bool UpdateEntity<V, P>(V entity) where V : BaseEntity;
 
-        int RemoveEntity<V, P>(IList<P> pks) where V : BaseEntity;
+        int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity;
 
-        int RemoveLogic<V, P>(IList<P> pks, string logicColumn, int status) where V : BaseEntity;
+        int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status) where V : BaseEntity;
 
-        V GetById<V, P>(P pk) where V : BaseEntity;
-        IList<Dictionary<string, object>> QueryBySql(string sql, object[] values);
+        V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity;
+        List<Dictionary<string, object>> QueryBySql(string sql, object[] values);
 
-        IList<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
+        List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
 
-        object QueryMapper(string nameSpace, string queryId, object queryObject);
+        List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject);
         int ExecuteMapper(string nameSpace, string exeId, object input);
+        int Execute(string sql, DbParameter[] parameters);
 
         PageDTO<O> QueryPage<V, O>(PageQuery query) where V : BaseEntity;
         long InsertBatch<V>(IEnumerable<V> models, CancellationToken token) where V : BaseEntity;
@@ -46,7 +47,7 @@ namespace Frameset.Core.Context
 
         void RestoreDs();
         string GetDsName();
-        List<V> QueryByCondition<V>(FilterCondition condition) where V : BaseEntity;
+        List<V> QueryByCondition<V>(FilterCondition condition, PageQuery query = null) where V : BaseEntity;
         List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
         List<O> QueryByFields<V, O>(QueryParameter queryParams) where V : BaseEntity;
@@ -60,5 +61,6 @@ namespace Frameset.Core.Context
         void ResetCommitStatus();
         void ManyToOne(Type subType, string fieldName, Type parentType);
         void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
+        IAdoDao GetDao();
     }
 }

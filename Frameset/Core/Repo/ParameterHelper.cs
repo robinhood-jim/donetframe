@@ -1,10 +1,10 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
-using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -12,10 +12,10 @@ namespace Frameset.Core.Repo
 {
     public static class ParameterHelper
     {
-        public static IList<DbParameter> AddQueryParam(IAdoDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
+        public static List<DbParameter> AddQueryParam(IAdoDao dao, FieldContent content, StringBuilder whereBuilder, int paramStartPos, out int parameterSize, Constants.SqlOperator oper, object[] values)
         {
-            IList<DbParameter> parameters = new List<DbParameter>();
-            AssertUtils.IsTrue(values.Count() > 0, "");
+            List<DbParameter> parameters = new List<DbParameter>();
+            Trace.Assert(values.Count() > 0, "");
             parameterSize = 0;
             switch (oper)
             {
@@ -30,7 +30,7 @@ namespace Frameset.Core.Repo
                     parameterSize = 1;
                     break;
                 case Constants.SqlOperator.BT:
-                    AssertUtils.IsTrue(values.Count() >= 2, "");
+                    Trace.Assert(values.Count() >= 2, "");
                     whereBuilder.Append(content.FieldName).Append(GetOperator(oper)).Append(" @").Append(Convert.ToString(paramStartPos)).Append(" AND ").Append("@").Append(Convert.ToString(paramStartPos + 1));
                     parameters.Add(dao.GetDialect().WrapParameter(paramStartPos, values[0]));
                     parameters.Add(dao.GetDialect().WrapParameter(paramStartPos + 1, values[1]));
@@ -43,9 +43,9 @@ namespace Frameset.Core.Repo
                     string likeValue = "%" + values[0].ToString() + "%";
                     if (oper != Constants.SqlOperator.LIKE)
                     {
-                        likeValue = Constants.SqlOperator.LLIKE.Equals(oper) ? "%" + values[0].ToString() : paramStartPos + "%";
+                        likeValue = Constants.SqlOperator.LLIKE.Equals(oper) ? "%" + values[0].ToString() : values[0].ToString() + "%";
                     }
-                    parameters.Add(dao.GetDialect().WrapParameter(paramStartPos, values[0].ToString()));
+                    parameters.Add(dao.GetDialect().WrapParameter(paramStartPos, likeValue));
                     whereBuilder.Append('@').Append(paramStartPos);
                     parameterSize = 1;
                     break;

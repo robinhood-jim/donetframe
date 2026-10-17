@@ -13,7 +13,6 @@ using Frameset.Core.Repo;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Spring.Util;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
@@ -30,7 +29,7 @@ namespace Frameset.Core.Context
 {
     public abstract class AbstractDbContext : IDbContext
     {
-        internal readonly Dictionary<Type, Tuple<EntityContent, IList<FieldContent>>> entityMap = [];
+        internal readonly Dictionary<Type, Tuple<EntityContent, List<FieldContent>>> entityMap = [];
         internal readonly Dictionary<Type, Dictionary<string, FieldContent>> fieldContentMap = [];
         internal readonly Dictionary<Type, List<Type>> subTypeMap = [];
         internal readonly Dictionary<Type, FieldContent> entityPkMap = [];
@@ -40,7 +39,7 @@ namespace Frameset.Core.Context
 
         internal ConcurrentDictionary<Thread, UpdateEntry> requestChanges = [];
         internal IAdoDao dao;
-        protected MethodInfo queryByFieldsMethod = typeof(AbstractDbContext).GetMethod("QueryModelsByFieldSimple", BindingFlags.NonPublic | BindingFlags.Instance);
+
         public string ContextName
         {
             get; set;
@@ -68,12 +67,12 @@ namespace Frameset.Core.Context
                 }
             }
         }
-        public object QueryMapper(string nameSpace, string queryId, object queryObject)
+        public List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, queryId);
             if (segment != null)
             {
-                AssertUtils.IsTrue(segment.GetType().Equals(typeof(SqlSelectSegment)), "");
+                Trace.Assert(segment.GetType().Equals(typeof(SqlSelectSegment)), "");
                 SqlSelectSegment sqlsegment = (SqlSelectSegment)segment;
                 Dictionary<string, object> paramMap = new Dictionary<string, object>();
 
@@ -105,8 +104,8 @@ namespace Frameset.Core.Context
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, exeId);
             if (segment != null)
             {
-                AssertUtils.IsTrue(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
-                AssertUtils.IsTrue(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
+                Trace.Assert(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
+                Trace.Assert(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
 
                 Type retType = null;
                 RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam> methodMap);
@@ -148,23 +147,23 @@ namespace Frameset.Core.Context
                 throw new ConfigMissingException("id " + exeId + " does not found in namespace " + nameSpace);
             }
         }
-        protected BaseEntity GetByIdSimple(Type entityType, object pk)
+        internal BaseEntity GetByIdSimple(Type entityType, object pk, bool ignoreLogic = false)
         {
             CheckTypeExists(entityType);
             if (!entityPkMap.TryGetValue(entityType, out FieldContent pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + entityType.Name);
             }
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
-            Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk);
-            IList<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+            Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk, ignoreLogic);
+            List<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
             object entity = Activator.CreateInstance(entityType);
             ConstructEntity(list, tuple, entity);
             return entity as BaseEntity;
         }
 
 
-        protected V GetByIdSimple<V, P>(P pk) where V : BaseEntity
+        protected V GetByIdSimple<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
@@ -172,14 +171,14 @@ namespace Frameset.Core.Context
             {
                 throw new BaseSqlException("pk column not found in Model " + entityType.Name);
             }
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
-            Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk);
-            IList<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+            Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk, ignoreLogic);
+            List<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
             V entity = Activator.CreateInstance<V>();
             ConstructEntity(list, tuple, entity);
             return entity;
         }
-        private void ConstructEntity(IList<Dictionary<string, object>> list, Tuple<EntityContent, IList<FieldContent>> tuple, object entity)
+        private void ConstructEntity(List<Dictionary<string, object>> list, Tuple<EntityContent, List<FieldContent>> tuple, object entity)
         {
             if (!list.IsNullOrEmpty())
             {
@@ -209,20 +208,39 @@ namespace Frameset.Core.Context
                 }
             }
         }
-        protected IList<V> QueryModelsByFieldSimple<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        internal List<V> QueryModelsByFieldSimple<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             if (!fields.IsNullOrEmpty())
             {
-                Tuple<StringBuilder, IList<DbParameter>> tuple = RepositoryHelper.QueryModelByFieldBefore(entityType, GetDao(), fields, propertyName, oper, values, orderByStr);
+                Tuple<StringBuilder, List<DbParameter>> tuple = RepositoryHelper.QueryModelByFieldBefore(entityType, GetDao(), fields, propertyName, oper, values, orderByStr);
                 using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
                 {
                     connection.Open();
                     using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, tuple.Item1.ToString()))
                     {
                         return GetDao().QueryModelsBySql<V>(command, tuple.Item2);
+                    }
+                }
+            }
+            return [];
+        }
+        internal List<BaseEntity> QueryModelsByFieldSimple(Type entityType, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        {
+
+            CheckTypeExists(entityType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
+            if (!fields.IsNullOrEmpty())
+            {
+                Tuple<StringBuilder, List<DbParameter>> tuple = RepositoryHelper.QueryModelByFieldBefore(entityType, GetDao(), fields, propertyName, oper, values, orderByStr);
+                using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+                {
+                    connection.Open();
+                    using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, tuple.Item1.ToString()))
+                    {
+                        return GetDao().QueryModelsBySql(entityType, command, tuple.Item2);
                     }
                 }
             }
@@ -243,7 +261,7 @@ namespace Frameset.Core.Context
         }
         public void ChangeDs(string _dsName)
         {
-            IAdoDao selectDao = DAOFactory.GetJdbcDao(_dsName);
+            IAdoDao selectDao = DAOFactory.GetAdoDao(_dsName);
             if (selectDao == null)
             {
                 throw new BaseSqlException("dsName " + _dsName + " not registered!");
@@ -262,11 +280,11 @@ namespace Frameset.Core.Context
                 return dsName;
             }
         }
-        protected IAdoDao GetDao()
+        public IAdoDao GetDao()
         {
             if (temporaryDsName != null && temporaryDsName.IsValueCreated)
             {
-                IAdoDao tempDao = DAOFactory.GetJdbcDao(temporaryDsName.Value);
+                IAdoDao tempDao = DAOFactory.GetAdoDao(temporaryDsName.Value);
                 if (tempDao == null)
                 {
                     throw new BaseSqlException("dsName " + dsName + " not registered!");
@@ -326,7 +344,7 @@ namespace Frameset.Core.Context
                 }
             }
         }
-        public IList<Dictionary<string, object>> QueryBySql(string sql, object[] values)
+        public List<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
             IAdoDao queryDao = GetDao();
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
@@ -338,12 +356,24 @@ namespace Frameset.Core.Context
                 }
             }
         }
+        public int Execute(string sql, DbParameter[] parameters)
+        {
+            IAdoDao queryDao = GetDao();
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
+                {
+                    return queryDao.Execute(command, sql, parameters);
+                }
+            }
+        }
 
-        public abstract V GetById<V, P>(P pk) where V : BaseEntity;
+        public abstract V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity;
 
         public abstract long InsertBatch<V>(IEnumerable<V> models, CancellationToken token) where V : BaseEntity;
 
-        public abstract List<V> QueryByCondition<V>(FilterCondition condition) where V : BaseEntity;
+        public abstract List<V> QueryByCondition<V>(FilterCondition condition, PageQuery query = null) where V : BaseEntity;
 
         public abstract List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
@@ -351,7 +381,7 @@ namespace Frameset.Core.Context
 
         public abstract List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter);
 
-        public abstract IList<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
+        public abstract List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
 
         public abstract PageDTO<V> QueryModelsPage<V>(PageQuery query) where V : BaseEntity;
 
@@ -359,9 +389,9 @@ namespace Frameset.Core.Context
 
         public abstract int RemoveByFields<V, P>(string fieldName, Constants.SqlOperator sqlOperator, object[] values) where V : BaseEntity;
 
-        public abstract int RemoveEntity<V, P>(IList<P> pks) where V : BaseEntity;
+        public abstract int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity;
 
-        public abstract int RemoveLogic<V, P>(IList<P> pks, string logicColumn, int status) where V : BaseEntity;
+        public abstract int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status) where V : BaseEntity;
         public abstract void SaveChanges();
 
         public abstract bool SaveEntity<V>(V entity) where V : BaseEntity;
@@ -400,7 +430,7 @@ namespace Frameset.Core.Context
                     }
                     Trace.Assert(type.IsSubclassOf(typeof(BaseEntity)), "Type must sub class of BaseEntity");
                     EntityContent content = EntityReflectUtils.GetEntityInfo(type);
-                    IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(type);
+                    List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(type);
                     Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(type);
                     IEnumerable<FieldContent> pkList = fields.Where(x => x.IfPrimary);
                     FieldContent pkColumn = !pkList.IsNullOrEmpty() ? pkList.First() : null;

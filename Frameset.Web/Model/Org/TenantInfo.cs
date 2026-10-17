@@ -11,11 +11,11 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         }
-        public string TeanatName
+        public string TenantName
         {
             get; set;
         } = string.Empty;
-        public string TeanatCode
+        public string TenantCode
         {
             get; set;
         } = string.Empty;
@@ -32,6 +32,10 @@ namespace Frameset.Web.Model.Org
             get; set;
         }
         public DateTime AuditTime
+        {
+            get; set;
+        }
+        public long EntId
         {
             get; set;
         }

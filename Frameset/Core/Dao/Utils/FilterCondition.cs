@@ -167,6 +167,34 @@ namespace Frameset.Core.Dao.Utils
             });
             return this;
         }
+        public SingleFilterConditionBuilder AddEq(bool valueExist, string columnName, object value)
+        {
+            if (valueExist)
+            {
+                AddEq(columnName, value);
+            }
+            return this;
+        }
+        public SingleFilterConditionBuilder AddLike(bool valueExists, string columnName, object value)
+        {
+            if (valueExists)
+            {
+                fieldMap.TryGetValue(columnName, out FieldContent content);
+                Trace.Assert(content != null, "field " + columnName + " not found in entity");
+                filterConditions.Add(new FilterCondition()
+                {
+                    ColumnName = content.FieldName,
+                    TargetEntity = targetEntity,
+                    ColumnType = content.ParamType,
+                    Operator = Constants.SqlOperator.LIKE,
+                    Values = ["%" + value + "%"]
+                });
+
+            }
+            return this;
+
+        }
+
         public SingleFilterConditionBuilder AddFilter(string columnName, Constants.SqlOperator sqlOperator, object[] objects)
         {
             fieldMap.TryGetValue(columnName, out FieldContent content);
@@ -179,6 +207,14 @@ namespace Frameset.Core.Dao.Utils
                 Operator = sqlOperator,
                 Values = new(objects)
             });
+            return this;
+        }
+        public SingleFilterConditionBuilder AddFilter(bool valueExist, string columnName, Constants.SqlOperator sqlOperator, object[] objects)
+        {
+            if (valueExist)
+            {
+                AddFilter(columnName, sqlOperator, objects);
+            }
             return this;
         }
         public SingleFilterConditionBuilder LeftArithmetic(string arithColumn, Type valueType, Constants.SqlOperator sqlOperator, object[] objects)
@@ -217,6 +253,19 @@ namespace Frameset.Core.Dao.Utils
                 Values = [value]
             };
         }
+        public FilterCondition Like(string columnName, object value)
+        {
+            fieldMap.TryGetValue(columnName, out FieldContent content);
+            Trace.Assert(content != null, "field " + columnName + " not found in entity");
+            return new FilterCondition()
+            {
+                ColumnName = content.FieldName,
+                ColumnType = content.ParamType,
+                Operator = Constants.SqlOperator.LIKE,
+                Values = ["%" + value + "%"]
+            };
+        }
+
         public FilterCondition Filter(string columnName, Constants.SqlOperator sqlOperator, object[] objects)
         {
             fieldMap.TryGetValue(columnName, out FieldContent content);
@@ -334,6 +383,15 @@ namespace Frameset.Core.Dao.Utils
             });
             return this;
         }
+        public SingleFilterConditionBuilder AddAnd(bool valid, List<FilterCondition> conditions)
+        {
+            if (valid)
+            {
+                AddAnd(conditions);
+            }
+            return this;
+        }
+
 
         public SingleFilterConditionBuilder AddAnd(Action<FilterCondition> action)
         {
@@ -345,6 +403,16 @@ namespace Frameset.Core.Dao.Utils
             action.Invoke(condition);
             return this;
         }
+        public SingleFilterConditionBuilder AddAnd(bool valid, Action<FilterCondition> action)
+        {
+            if (valid)
+            {
+                AddAnd(action);
+            }
+            return this;
+        }
+
+
         public SingleFilterConditionBuilder SelectParts(string selectParts)
         {
             _selectParts = selectParts;

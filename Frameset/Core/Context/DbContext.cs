@@ -16,7 +16,6 @@ using System.Collections.Generic;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
@@ -38,7 +37,7 @@ namespace Frameset.Core.Context
                 List<Type> types = ScanPackage();
                 RegisterExists(types.ToArray());
             }
-            dao = DAOFactory.GetJdbcDao(defaultDs);
+            dao = DAOFactory.GetAdoDao(defaultDs);
             timer = new Timer(new TimerCallback(OnTimerEvent));
             timer.Change(60000 * 2, 60000 * 5);
             refreshTag = new AtomicBoolean(false);
@@ -89,7 +88,7 @@ namespace Frameset.Core.Context
                 return true;
             }
         }
-        public override int RemoveEntity<V, P>(IList<P> pks)
+        public override int RemoveEntity<V, P>(List<P> pks)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
@@ -97,7 +96,7 @@ namespace Frameset.Core.Context
             {
                 if (IsAutoCommit())
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", null, (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", default(V), (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
                 }
                 GetCurrrentUpdateEntry().Delete<V, P>(pks);
                 return pks.Count;
@@ -110,12 +109,12 @@ namespace Frameset.Core.Context
             CheckTypeExists(entityType);
             if (IsAutoCommit())
             {
-                Tuple<string, IList<DbParameter>> tuple =
+                Tuple<string, List<DbParameter>> tuple =
                         SqlUtils.GetRemoveCondition(GetDao(), entityType, fieldName, sqlOperator, values);
                 return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1, null,
                         (command, v) => GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray()));
             }
-            IList<V> list = QueryModelsByField<V>(fieldName, sqlOperator, values);
+            List<V> list = QueryModelsByField<V>(fieldName, sqlOperator, values);
             FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(entityType);
             List<object> pkList = list.Select(x => pkColumn.GetMethod.Invoke(x, null)).ToList();
             GetCurrrentUpdateEntry().Delete<V, P>([.. pkList.Cast<P>()]);
@@ -124,11 +123,11 @@ namespace Frameset.Core.Context
 
 
 
-        public override int RemoveLogic<V, P>(IList<P> pks, string logicColumn, int status)
+        public override int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
             if (!entityPkMap.TryGetValue(typeof(V), out FieldContent pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + typeof(V).Name);
@@ -162,12 +161,12 @@ namespace Frameset.Core.Context
             return -1;
         }
 
-        public override V GetById<V, P>(P pk)
+        public override V GetById<V, P>(P pk, bool ignoreLogic = false)
         {
             Type entityType = typeof(V);
-            V entity = GetByIdSimple<V, P>(pk);
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, IList<FieldContent>> tuple);
-            WrapSubEntity<V>(typeof(V), [entity], tuple.Item2);
+            V entity = GetByIdSimple<V, P>(pk, ignoreLogic);
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+            CrudUtils.WrapSubEntity<V>(this, typeof(V), [entity], tuple.Item2);
             return entity;
         }
         public override long InsertBatch<V>(IEnumerable<V> models, CancellationToken token)
@@ -189,8 +188,21 @@ namespace Frameset.Core.Context
                 }
             }
         }
-
-        public override List<V> QueryByCondition<V>(FilterCondition condition)
+        public int BatchInsert<T>(List<T> list, int batchSize = 1000)
+        {
+            Type entityType = typeof(T);
+            CheckTypeExists(entityType);
+            using DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString());
+            try
+            {
+                return GetDao().GetDialect().BatchInsert<T>(GetDao(), connection, list, batchSize);
+            }
+            catch (Exception ex)
+            {
+                throw new BaseSqlException(ex.Message);
+            }
+        }
+        public override List<V> QueryByCondition<V>(FilterCondition condition, PageQuery query = null)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
@@ -199,7 +211,13 @@ namespace Frameset.Core.Context
                 connection.Open();
                 using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, ""))
                 {
-                    return GetDao().QueryByCondition<V>(command, condition);
+                    List<V> retList = GetDao().QueryByCondition<V>(command, condition, query);
+                    if (!retList.IsNullOrEmpty())
+                    {
+                        entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+                        CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
+                    }
+                    return retList;
                 }
             }
         }
@@ -245,9 +263,15 @@ namespace Frameset.Core.Context
             }
         }
 
-        public override IList<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        public override List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
         {
-            IList<V> retList = QueryModelsByFieldSimple<V>(propertyName, oper, values, orderByStr);
+            Type entityType = typeof(V);
+            List<V> retList = QueryModelsByFieldSimple<V>(propertyName, oper, values, orderByStr);
+            if (!retList.IsNullOrEmpty())
+            {
+                entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+                CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
+            }
             return retList;
         }
 
@@ -257,10 +281,13 @@ namespace Frameset.Core.Context
             CheckTypeExists(entityType);
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             List<DbParameter> dbParameters = [];
-            StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
-            if (query != null && !query.Parameters.IsNullOrEmpty())
+            StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType));
+            if (query != null)
             {
-
+                if (!query.Parameters.IsNullOrEmpty())
+                {
+                    builder.Append(" WHERE ");
+                }
                 RepositoryHelper.GetQueryParam(GetDao(), query, fieldMap, dbParameters, builder);
                 string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
                 string countSql = GetDao().GetDialect().GenerateCountSql(builder.ToString());
@@ -273,10 +300,14 @@ namespace Frameset.Core.Context
 
                         long totalCount = GetDao().QueryByLong(command, dbParameters);
                         command.CommandText = querySql;
-                        IList<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
+                        List<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
+                        if (!list.IsNullOrEmpty())
+                        {
+                            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+                            CrudUtils.WrapSubEntity<V>(this, typeof(V), list, tuple.Item2);
+                        }
+                        PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize, list);
 
-                        PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize);
-                        ret.Results = list;
                         return ret;
                     }
                 }
@@ -301,7 +332,7 @@ namespace Frameset.Core.Context
         public override void ManyToOne(Type subType, string fieldName, Type parentType)
         {
             RegisterExists([subType, parentType]);
-            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, IList<FieldContent>> tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent> dict))
+            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>> tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent> dict))
             {
                 tuple.Item1.ParentEntitys.Add(parentType);
                 if (dict.TryGetValue(fieldName, out FieldContent fieldContent))
@@ -318,7 +349,7 @@ namespace Frameset.Core.Context
         public override void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH)
         {
             RegisterExists([subType, parentType]);
-            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, IList<FieldContent>> tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent> dict))
+            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>> tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent> dict))
             {
                 tuple.Item1.ParentEntitys.Add(parentType);
                 if (dict.TryGetValue(fieldName, out FieldContent fieldContent))
@@ -375,67 +406,7 @@ namespace Frameset.Core.Context
                 requestChanges.Remove(Thread.CurrentThread, out _);
             }
         }
-        private void WrapSubEntity<V>(Type entityType, List<V> retList, IList<FieldContent> fields)
-        {
-            FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(entityType);
-            Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
-            IEnumerable<FieldContent> manyToOnes = fields.Where(x => x.IsManyToOne);
-            if (!manyToOnes.IsNullOrEmpty())
-            {
-                foreach (V entity in retList)
-                {
-                    List<FieldContent> contentList = manyToOnes.ToList();
-                    foreach (FieldContent content in contentList)
-                    {
-                        Type parentType = content.ParentEntity;
-                        string realtionColumn = content.RealtionColumn;
-                        object relationId = null;
-                        if (fieldMap.TryGetValue(realtionColumn, out FieldContent relationContent))
-                        {
-                            relationId = relationContent.GetMethod.Invoke(entity, null);
-                        }
-                        else
-                        {
-                            throw new BaseSqlException("refrence column " + realtionColumn + " not exists!");
-                        }
-                        object parentVo = GetByIdSimple(parentType, relationId);
-                        content.SetMethod.Invoke(entity, [parentVo]);
-                    }
-                }
-            }
-            IEnumerable<FieldContent> oneToManys = fields.Where(x => x.IsOneToMany);
-            if (!oneToManys.IsNullOrEmpty())
-            {
-                foreach (V entity in retList)
-                {
-                    List<FieldContent> contentList = oneToManys.ToList();
-                    foreach (FieldContent content in contentList)
-                    {
-                        Type subType = content.SubType;
-                        object id = pkColumn.GetMethod.Invoke(entity, null);
-                        if (EntityReflectUtils.GetRelationMap().TryGetValue(entityType, out Dictionary<Type, string> subEntityMaps) && subEntityMaps.TryGetValue(subType, out string relationColumn))
-                        {
-                            Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
-                            if (subFieldMap.TryGetValue(relationColumn, out FieldContent relationContent))
-                            {
-                                MethodInfo methodInfo = queryByFieldsMethod.MakeGenericMethod(subType);
-                                object rsList = methodInfo.Invoke(this, [relationColumn, Constants.SqlOperator.EQ, new object[] { id }, null]);
-                                content.SetMethod.Invoke(entity, [rsList]);
-                            }
-                            else
-                            {
-                                throw new BaseSqlException(" subColumn " + relationColumn + " is not defined in Model!");
-                            }
 
-                        }
-                        else
-                        {
-                            throw new BaseSqlException(" type " + subType.Name + " is not defined subEntity as ManyToOne!");
-                        }
-                    }
-                }
-            }
-        }
         private UpdateEntry GetCurrrentUpdateEntry()
         {
             WaitForRefreshTimer();
@@ -507,7 +478,7 @@ namespace Frameset.Core.Context
         {
             int effectRow = 0;
             Type entityType = superEntity.GetType();
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             IEnumerable<FieldContent> oneToManys = fields.Where(x => x.IsOneToMany && (x.Cascade == CascadeType.PERSIST || x.Cascade == CascadeType.MERGE || x.Cascade == CascadeType.ALL));
             if (!oneToManys.IsNullOrEmpty())
             {
@@ -522,7 +493,7 @@ namespace Frameset.Core.Context
                     {
                         Type subType = list.GetType().GetGenericArguments()[0];
                         //remove origin
-                        Tuple<string, IList<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao, subType, content.RealtionColumn, Constants.SqlOperator.EQ, [id]);
+                        Tuple<string, List<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao, subType, content.RealtionColumn, Constants.SqlOperator.EQ, [id]);
                         GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
 
                         Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
@@ -586,7 +557,7 @@ namespace Frameset.Core.Context
 
             effectRow += GetDao().Execute(command, removeSql, parameters);
 
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(superEntityType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(superEntityType);
             IEnumerable<FieldContent> oneToManys = fields.Where(x => x.IsOneToMany && (x.Cascade == CascadeType.REMOVE || x.Cascade == CascadeType.ALL));
             if (!oneToManys.IsNullOrEmpty())
             {
@@ -599,7 +570,7 @@ namespace Frameset.Core.Context
                     {
                         throw new BaseSqlException("refrence column " + subColumn + " not defined in entity " + subType.Name);
                     }
-                    Tuple<string, IList<DbParameter>> tuple1 = SqlUtils.GetRemoveCondition(GetDao(), subType, relationContent.FieldName, Constants.SqlOperator.IN, [pkList]);
+                    Tuple<string, List<DbParameter>> tuple1 = SqlUtils.GetRemoveCondition(GetDao(), subType, relationContent.FieldName, Constants.SqlOperator.IN, [pkList]);
                     effectRow += GetDao().Execute(command, tuple1.Item1, tuple1.Item2.ToArray());
                 }
             }

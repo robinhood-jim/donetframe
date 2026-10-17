@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Text;
 using System.Threading;
 
 namespace Frameset.Core.Dao
@@ -47,9 +48,10 @@ namespace Frameset.Core.Dao
 
         int QueryByInt(DbCommand command, List<DbParameter> parameters = null);
         long QueryByLong(DbCommand command, List<DbParameter> parameters = null);
-        IList<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
+        List<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
         PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query);
-        IList<V> QueryModelsBySql<V>(DbCommand command, IList<DbParameter> parameters);
+        List<V> QueryModelsBySql<V>(DbCommand command, List<DbParameter> parameters);
+        List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, List<DbParameter> parameters);
         /// <summary>
         /// Mybatis Like Query
         /// </summary>
@@ -59,7 +61,7 @@ namespace Frameset.Core.Dao
         /// <param name="command"></param>
         /// <param name="queryObject"></param>
         /// <returns></returns>
-        object QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject);
+        List<dynamic> QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject);
 
         string GetCurrentSchema();
         /// <summary>
@@ -70,7 +72,7 @@ namespace Frameset.Core.Dao
         /// <param name="action"></param>
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
         void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action);
-        List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition);
+        List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition, PageQuery query = null);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
         /// </summary>
@@ -81,6 +83,7 @@ namespace Frameset.Core.Dao
         /// <returns></returns>
         List<O> QueryByFields<O>(Type entityType, DbCommand command, QueryParameter queryParams);
         List<O> QueryByNamedParameter<O>(DbCommand command, Dictionary<string, object> namedParamter);
+        void GetSqlAndParameterByCondition<V>(FilterCondition condition, out StringBuilder builder, out Dictionary<string, object> queryParameter);
         /// <summary>
         /// Logic Delete Column support
         /// </summary>
@@ -92,5 +95,7 @@ namespace Frameset.Core.Dao
         void SetInvalidValue(int value);
         int GetInvalidValue();
         long InsertBatch(DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000);
+        int BatchInsert<T>(DbConnection connection, List<T> list, int batchSize = 1000);
+        List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, IList<DbParameter> parameters);
     }
 }

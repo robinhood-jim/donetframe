@@ -18,7 +18,7 @@ namespace Frameset.Core.Dao.Utils
         public static InsertSegment GetInsertSegment(IAdoDao dao, BaseEntity vo)
         {
             int pos = 1;
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(vo.GetType());
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(vo.GetType());
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(vo.GetType());
             StringBuilder builder = new StringBuilder();
             builder.Append("insert into ");
@@ -89,7 +89,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public static string GetInsertBactchSql(IAdoDao dao, Type modelType)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder builder = new StringBuilder();
             builder.Append("insert into ");
@@ -114,7 +114,7 @@ namespace Frameset.Core.Dao.Utils
         {
             Trace.Assert(origin.GetType().Equals(update.GetType()), "compare must be same type");
             int pos = 1;
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(origin.GetType());
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(origin.GetType());
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(origin.GetType());
             StringBuilder builder = new StringBuilder();
             builder.Append("update ");
@@ -170,7 +170,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public static string GetRemovePkSql(Type modelType)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder removeBuilder = new StringBuilder("delete from ");
 
@@ -188,14 +188,14 @@ namespace Frameset.Core.Dao.Utils
 
         public static string GetRemoveTableSql(Type modelType)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder removeBuilder = new StringBuilder("delete from ");
 
             removeBuilder.Append(entityContent.GetTableName()).Append(" where ");
             return removeBuilder.ToString();
         }
-        public static Tuple<string, IList<DbParameter>> GetRemoveCondition(IAdoDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
+        public static Tuple<string, List<DbParameter>> GetRemoveCondition(IAdoDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
@@ -208,7 +208,7 @@ namespace Frameset.Core.Dao.Utils
             {
                 StringBuilder builder = new StringBuilder("DELETE FROM ").Append(entityContent.GetTableName())
                     .Append(" WHERE ");
-                IList<DbParameter> parameters =
+                List<DbParameter> parameters =
                     ParameterHelper.AddQueryParam(dao, fieldContent, builder, 0, out int _, oper, values);
                 return Tuple.Create(builder.ToString(), parameters);
             }
@@ -223,12 +223,12 @@ namespace Frameset.Core.Dao.Utils
                 parameters.AddRange(ParameterHelper.AddQueryParam(dao, fieldContent, updateBuilder, 0,
                     out _, oper, values));
                 updateBuilder.Append(")");
-                return Tuple.Create(updateBuilder.ToString(), (IList<DbParameter>)parameters);
+                return Tuple.Create(updateBuilder.ToString(), parameters);
             }
         }
         public static string GetSelectSql(Type modelType)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder fieldsBuilder = new StringBuilder();
             StringBuilder tabBuilder = new StringBuilder();
@@ -250,14 +250,14 @@ namespace Frameset.Core.Dao.Utils
         }
 
 
-        public static Tuple<string, List<object>> GetSelectByIdSql(IAdoDao dao, Type modelType, FieldContent content, object pk)
+        public static Tuple<string, List<object>> GetSelectByIdSql(IAdoDao dao, Type modelType, FieldContent content, object pk, bool ignoreLogic = false)
         {
             List<object> listObjects = [pk];
             StringBuilder selectBuilder = new StringBuilder(GetSelectSql(modelType));
             selectBuilder.Append(" where ").Append(content.FieldName).Append("=@0");
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
-            if (logicColumn != null)
+            if (logicColumn != null && !ignoreLogic)
             {
                 selectBuilder.Append(" and ").Append(logicColumn.FieldName).Append("=@1");
                 listObjects.Add(logicColumn.ValidValue);
@@ -324,20 +324,21 @@ namespace Frameset.Core.Dao.Utils
                 case Constants.SqlOperator.LIKE:
                 case Constants.SqlOperator.LLIKE:
                 case Constants.SqlOperator.RLIKE:
-                    valueMap.TryAdd(fieldName, Values[0].ToString());
+                    builder.Append("@" + fieldName);
+                    StringBuilder builder1 = new();
                     if (Constants.SqlOperator.LLIKE == Operator)
                     {
-                        builder.Append(" '%'+@" + fieldName);
-
+                        builder1.Append('%').Append(condition.Values[0]);
                     }
                     else if (Constants.SqlOperator.RLIKE == Operator)
                     {
-                        builder.Append("@" + fieldName + "+'%'");
+                        builder1.Append(condition.Values[0]).Append('%');
                     }
                     else
                     {
-                        builder.Append(" '%'+@" + fieldName + "+'%'");
+                        builder1.Append('%').Append(condition.Values[0]).Append('%');
                     }
+                    valueMap.TryAdd(fieldName, builder1.ToString());
                     break;
                 case Constants.SqlOperator.NOTNULL:
                     builder.Append(" IS NOT NULL");

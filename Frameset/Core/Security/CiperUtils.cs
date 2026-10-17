@@ -11,8 +11,6 @@ namespace Frameset.Core.Security
 {
     public static class CiperUtils
     {
-        private static string DEFAULT_CIPHER_ALGORITHM = "AES/ECB/PKCS7Padding";
-        private static string DEFAULTALGORITHM = "AES";
         public static byte[] AesEncrypt(string input, byte[] key)
         {
             IBlockCipher symmetricBlockCipher = new AesEngine();

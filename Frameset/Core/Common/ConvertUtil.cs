@@ -2,7 +2,8 @@
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Model;
-using Spring.Util;
+using Microsoft.IdentityModel.Tokens;
+
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -19,7 +20,7 @@ namespace Frameset.Core.Common
         public static object ParseByType(Type targetType, object input)
         {
             object retVal = null;
-            AssertUtils.ArgumentNotNull(input, "must not be null!");
+            Trace.Assert(input != null, "must not be null!");
 
             if (targetType.Equals(input.GetType()))
             {
@@ -28,7 +29,7 @@ namespace Frameset.Core.Common
             else
             {
                 //adjust if is Nullable property
-                if (targetType.IsGenericType || (!targetType.IsPrimitive && !targetType.Equals(typeof(string)) && targetType.GetGenericTypeDefinition() == typeof(Nullable<>)))
+                if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
                 {
                     targetType = targetType.GetGenericArguments()[0];
                 }
@@ -163,7 +164,7 @@ namespace Frameset.Core.Common
         {
             if (obj.GetType().IsSubclassOf(typeof(BaseModel)))
             {
-                IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
+                List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
                 foreach (FieldContent fieldContent in fieldContents)
                 {
                     object value = fieldContent.GetMethod.Invoke(obj, null);
@@ -187,7 +188,7 @@ namespace Frameset.Core.Common
             dict = [];
             if (obj.GetType().IsSubclassOf(typeof(BaseModel)))
             {
-                IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
+                List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
                 foreach (FieldContent fieldContent in fieldContents)
                 {
                     object value = fieldContent.GetMethod.Invoke(obj, null);
@@ -209,7 +210,7 @@ namespace Frameset.Core.Common
         public static void WrapUpdate(BaseEntity origin, BaseEntity update)
         {
             Trace.Assert(origin.GetType().Equals(update.GetType()), "must have same type!");
-            IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(origin.GetType());
+            List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(origin.GetType());
             foreach (FieldContent fieldContent in fieldContents)
             {
                 object value = fieldContent.GetMethod.Invoke(update, null);
@@ -218,6 +219,22 @@ namespace Frameset.Core.Common
                     fieldContent.SetMethod.Invoke(origin, [value]);
                 }
             }
+
+        }
+        public static object GetListsByType<V>(Type genericType, Type listType, List<V> input)
+        {
+            Trace.Assert(genericType.IsGenericType, "");
+            Type constructType = genericType.MakeGenericType(listType);
+            object obj = Activator.CreateInstance(constructType);
+            MethodInfo info = constructType.GetMethod("Add");
+            if (!input.IsNullOrEmpty())
+            {
+                foreach (V entity in input)
+                {
+                    info.Invoke(obj, [entity]);
+                }
+            }
+            return obj;
 
         }
         public static object ConvertStringToTargetObject(object value, DataSetColumnMeta meta, string dateTimeFormatter = "yyyy-MM-dd HH:mm:ss")

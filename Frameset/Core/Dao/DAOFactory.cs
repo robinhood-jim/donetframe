@@ -229,7 +229,7 @@ namespace Frameset.Core.Dao
         {
             return input == null || string.IsNullOrWhiteSpace(input.ToString());
         }
-        public static IAdoDao GetJdbcDao(string key)
+        public static IAdoDao GetAdoDao(string key)
         {
             containner.TryGetValue(key, out IAdoDao dao);
 

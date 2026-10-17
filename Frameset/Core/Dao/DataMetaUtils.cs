@@ -1,7 +1,6 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Exceptions;
 using Serilog;
-using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -22,7 +21,7 @@ namespace Frameset.Core.Dao
                 resrtictions[0] = schema;
 
                 DataTable tables = connection.GetSchema("Columns", resrtictions);
-                if (!CollectionUtils.IsEmpty(tables.Rows))
+                if (tables.Rows != null)
                 {
                     foreach (DataRow row in tables.Rows)
                     {
@@ -67,7 +66,7 @@ namespace Frameset.Core.Dao
                 string[] resrtictions = new string[2];
                 resrtictions[1] = schema;
                 DataTable tables = connection.GetSchema("Tables", resrtictions);
-                if (!CollectionUtils.IsEmpty(tables.Rows))
+                if (tables.Rows != null)
                 {
                     foreach (DataRow row in tables.Rows)
                     {

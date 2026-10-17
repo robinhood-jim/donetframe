@@ -3,7 +3,6 @@ using Frameset.Core.Dao.Utils;
 using Frameset.Office.Annotation;
 using Frameset.Office.Element;
 using Microsoft.IdentityModel.Tokens;
-using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Data;
@@ -270,37 +269,37 @@ namespace Frameset.Office.Excel.Meta
         }
         public SheetPropBuilder StartRow(int startRow)
         {
-            AssertUtils.IsTrue(startRow > 0, "start Row must large than zero!");
+            Trace.Assert(startRow > 0, "start Row must large than zero!");
             prop.StartRow = startRow;
             return this;
         }
         public SheetPropBuilder StartCol(int startCol)
         {
-            AssertUtils.IsTrue(startCol > 0, "start Column must large than zero!");
+            Trace.Assert(startCol > 0, "start Column must large than zero!");
             prop.StartCol = startCol;
             return this;
         }
         public SheetPropBuilder SheetName(string sheetName)
         {
-            AssertUtils.IsTrue(!sheetName.IsNullOrEmpty(), "");
+            Trace.Assert(!sheetName.IsNullOrEmpty(), "");
             prop.SheetName = sheetName;
             return this;
         }
         public SheetPropBuilder TemplateFile(string templateFile)
         {
-            AssertUtils.IsTrue(!templateFile.IsNullOrEmpty(), "");
+            Trace.Assert(!templateFile.IsNullOrEmpty(), "");
             prop.TemplateFile = templateFile;
             return this;
         }
         public SheetPropBuilder MaxRows(int maxRows)
         {
-            AssertUtils.IsTrue(maxRows > 0, "must large than zero!");
+            Trace.Assert(maxRows > 0, "must large than zero!");
             prop.MaxRows = maxRows;
             return this;
         }
         public SheetPropBuilder FlushOutBufferSize(int bufferSize)
         {
-            AssertUtils.IsTrue(bufferSize > 81920, "must large than 81920!");
+            Trace.Assert(bufferSize > 81920, "must large than 81920!");
             prop.FlushOutBufferSize = bufferSize;
             return this;
         }

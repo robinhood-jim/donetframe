@@ -54,5 +54,5 @@ public interface ISqlDialect
     void ExecuteNoQuery(DbConnection connection, string sql);
     Constants.DbType GetDbType();
     string GetTruncateTableStatement(string tableName);
-    int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys);
+    int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys, int batchSize = 1000);
 }

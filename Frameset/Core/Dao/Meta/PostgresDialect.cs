@@ -157,7 +157,7 @@ namespace Frameset.Core.Dao.Meta
         }
         internal string GenerateCopySql(Type modelType)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             StringBuilder builder = new();
             builder.Append("COPY ").Append(entityContent.GetTableName());

@@ -25,7 +25,7 @@ namespace Frameset.Core.Utils
                     EntityContent content = EntityReflectUtils.GetEntityInfo(type);
                     if (type != null)
                     {
-                        IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(type);
+                        List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(type);
                         if (!fields.IsNullOrEmpty())
                         {
                             writer.WriteLine(GenerateCreatSql(content, fields, dialect, additionalCfgMap));

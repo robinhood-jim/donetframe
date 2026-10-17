@@ -2,11 +2,11 @@
 using Frameset.Core.Common;
 using Frameset.Core.Model;
 using Microsoft.IdentityModel.Tokens;
-using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 
@@ -16,14 +16,14 @@ namespace Frameset.Core.Dao.Utils
     public static class EntityReflectUtils
     {
         private static readonly Dictionary<Type, EntityContent> entityContentMap = [];
-        private static readonly Dictionary<Type, IList<FieldContent>> fieldsListMap = [];
+        private static readonly Dictionary<Type, List<FieldContent>> fieldsListMap = [];
         private static readonly Dictionary<Type, Dictionary<Type, string>> relationMap = [];
         private static readonly Dictionary<Type, FieldContent> pkFieldMap = [];
         private static readonly Dictionary<Type, TableLogicColumn> logicMap = [];
 
         public static EntityContent GetEntityInfo(Type entityType)
         {
-            AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
+            Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
             EntityContent content;
 
 
@@ -57,10 +57,10 @@ namespace Frameset.Core.Dao.Utils
         /**
          * Support MappingField and EF Core  Column Define
          */
-        public static IList<FieldContent> GetFieldsContent(Type entityType)
+        public static List<FieldContent> GetFieldsContent(Type entityType)
         {
-            AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
-            IList<FieldContent> fields;
+            Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
+            List<FieldContent> fields;
             EntityContent entityContent = GetEntityInfo(entityType);
             if (!fieldsListMap.TryGetValue(entityType, out fields))
             {
@@ -177,7 +177,7 @@ namespace Frameset.Core.Dao.Utils
                     }
                 }
 
-                if (!CollectionUtils.IsEmpty(fields))
+                if (!fields.IsNullOrEmpty())
                 {
                     fieldsListMap.Add(entityType, fields);
                 }
@@ -187,8 +187,8 @@ namespace Frameset.Core.Dao.Utils
         }
         public static Dictionary<string, FieldContent> GetFieldsMap(Type entityType)
         {
-            AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
-            IList<FieldContent> fields = GetFieldsContent(entityType);
+            Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
+            List<FieldContent> fields = GetFieldsContent(entityType);
             if (!fields.IsNullOrEmpty())
             {
                 return fields.GroupBy(p => p.PropertyName).ToDictionary(k => k.Key, v => v.First());
@@ -201,8 +201,8 @@ namespace Frameset.Core.Dao.Utils
         }
         public static FieldContent GetPrimaryKey(Type entityType)
         {
-            AssertUtils.IsTrue(entityType.IsSubclassOf(typeof(BaseEntity)));
-            IList<FieldContent> fields = GetFieldsContent(entityType);
+            Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
+            List<FieldContent> fields = GetFieldsContent(entityType);
             if (!pkFieldMap.TryGetValue(entityType, out FieldContent content))
             {
                 if (!fields.IsNullOrEmpty())
@@ -226,7 +226,7 @@ namespace Frameset.Core.Dao.Utils
         {
             if (!logicMap.TryGetValue(entityType, out TableLogicColumn tableLogicColumn))
             {
-                IList<FieldContent> fields = GetFieldsContent(entityType);
+                List<FieldContent> fields = GetFieldsContent(entityType);
                 FieldContent logicContent = ((List<FieldContent>)fields).Find(x => x.IfLogicColumn);
                 if (logicContent != null)
                 {

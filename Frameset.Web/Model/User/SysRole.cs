@@ -1,4 +1,5 @@
 ﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using Frameset.Core.Model;
 
 namespace Frameset.Web.Model.User
@@ -23,5 +24,10 @@ namespace Frameset.Web.Model.User
         {
             get; set;
         } = string.Empty;
+        [LogicColumn]
+        public string Status
+        {
+            get; set;
+        } = Constants.VALID;
     }
 }

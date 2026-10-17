@@ -1,5 +1,6 @@
-﻿using Spring.Util;
-using System;
+﻿using System;
+using System.Collections.Generic;
+using System.Diagnostics;
 using System.Text;
 
 
@@ -23,7 +24,24 @@ namespace Frameset.Core.Utils
                 throw new AggregateException("value is empty!");
             }
         }
-
+        public static bool IsNotNull(object value)
+        {
+            return value != null && !string.IsNullOrWhiteSpace(value.ToString());
+        }
+        public static bool IsDictNullWithReturn(Dictionary<string, object> dict, string key, out string value)
+        {
+            value = string.Empty;
+            if (dict != null && dict.TryGetValue(key, out object obj))
+            {
+                string valueStr = obj.ToString();
+                if (!string.IsNullOrEmpty(valueStr))
+                {
+                    value = valueStr;
+                    return true;
+                }
+            }
+            return false;
+        }
         public static string Uncapitalize(string value)
         {
             if (HasLegth(value))
@@ -37,7 +55,7 @@ namespace Frameset.Core.Utils
         }
         public static string CamelCaseUpperConvert(string column)
         {
-            AssertUtils.IsTrue(!string.IsNullOrWhiteSpace(column));
+            Trace.Assert(!string.IsNullOrWhiteSpace(column));
             StringBuilder buider = new StringBuilder();
             for (int i = 0; i < column.Length; i++)
             {
@@ -55,7 +73,7 @@ namespace Frameset.Core.Utils
         }
         public static string CamelCaseLowConvert(string column)
         {
-            AssertUtils.IsTrue(!string.IsNullOrWhiteSpace(column));
+            Trace.Assert(!string.IsNullOrWhiteSpace(column));
             StringBuilder buider = new StringBuilder();
             if (!column.ToLower().Equals(column))
             {

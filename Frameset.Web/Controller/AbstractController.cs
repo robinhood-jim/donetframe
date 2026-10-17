@@ -3,20 +3,25 @@ using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
-using Frameset.Core.Repo;
+using Frameset.Core.Service;
+using Frameset.Core.Utils;
 using Microsoft.AspNetCore.Mvc;
 using System.Diagnostics;
 
 namespace Frameset.Web.Controller
 {
-    public class AbstractController<R, V, P> : AbstractControllerBase where R : IBaseRepository<V, P> where V : BaseEntity
+    public class AbstractController<R, V, P> : AbstractControllerBase where R : IService<V, P> where V : BaseEntity where P : notnull
     {
-        protected readonly R repository;
+        protected R repository;
 
 
         public AbstractController(R baseRepository)
         {
             repository = baseRepository;
+        }
+        public AbstractController()
+        {
+            repository = default(R);
         }
         public JsonResult SaveEntity(object input)
         {
@@ -70,14 +75,15 @@ namespace Frameset.Web.Controller
 
         internal V GetValueFrom(object input)
         {
-            V retObj = System.Activator.CreateInstance<V>();
+            V retObj = Activator.CreateInstance<V>();
             Dictionary<string, MethodParam> paramMap = AnnotationUtils.ReflectObject(typeof(V));
             if (input.GetType().Equals(typeof(Dictionary<string, object>)))
             {
                 foreach (var entry in (Dictionary<string, object>)input)
                 {
+                    string key = StringUtils.Capitalize(entry.Key);
                     MethodParam? param = null;
-                    paramMap.TryGetValue(entry.Key, out param);
+                    paramMap.TryGetValue(key, out param);
                     param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
 
                 }

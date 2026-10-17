@@ -18,7 +18,7 @@ namespace Frameset.Core.Dao.Utils
             foreach (Type type in scanTypes)
             {
                 EntityContent entityContent = EntityReflectUtils.GetEntityInfo(type);
-                List<FieldContent> fieldContents = (List<FieldContent>)EntityReflectUtils.GetFieldsContent(type);
+                List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(type);
                 builder.Append(GenerateDDM(dao, entityContent, fieldContents));
                 builder.Append(";\n");
             }

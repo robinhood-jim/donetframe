@@ -1,6 +1,5 @@
 ﻿using Microsoft.IdentityModel.Tokens;
 using Serilog;
-using Spring.Util;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -122,7 +121,7 @@ namespace Frameset.Core.Utils
                         }
                         else
                         {
-                            if (NumberUtils.IsNumber(element))
+                            if (IsNumber(element))
                             {
                                 stack.Push(Convert.ToDouble(element));
                             }
@@ -204,5 +203,14 @@ namespace Frameset.Core.Utils
                 }
             }
         }
+        private static bool IsNumber(string input) {
+            bool canParse = true;
+            if(!long.TryParse(input,out _) || !int.TryParse(input, out _) || double.TryParse(input,out _))
+            {
+                canParse = false;
+            }
+            return canParse;
+        }
     }
+    
 }

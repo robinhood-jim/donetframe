@@ -44,7 +44,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
             long flushRow = 0;
             using (var bulkCopy = new ClickHouseBulkCopy((ClickHouseConnection)connection))

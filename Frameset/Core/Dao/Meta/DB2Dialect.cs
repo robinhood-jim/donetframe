@@ -42,7 +42,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
         {
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
             long count = 0;
             using (DB2BulkCopy copy = new DB2BulkCopy((DB2Connection)connection, DB2BulkCopyOptions.Default))

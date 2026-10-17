@@ -34,7 +34,7 @@ namespace Frameset.Core.Dao.Meta
         {
             Type sourceType = typeof(V);
             bool isMap = sourceType.Equals(typeof(Dictionary<string, object>));
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(typeof(V));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
             using MySqlTransaction transaction = ((MySqlConnection)connection).BeginTransaction();
             try
@@ -77,7 +77,7 @@ namespace Frameset.Core.Dao.Meta
             }
         }
 
-        public override int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys)
+        public override int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys, int batchSize = 1000)
         {
             return BatchInsert(dao, dbConnection, entitys, (adpater, filecontents) =>
             {
@@ -122,7 +122,7 @@ namespace Frameset.Core.Dao.Meta
                     }
                 }
                 return filecontents.Count;
-            });
+            }, batchSize);
 
         }
 
@@ -188,11 +188,20 @@ namespace Frameset.Core.Dao.Meta
         }
         public override DbParameter WrapParameter(int pos, object value)
         {
-            return new MySqlParameter("@" + Convert.ToString(pos), value);
+            return new MySqlParameter()
+            {
+                ParameterName = "@" + Convert.ToString(pos),
+                Value = value,
+                MySqlDbType = GetDbType(value)
+            };
         }
         public override DbParameter WrapParameter(string column, object value)
         {
-            return new MySqlParameter(column, value);
+            return new MySqlParameter()
+            {
+                ParameterName = column,
+                Value = value
+            };
         }
         public override long QueryIdentityByTable(IAdoDao dao, DbConnection connection, string schema, string tableName)
         {
@@ -229,6 +238,50 @@ namespace Frameset.Core.Dao.Meta
             DbBatch batch = new MySqlBatch((MySqlConnection)connection);
             DbBatchCommand command = new MySqlBatchCommand(batchSql);
             return Tuple.Create(batch, command);
+        }
+        private MySqlDbType GetDbType(object value)
+        {
+            Type targetType = value.GetType();
+            MySqlDbType dbType = MySqlDbType.VarChar;
+            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            {
+                targetType = targetType.GetGenericArguments()[0];
+            }
+            switch (Type.GetTypeCode(targetType))
+            {
+                case TypeCode.Int16:
+                    dbType = MySqlDbType.Int16;
+                    break;
+                case TypeCode.Int32:
+                    dbType = MySqlDbType.Int32;
+                    break;
+                case TypeCode.Int64:
+                    dbType = MySqlDbType.Int64;
+                    break;
+                case TypeCode.Single:
+                    dbType = MySqlDbType.Decimal;
+                    break;
+                case TypeCode.Double:
+                    dbType = MySqlDbType.Double;
+                    break;
+                case TypeCode.Boolean:
+                    dbType = MySqlDbType.Bool;
+                    break;
+                case TypeCode.DateTime:
+                    dbType = MySqlDbType.Timestamp;
+                    break;
+                default:
+                    if (value.ToString().Contains("%"))
+                    {
+                        dbType = MySqlDbType.VarChar;
+                    }
+                    else if (value.ToString().Length == 1)
+                    {
+                        dbType = MySqlDbType.String;
+                    }
+                    break;
+            }
+            return dbType;
         }
 
         public override Constants.DbType GetDbType()

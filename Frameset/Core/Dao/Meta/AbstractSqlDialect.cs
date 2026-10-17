@@ -222,7 +222,7 @@ namespace Frameset.Core.Dao.Meta
             CheckTypeExists(typeof(T));
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(T));
             DataTable table = new DataTable(entityContent.GetTableName());
-            IList<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(typeof(T));
+            List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(typeof(T));
             Dictionary<string, MethodParam> methodParams = AnnotationUtils.ReflectObject(typeof(T));
             foreach (var entity in entitys)
             {
@@ -265,7 +265,7 @@ namespace Frameset.Core.Dao.Meta
         public abstract DbParameter WrapParameter(int pos, object value);
         public abstract DbParameter WrapParameter(string column, object value);
         public abstract Constants.DbType GetDbType();
-        public virtual int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys)
+        public virtual int BatchInsert<T>(IAdoDao dao, DbConnection dbConnection, List<T> entitys, int batchSize = 1000)
         {
             throw new NotImplementedException();
         }

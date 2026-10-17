@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Exceptions;
 using Frameset.Core.Repo;
+using Frameset.Core.Service;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
@@ -99,17 +100,18 @@ namespace Frameset.Core.Context
                         registerMap.TryAdd(interfaceType, retObj);
                         targetTypeMap.TryAdd(retObj.GetType(), retObj);
                     }
-                    else
-                    {
-                        if (provider != null)
-                        {
-                            retObj = provider.GetRequiredService(interfaceType);
-                        }
-                        if (retObj == null)
-                        {
-                            throw new OperationFailedException("type does not register!");
-                        }
-                    }
+
+                }
+            }
+            if (retObj == null)
+            {
+                if (provider != null)
+                {
+                    retObj = provider.GetRequiredService(interfaceType);
+                }
+                if (retObj == null)
+                {
+                    throw new OperationFailedException("type does not register!");
                 }
             }
             if (interfaceType.IsAssignableFrom(retObj.GetType()))
@@ -241,8 +243,16 @@ namespace Frameset.Core.Context
                     {
                         ParameterInfo parameter = parameterInfos[i];
                         Type tagetType = GetParameterType(parameter.ParameterType);
-                        paramObj[i] = GetServiceRequired(parameter.ParameterType, tagetType, lifeTime, scannnedTypes);
-                        scannnedTypes.TryAdd(parameter.ParameterType, 1);
+                        if (tagetType != null)
+                        {
+                            paramObj[i] = GetServiceRequired(parameter.ParameterType, tagetType, lifeTime, scannnedTypes);
+                            scannnedTypes.TryAdd(parameter.ParameterType, 1);
+                        }
+                        else
+                        {
+                            paramObj[i] = parameter.DefaultValue;
+                        }
+
                     }
                     retObj = constructorInfo.Invoke(paramObj);
                     break;
@@ -284,12 +294,22 @@ namespace Frameset.Core.Context
         {
             if (!interfaceTargetMap.TryGetValue(baseType, out Type implementType))
             {
-                if (baseType.IsGenericType && baseType.FullName.StartsWith("Frameset.Core.Repo.IBaseRepository"))
+                if (baseType.IsGenericType)
                 {
-                    Type type = typeof(BaseRepository<,>);
-                    Type[] types = baseType.GetGenericArguments();
-                    Type constructType = type.MakeGenericType(types[0], types[1]);
-                    implementType = constructType;
+                    if (baseType.FullName.StartsWith("Frameset.Core.Repo.IBaseRepository"))
+                    {
+                        Type type = typeof(BaseRepository<,>);
+                        Type[] types = baseType.GetGenericArguments();
+                        Type constructType = type.MakeGenericType(types[0], types[1]);
+                        implementType = constructType;
+                    }
+                    else if (baseType.FullName.StartsWith("Frameset.Core.Service.IService"))
+                    {
+                        Type type = typeof(ServiceImpl<,>);
+                        Type[] types = baseType.GetGenericArguments();
+                        Type constructType = type.MakeGenericType(types[0], types[1]);
+                        implementType = constructType;
+                    }
                 }
             }
             return implementType;

@@ -24,14 +24,14 @@ namespace Frameset.Core.Context
             effect.OriginEntity = origin;
             EffectEntrys.Add(effect);
         }
-        public void Delete<V, P>(IList<P> pkList) where V : BaseEntity
+        public void Delete<V, P>(List<P> pkList) where V : BaseEntity
         {
             EffectEntry effect = new EffectEntry(EFFECTTYPE.Delete);
             effect.PkList = pkList.Cast<object>().ToList();
             EffectEntrys.Add(effect);
         }
 
-        public void DeleteLogic<V, P>(IList<P> pkList, string logicColumn, int status) where V : BaseEntity
+        public void DeleteLogic<V, P>(List<P> pkList, string logicColumn, int status) where V : BaseEntity
         {
             EffectEntry effect = new EffectEntry(EFFECTTYPE.DeleteLogic);
             effect.PkList = pkList.Cast<object>().ToList();

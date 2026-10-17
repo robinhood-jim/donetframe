@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Model;
-using Spring.Util;
+using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 namespace Frameset.Core.Dao.Utils
 {
@@ -9,9 +10,9 @@ namespace Frameset.Core.Dao.Utils
         public static void parseInsert(AdoDao dao, BaseEntity entity)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entity.GetType());
-            AssertUtils.ArgumentNotNull(entityContent, "");
-            IList<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entity.GetType());
-            if (!CollectionUtils.IsEmpty(fields))
+            Trace.Assert(entityContent != null, "");
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entity.GetType());
+            if (!fields.IsNullOrEmpty())
             {
 
             }

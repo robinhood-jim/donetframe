@@ -9,7 +9,7 @@ namespace Frameset.Core.Query.Dto
         public long Count { get; set; }
         public string OrderField { get; set; }
         public long Total { get; set; }
-        public IList<V> Results { get; set; } = new List<V>();
+        public List<V> Results { get; set; } = new List<V>();
         public PageDTO(long total, long limit)
         {
             Total = total;
@@ -32,6 +32,10 @@ namespace Frameset.Core.Query.Dto
                 pageSize++;
             }
             Count = pageSize;
+        }
+        public PageDTO(long total, long limit, List<V> list) : this(total, limit)
+        {
+            Results = list;
         }
     }
 }

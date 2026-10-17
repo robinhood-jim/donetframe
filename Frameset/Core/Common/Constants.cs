@@ -277,8 +277,8 @@ namespace Frameset.Core.Common
                 SqlOperator.RLIKE => " LIKE ",
                 SqlOperator.EXISTS => " EXISTS ",
                 SqlOperator.NOTEXISTS => " NOT EXISTS",
-                SqlOperator.NOTNULL => " NOT NULL",
-                SqlOperator.ISNULL => " IS NULL ",
+                SqlOperator.NOTNULL => "",
+                SqlOperator.ISNULL => "",
                 SqlOperator.UNION => " UNION ",
                 SqlOperator.UNIONALL => " UNION ALL ",
                 _ => "="

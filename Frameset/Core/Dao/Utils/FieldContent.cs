@@ -118,7 +118,7 @@ namespace Frameset.Core.Dao.Utils
         public string RealtionColumn
         {
             get; set;
-        }
+        } = string.Empty;
         public Type SubType
         {
             get; set;
