@@ -3,6 +3,7 @@ using Jint;
 using Jint.Native;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 
 
 namespace Frameset.Core.Scripts
@@ -23,7 +24,8 @@ namespace Frameset.Core.Scripts
             bool useMap = type.Equals(typeof(Dictionary<string, object>));
             if (useMap)
             {
-                Dictionary<string, object> dict = input as Dictionary<string, object>;
+                Dictionary<string, object>? dict = input as Dictionary<string, object>;
+                Trace.Assert(dict != null);
                 foreach (var item in dict)
                 {
                     engine.SetValue(item.Key, item.Value);
@@ -34,7 +36,7 @@ namespace Frameset.Core.Scripts
                 Dictionary<string, MethodParam> dict = AnnotationUtils.ReflectObject(type);
                 foreach (var item in dict)
                 {
-                    object value = item.Value.GetMethod.Invoke(input, []);
+                    object? value = item.Value.GetMethod.Invoke(input, []);
                     if (value != null)
                     {
                         engine.SetValue(item.Key, value);

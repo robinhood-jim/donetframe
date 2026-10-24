@@ -14,17 +14,17 @@ namespace Frameset.Office.Meta
         bool underlined;
         string name;
         int size;
-        string rgbColor;
+        string? rgbColor;
         bool strikethrough;
         internal static string defaultFontName;
-        public static Font DEFAULT = null;
+        public static Font DEFAULT = null!;
         static Font()
         {
             CultureInfo currentCulture = Thread.CurrentThread.CurrentCulture;
             defaultFontName = string.Equals(currentCulture.Name, "zh-CN", StringComparison.OrdinalIgnoreCase) ? "宋体" : "Calibri";
             DEFAULT = Build(false, false, false, defaultFontName, 12, "FF000000", false);
         }
-        public Font(bool bold, bool italic, bool underlined, string name, int size, string rgbColor, bool strikethrough)
+        public Font(bool bold, bool italic, bool underlined, string name, int size, string? rgbColor, bool strikethrough)
         {
             if (size < 1 || size > 409)
             {
@@ -46,7 +46,7 @@ namespace Frameset.Office.Meta
         {
             w.Append("<font>").Append(bold ? "<b/>" : "").Append(italic ? "<i/>" : "").Append(underlined ? "<u/>" : "").Append("<sz val=\"").Append(Convert.ToString(size)).Append("\"/>");
             w.Append(strikethrough ? "<strike/>" : "");
-            if (rgbColor != null)
+            if (!string.IsNullOrWhiteSpace(rgbColor))
             {
                 w.Append("<color rgb=\"").Append(rgbColor).Append("\"/>");
             }

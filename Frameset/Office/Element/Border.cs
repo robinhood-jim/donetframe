@@ -6,8 +6,8 @@ namespace Frameset.Office.Element
     public class Border : IWritableElement
     {
         internal Dictionary<BorderSide, BorderElement> elements = new Dictionary<BorderSide, BorderElement>();
-        public static Border NONE = new Border();
-        public static Border BLACK = new Border(new BorderElement(null, "FFFFFFFF"));
+        public static readonly Border NONE = new Border();
+        public static readonly Border BLACK = new Border(new BorderElement(null, "FFFFFFFF"));
         internal Border(BorderElement left, BorderElement right, BorderElement top, BorderElement bottom, BorderElement diagonal)
         {
             elements.TryAdd(BorderSide.TOP, top);
@@ -47,10 +47,10 @@ namespace Frameset.Office.Element
     }
     public class BorderElement
     {
-        internal string style;
-        internal string rgbColor;
+        internal string? style;
+        internal string? rgbColor;
         internal static BorderElement NONE = new BorderElement(null, null);
-        internal BorderElement(string style, string rgbColor)
+        internal BorderElement(string? style, string? rgbColor)
         {
             this.style = style;
             this.rgbColor = rgbColor;
@@ -64,12 +64,12 @@ namespace Frameset.Office.Element
             }
             else
             {
-                if (style != null)
+                if (!string.IsNullOrWhiteSpace(style))
                 {
                     w.Append(" style=\"").Append(style).Append("\"");
                 }
                 w.Append(">");
-                if (rgbColor != null)
+                if (!string.IsNullOrWhiteSpace(rgbColor))
                 {
                     w.Append("<color rgb=\"").Append(rgbColor).Append("\"/>");
                 }

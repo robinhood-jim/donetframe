@@ -46,9 +46,16 @@ namespace Frameset.Core.Dao
 
         ISqlDialect GetDialect();
 
-        int QueryByInt(DbCommand command, List<DbParameter> parameters = null);
-        long QueryByLong(DbCommand command, List<DbParameter> parameters = null);
+        int QueryByInt(DbCommand command, List<DbParameter>? parameters = null);
+        long QueryByLong(DbCommand command, List<DbParameter>? parameters = null);
         List<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
+        /// <summary>
+        /// Execute pageQuery
+        /// </summary>
+        /// <typeparam name="V"></typeparam>
+        /// <param name="command"></param>
+        /// <param name="query"></param>
+        /// <returns></returns>
         PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query);
         List<V> QueryModelsBySql<V>(DbCommand command, List<DbParameter> parameters);
         List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, List<DbParameter> parameters);
@@ -59,10 +66,9 @@ namespace Frameset.Core.Dao
         /// <param name="paramMap"></param>
         /// <param name="nameSpace"></param>
         /// <param name="command"></param>
-        /// <param name="queryObject"></param>
+        /// 
         /// <returns></returns>
-        List<dynamic> QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command, object queryObject);
-
+        List<dynamic> QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command);
         string GetCurrentSchema();
         /// <summary>
         /// Query DataReader with Operation
@@ -72,7 +78,7 @@ namespace Frameset.Core.Dao
         /// <param name="action"></param>
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
         void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action);
-        List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition, PageQuery query = null);
+        List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition, PageQuery? query = null);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
         /// </summary>

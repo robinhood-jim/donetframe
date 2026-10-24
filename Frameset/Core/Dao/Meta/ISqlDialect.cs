@@ -33,7 +33,7 @@ public interface ISqlDialect
     string GetVarcharFormat(FieldContent content);
     string GetCharFormat(int length);
     string GetTimestampFormat(FieldContent content);
-    long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000);
+    long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000) where V : notnull;
     long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName,
         List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token,
         int batchSize = 10000);

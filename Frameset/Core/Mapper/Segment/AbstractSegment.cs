@@ -7,15 +7,15 @@ namespace Frameset.Core.Mapper.Segment
         public string Value
         {
             get; set;
-        }
+        } = null!;
         public string Namespace
         {
             get; set;
-        }
+        } = null!;
         public string Id
         {
             get; set;
-        }
+        } = null!;
         protected AbstractSegment(string nameSpace, string id, string value)
         {
             this.Id = id;

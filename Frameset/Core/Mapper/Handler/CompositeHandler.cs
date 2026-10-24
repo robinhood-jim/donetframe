@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Mapper.Segment;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Xml;
 
 namespace Frameset.Core.Mapper.Handler
@@ -32,7 +33,7 @@ namespace Frameset.Core.Mapper.Handler
             {
                 segments.Add(new SqlConstantSegment(namespaceStr, "", element.InnerText));
             }
-            CompositeSegment segment = null;
+            CompositeSegment? segment = null;
             switch (type)
             {
                 case "select":
@@ -60,6 +61,7 @@ namespace Frameset.Core.Mapper.Handler
                     segment = new SqlBatchSegement(namespaceStr, id, element.GetAttribute("type"), element.GetAttribute("resultMap"), element.GetAttribute("parameterType"), segments);
                     break;
             }
+            Trace.Assert(segment != null);
             return segment;
         }
 

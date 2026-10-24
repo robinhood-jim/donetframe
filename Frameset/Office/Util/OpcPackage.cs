@@ -6,6 +6,7 @@ using Frameset.Office.Meta;
 using ICSharpCode.SharpZipLib.Zip;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text.RegularExpressions;
 
@@ -17,7 +18,7 @@ namespace Frameset.Office.Util
         internal ZipFile InputFile
         {
             get; set;
-        }
+        } = null!;
         public static readonly string WORKBOOK_MAIN_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sheet.main+xml";
         public static readonly string WORKBOOK_EXCEL_MACRO_ENABLED_MAIN_CONTENT_TYPE = "application/vnd.ms-excel.sheet.macroEnabled.main+xml";
         public static readonly string SHARED_STRINGS_CONTENT_TYPE = "application/vnd.openxmlformats-officedocument.spreadsheetml.sharedstrings+xml";
@@ -40,7 +41,7 @@ namespace Frameset.Office.Util
         public ZipOutputStream OutputStream
         {
             get; internal set;
-        }
+        } = null!;
         public static readonly Dictionary<string, string> IMPLICIT_NUM_FMTS = new Dictionary<string, string>() { { "1", "0" },
             {"2", "0.00" },
             {"3", "#,##0"},
@@ -112,6 +113,7 @@ namespace Frameset.Office.Util
         internal Stream GetEntryContent(string name)
         {
             string partName = name;
+            Stream? stream = null;
             if (partName.StartsWith("/"))
             {
                 partName = partName.Substring(1, partName.Length - 1);
@@ -124,18 +126,22 @@ namespace Frameset.Office.Util
                     var iter = InputFile.GetEnumerator();
                     while (iter.MoveNext())
                     {
-                        ZipEntry e1 = iter.Current as ZipEntry;
-                        if (string.Equals(name, e1.Name, StringComparison.OrdinalIgnoreCase))
+                        ZipEntry? e1 = iter.Current as ZipEntry;
+                        if (e1 != null && string.Equals(name, e1.Name, StringComparison.OrdinalIgnoreCase))
                         {
-                            return InputFile.GetInputStream(e1);
+                            stream = InputFile.GetInputStream(e1);
+                            break;
                         }
                     }
-                    return null;
                 }
                 else
                 {
-                    return InputFile.GetInputStream(entry);
+                    stream = InputFile.GetInputStream(entry);
                 }
+            }
+            if (stream != null)
+            {
+                return stream;
             }
             else
             {
@@ -150,14 +156,15 @@ namespace Frameset.Office.Util
             {
                 while (reader.GotoElement("Relationship"))
                 {
-                    string id = reader.GetAttribute("Id");
-                    string target = reader.GetAttribute("Target");
-                    string type = reader.GetAttribute("Type");
+                    string? id = reader.GetAttribute("Id");
+                    string? target = reader.GetAttribute("Target");
+                    string? type = reader.GetAttribute("Type");
                     // if name does not start with /, it is a relative path
-                    if (!target.StartsWith("/"))
+                    if (!string.IsNullOrWhiteSpace(target) && !target.StartsWith("/"))
                     {
                         target = xlFolder + target;
                     } // else it is an absolute path
+                    Trace.Assert(!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(type));
                     RelationShipMap.TryAdd(id, new RelationShip(id, target, type));
                 }
             }

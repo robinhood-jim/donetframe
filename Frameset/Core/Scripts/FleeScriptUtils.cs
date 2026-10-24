@@ -27,7 +27,7 @@ public class FleeScriptUtils
         return context.CompileDynamic(expression);
     }
 
-    public static IDynamicExpression Compile<T>(string expression, Type[] addPackages, out ExpressionContext context, string objectParameter = "o")
+    public static IDynamicExpression Compile<T>(string expression, Type[] addPackages, out ExpressionContext context, string objectParameter = "o") where T : notnull
     {
         Type modelType = typeof(T);
         context = new ExpressionContext();
@@ -48,20 +48,20 @@ public class FleeScriptUtils
     {
         foreach (DataSetColumnMeta columnMeta in colmetas)
         {
-            if (input.TryGetValue(columnMeta.ColumnCode, out object value))
+            if (input.TryGetValue(columnMeta.ColumnCode, out object? value))
             {
                 context.Variables[columnMeta.ColumnCode] = value;
             }
             else
             {
-                context.Variables[columnMeta.ColumnCode] = null;
+                context.Variables[columnMeta.ColumnCode] = null!;
             }
         }
         return expression.Evaluate();
     }
 
     public static object Eval<T>(T input, ExpressionContext context,
-        IDynamicExpression expression, string objectParameter = "o")
+        IDynamicExpression expression, string objectParameter = "o") where T : notnull
     {
         context.Variables[objectParameter] = input;
         return expression.Evaluate();

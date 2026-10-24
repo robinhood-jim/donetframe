@@ -6,6 +6,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Text;
+using System.Text.Json;
 
 namespace Frameset.Core.Dao.Utils
 {
@@ -18,15 +19,15 @@ namespace Frameset.Core.Dao.Utils
         public string ColumnName
         {
             get; set;
-        }
+        } = string.Empty;
         public List<object> Values
         {
             get; set;
-        }
+        } = null!;
         public Type ColumnType
         {
             get; set;
-        }
+        } = null!;
         public List<FilterCondition> Conditions
         {
             get; set;
@@ -38,11 +39,11 @@ namespace Frameset.Core.Dao.Utils
         public string LeftArithmetic
         {
             get; set;
-        }
+        } = null!;
         public string RightArithmetic
         {
             get; set;
-        }
+        } = null!;
         public bool LeftArith
         {
             get; set;
@@ -55,31 +56,31 @@ namespace Frameset.Core.Dao.Utils
         public EntityContent TargetEntity
         {
             get; set;
-        }
+        } = null!;
         public string GroupBy
         {
             get; set;
-        }
+        } = null!;
         public string Having
         {
             get; set;
-        }
+        } = null!;
         public string OrderBy
         {
             get; set;
-        }
+        } = null!;
         public string SelectParts
         {
             get; set;
-        }
+        } = null!;
         public List<string> NewColumns
         {
             get; set;
-        }
+        } = null!;
         public Dictionary<string, string> PropFieldMap
         {
             get; set;
-        }
+        } = null!;
 
 
 
@@ -139,10 +140,10 @@ namespace Frameset.Core.Dao.Utils
         private readonly Type modelType;
         private readonly Dictionary<string, FieldContent> fieldMap;
         private EntityContent targetEntity;
-        private string _selectParts;
-        private string _groupBy;
-        private string _having;
-        private string _orderBy;
+        private string _selectParts = null!;
+        private string _groupBy = null!;
+        private string _having = null!;
+        private string _orderBy = null!;
         private SingleFilterConditionBuilder(Type modelType)
         {
             Trace.Assert(modelType.IsSubclassOf(typeof(BaseEntity)), "must use BaseEntity");
@@ -156,7 +157,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public SingleFilterConditionBuilder AddEq(string columnName, object value)
         {
-            fieldMap.TryGetValue(columnName, out FieldContent content);
+            fieldMap.TryGetValue(columnName, out FieldContent? content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
             filterConditions.Add(new FilterCondition()
             {
@@ -179,7 +180,7 @@ namespace Frameset.Core.Dao.Utils
         {
             if (valueExists)
             {
-                fieldMap.TryGetValue(columnName, out FieldContent content);
+                fieldMap.TryGetValue(columnName, out FieldContent? content);
                 Trace.Assert(content != null, "field " + columnName + " not found in entity");
                 filterConditions.Add(new FilterCondition()
                 {
@@ -197,7 +198,7 @@ namespace Frameset.Core.Dao.Utils
 
         public SingleFilterConditionBuilder AddFilter(string columnName, Constants.SqlOperator sqlOperator, object[] objects)
         {
-            fieldMap.TryGetValue(columnName, out FieldContent content);
+            fieldMap.TryGetValue(columnName, out FieldContent? content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
             filterConditions.Add(new FilterCondition()
             {
@@ -242,9 +243,71 @@ namespace Frameset.Core.Dao.Utils
             });
             return this;
         }
+        public SingleFilterConditionBuilder ParseFromJson(string jsonInput)
+        {
+            List<object>? parameters = JsonSerializer.Deserialize<List<object>>(jsonInput);
+            Trace.Assert(parameters != null && !parameters.IsNullOrEmpty());
+            foreach (object obj in parameters)
+            {
+                if (obj.GetType().IsTypeDictionary())
+                {
+                    Dictionary<string, object>? dict = obj as Dictionary<string, object>;
+                    if (dict != null && !dict.IsNullOrEmpty() && dict.TryGetValue("fieldName", out object? fieldNameObj) && dict.TryGetValue("fieldValue", out object? fieldValue))
+                    {
+                        dict.TryGetValue("operator", out object? operObj);
+                        string? operStr = operObj?.ToString();
+                        string? fieldName = fieldNameObj.ToString();
+                        Trace.Assert(!string.IsNullOrWhiteSpace(operStr) && !string.IsNullOrWhiteSpace(fieldName));
+                        if (fieldValue != null)
+                        {
+                            Constants.SqlOperator sqlOperator = !string.IsNullOrWhiteSpace(operStr) ? Constants.Parse(operStr) : Constants.SqlOperator.EQ;
+                            ParseParameter(fieldName, sqlOperator, fieldValue);
+
+                        }
+                        else
+                        {
+                            dict.TryGetValue("conditions", out object? conditionsObj);
+                            dict.TryGetValue("linkOper", out object? linkOperObj);
+                            Trace.Assert(linkOperObj != null && conditionsObj != null);
+                            string? linkOper = linkOperObj.ToString();
+                            Trace.Assert(!string.IsNullOrWhiteSpace(linkOper) &&
+                                (string.Equals(linkOper, Constants.LINK_AND, StringComparison.OrdinalIgnoreCase)
+                                || string.Equals(linkOper, Constants.LINK_OR, StringComparison.OrdinalIgnoreCase)));
+                            List<Dictionary<string, object>>? conditions = conditionsObj as List<Dictionary<string, object>>;
+                        }
+                    }
+                }
+            }
+
+            return this;
+        }
+        private void ParseParameter(string fieldName, Constants.SqlOperator sqlOperator, object? value)
+        {
+            Trace.Assert(value != null);
+            if (fieldMap.TryGetValue(fieldName, out FieldContent? content))
+            {
+                if (!Constants.SqlOperator.IN.Equals(sqlOperator) && !Constants.SqlOperator.NOTIN.Equals(sqlOperator) && !Constants.SqlOperator.BT.Equals(sqlOperator))
+                {
+                    AddFilter(fieldName, sqlOperator, [ConvertUtil.ParseByType(content.ParamType, value)]);
+                }
+                else
+                {
+                    string? str = value.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(str));
+                    Trace.Assert(str.Contains(","));
+                    List<object> values = str.Split(',').Select(x => ConvertUtil.ParseByType(content.ParamType, x)).ToList();
+                    AddFilter(fieldName, sqlOperator, values.ToArray());
+                }
+            }
+        }
+        private void ParseAndOr(string? linkOper, List<Dictionary<string, object>> conditions)
+        {
+
+        }
+
         public FilterCondition Eq(string columnName, object value)
         {
-            fieldMap.TryGetValue(columnName, out FieldContent content);
+            fieldMap.TryGetValue(columnName, out FieldContent? content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
             return new FilterCondition()
             {
@@ -255,7 +318,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public FilterCondition Like(string columnName, object value)
         {
-            fieldMap.TryGetValue(columnName, out FieldContent content);
+            fieldMap.TryGetValue(columnName, out FieldContent? content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
             return new FilterCondition()
             {
@@ -268,7 +331,7 @@ namespace Frameset.Core.Dao.Utils
 
         public FilterCondition Filter(string columnName, Constants.SqlOperator sqlOperator, object[] objects)
         {
-            fieldMap.TryGetValue(columnName, out FieldContent content);
+            fieldMap.TryGetValue(columnName, out FieldContent? content);
             Trace.Assert(content != null, "field " + columnName + " not found in entity");
             return new FilterCondition()
             {
@@ -307,7 +370,7 @@ namespace Frameset.Core.Dao.Utils
             List<FilterCondition> condition = [];
             foreach (var entry in paramDict)
             {
-                fieldMap.TryGetValue(entry.Key, out FieldContent content);
+                fieldMap.TryGetValue(entry.Key, out FieldContent? content);
                 Trace.Assert(content != null, "field " + entry.Key + " not found in entity");
                 string[] parameters = entry.Value.Split('|');
                 string[] values = [];
@@ -340,7 +403,7 @@ namespace Frameset.Core.Dao.Utils
             List<FilterCondition> condition = [];
             foreach (var entry in paramDict)
             {
-                fieldMap.TryGetValue(entry.Key, out FieldContent content);
+                fieldMap.TryGetValue(entry.Key, out FieldContent? content);
                 Trace.Assert(content != null, "field " + entry.Key + " not found in entity");
                 string[] parameters = entry.Value.Split('|');
                 string[] values = [];
@@ -435,7 +498,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public SingleFilterConditionBuilder OrderBy(string propName, bool ascTag)
         {
-            fieldMap.TryGetValue(propName, out FieldContent content);
+            fieldMap.TryGetValue(propName, out FieldContent? content);
             Trace.Assert(content != null, "field " + propName + " not found in entity");
             StringBuilder builder = new StringBuilder(content.FieldName);
             if (!ascTag)

@@ -52,7 +52,7 @@ namespace Frameset.Office.Core
                 reader.Read();
             }
         }
-        public string GetAttribute(string name)
+        public string? GetAttribute(string name)
         {
             return reader.GetAttribute(name);
         }
@@ -60,7 +60,7 @@ namespace Frameset.Office.Core
         {
             return reader.GetAttribute(pos);
         }
-        public string GetAttribute(string nameSpace, string name)
+        public string? GetAttribute(string nameSpace, string name)
         {
             return reader.GetAttribute(name, nameSpace);
         }

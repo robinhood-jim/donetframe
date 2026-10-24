@@ -15,9 +15,9 @@ namespace Frameset.Core.Security
         internal static byte[] mzHeader = { 0x4D, 0x5A, 0x50, 0x00, 0x02, 0x00, 0x00, 0x00, 0x04, 0x00, 0x0f, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00, 0x00 };
         internal static byte[] PADDING = { 0X7f };
         internal static byte[] ENDING = { 0x00 };
-        public static byte[] ACK = { 0x7E, 0x7F, 0x7E, 0x7F };
+        public static readonly byte[] ACK = { 0x7E, 0x7F, 0x7E, 0x7F };
         internal static byte[] PERMIT = { 0x7E, 0x7F, 0x01, 0x01 };
-        public static byte[] BANNED = { 0x7E, 0x7F, 0xFF, 0xFF };
+        public static readonly byte[] BANNED = { 0x7E, 0x7F, 0xFF, 0xFF };
         internal static byte[] EXPIRE = { 0x7E, 0x7F, 0x7F, 0x7F };
         internal static byte[] PUBLICKEYLIC = { 0x7E, 0x7F, 0x10, 0x10 };
         internal static byte[] PUBLICKEYLICACK = { 0x7E, 0x7F, 0xE0, 0xE0 };
@@ -25,7 +25,7 @@ namespace Frameset.Core.Security
         internal static byte[] LICENSEFILEACK = { 0x7E, 0x7F, 0xD0, 0xD0 };
         public static bool ValidateLicense()
         {
-            string userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).FullName;
+            string? userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))?.FullName;
             string licensePath = userPath + Path.DirectorySeparatorChar + Environment.UserName + Path.DirectorySeparatorChar + ".robin" + Path.DirectorySeparatorChar + ".license";
             if (File.Exists(licensePath))
             {
@@ -74,9 +74,10 @@ namespace Frameset.Core.Security
             if (frames.Length > 1)
             {
                 StackFrame callFrame = frames[1];
-                string className = callFrame.GetFileName();
-                MethodBase method = callFrame.GetMethod();
-                Type type = method.DeclaringType;
+                string? className = callFrame.GetFileName();
+                MethodBase? method = callFrame.GetMethod();
+                Trace.Assert(method != null);
+                Type? type = method.DeclaringType;
 
                 Trace.Assert(typeof(LicenseUtils).Equals(type) || typeof(ProjectConfiguration).Equals(type), "invalid call from outside class!");
             }
@@ -103,7 +104,8 @@ namespace Frameset.Core.Security
             RSACryptoServiceProvider publicProvider = RsaUtils.LoadDefaultPublicKey();
             if (publicProvider == null)
             {
-                using Stream stream = FileUtil.ReadStreamInPackage("Frameset.Resources.public.pem");
+                using Stream? stream = FileUtil.ReadStreamInPackage("Frameset.Resources.public.pem");
+                Trace.Assert(stream != null);
                 publicProvider = RsaUtils.LoadPublicByPem(stream);
             }
             return publicProvider;
@@ -113,7 +115,8 @@ namespace Frameset.Core.Security
             RSACryptoServiceProvider publicProvider = RsaUtils.LoadDefaultPrivateKey();
             if (publicProvider == null)
             {
-                using Stream stream = FileUtil.ReadStreamInPackage("Frameset.Resources.private.pem");
+                using Stream? stream = FileUtil.ReadStreamInPackage("Frameset.Resources.private.pem");
+                Trace.Assert(stream != null);
                 publicProvider = RsaUtils.LoadPrivateByPem(stream);
             }
             return publicProvider;

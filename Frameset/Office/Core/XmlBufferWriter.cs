@@ -106,8 +106,9 @@ namespace Frameset.Office.Core
             if (outStream != null)
             {
                 Flush();
+                outStream.Close();
             }
-            outStream.Close();
+
         }
     }
 }

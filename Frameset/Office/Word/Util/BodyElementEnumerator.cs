@@ -16,11 +16,11 @@ namespace Frameset.Office.Word.Util
     {
         private readonly Document document;
         private readonly XMLStreamReader reader;
-        private string paragraphId;
-        private string rsidRDefault;
-        private string rsidR;
-        private string runId;
-        private IBodyElement bodyElement;
+        private string? paragraphId = null!;
+        private string? rsidRDefault = null!;
+        private string? rsidR = null!;
+        private string? runId = null!;
+        private IBodyElement bodyElement = null!;
         public static readonly string NAMESPACEMAIN = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
         public static readonly string NAMESPACEW14 = "http://schemas.microsoft.com/office/word/2010/wordml";
 
@@ -51,7 +51,6 @@ namespace Frameset.Office.Word.Util
         public bool MoveNext()
         {
             List<PictureData> pictureDatas = [];
-            bodyElement = null;
             List<XRunElement> elements = [];
             StringBuilder builder = new StringBuilder();
             while (reader.HasNext())
@@ -76,6 +75,7 @@ namespace Frameset.Office.Word.Util
                     {
                         runId = reader.GetAttributeAt(0);
                     }
+                    Trace.Assert(!string.IsNullOrWhiteSpace(runId));
                     XRunElement element1 = new XRunElement(runId);
                     if (builder.Length > 0)
                     {
@@ -93,8 +93,9 @@ namespace Frameset.Office.Word.Util
                             PictureData pictureData = new PictureData();
                             pictureData.Rid = r2.GetAttribute(0);
                             Trace.Assert(!string.IsNullOrWhiteSpace(pictureData.Rid), "rid is null");
-                            document.GetOpcPackage().RelationShipMap.TryGetValue(pictureData.Rid, out RelationShip relationShip);
-                            pictureData.Path = relationShip?.Target;
+                            document.GetOpcPackage().RelationShipMap.TryGetValue(pictureData.Rid, out RelationShip? relationShip);
+                            Trace.Assert(relationShip != null);
+                            pictureData.Path = relationShip.Target;
                             pictureDatas.Add(pictureData);
                         }
                     });
@@ -124,7 +125,7 @@ namespace Frameset.Office.Word.Util
             }
             return bodyElement != null;
         }
-        private TableElement ParseTable()
+        private TableElement? ParseTable()
         {
             List<string> header = [];
             List<string> tmpValues = [];

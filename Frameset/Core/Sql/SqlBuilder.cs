@@ -24,7 +24,7 @@ namespace Frameset.Core.Sql
         private readonly Dictionary<string, int> newColumnMap = [];
         private readonly List<Tuple<Type, Constants.SqlOperator, FieldContent, SqlBuilder>> inSubQuerys = [];
         private readonly List<Tuple<Constants.SqlOperator, SqlBuilder>> subQuerys = [];
-        private Type fromBaseType;
+        private Type fromBaseType = null!;
         private readonly List<TableJoin> joins = [];
         private readonly List<Tuple<Type, FieldContent>> selectFields = [];
         private readonly StringBuilder whereBuilder = new();
@@ -32,12 +32,12 @@ namespace Frameset.Core.Sql
         private readonly StringBuilder groupBuilder = new();
         private readonly StringBuilder orderByBuilder = new();
         private readonly StringBuilder sqlBuilder = new();
-        private FilterCondition filterCondition;
-        private FilterCondition havingConditon;
+        private FilterCondition filterCondition = null!;
+        private FilterCondition havingConditon = null!;
         public SqlParameter QueryParamters
         {
             get; protected set;
-        }
+        } = null!;
 
         private SqlBuilder()
         {
@@ -113,7 +113,7 @@ namespace Frameset.Core.Sql
                     {
                         string[] selParts = columns[0].Split('.');
                         Tuple<Type, FieldContent> tuple = AliasColumn(selParts, AppendField);
-                        if (columnAliasMap.TryGetValue(tuple.Item1, out Dictionary<string, string> aliasDict))
+                        if (columnAliasMap.TryGetValue(tuple.Item1, out Dictionary<string, string>? aliasDict))
                         {
                             aliasDict.TryAdd(tuple.Item2.PropertyName, aliasName);
                         }
@@ -137,8 +137,8 @@ namespace Frameset.Core.Sql
             Tuple<Type, FieldContent> leftEntityTuple = AliasColumn(leftColumn.Split('.'));
             Tuple<Type, FieldContent> rightEntityTuple = AliasColumn(rightColumn.Split('.'));
 
-            if (entityTypeMap.TryGetValue(leftEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _)
-                && entityTypeMap.TryGetValue(rightEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _))
+            if (entityTypeMap.TryGetValue(leftEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>>? _)
+                && entityTypeMap.TryGetValue(rightEntityTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>>? _))
             {
                 joins.Add(new TableJoin(leftEntityTuple.Item1, rightEntityTuple.Item1, leftEntityTuple.Item2, rightEntityTuple.Item2, joinType));
             }
@@ -189,14 +189,16 @@ namespace Frameset.Core.Sql
             StringBuilder builder = new StringBuilder();
             String operationColumn = GetCombinedColumn(caseColumns);
             builder.Append("CASE ").Append(operationColumn);
-            caseDict.TryGetValue("_DEFAULT", out object defaultValue);
+            caseDict.TryGetValue("_DEFAULT", out object? defaultValue);
             caseDict.Remove("_DEFAULT");
             foreach (var entry in caseDict)
             {
                 builder.Append(" WHEN ").Append(entry.Key).Append(" THEN ");
                 if (entry.Value.GetType().Equals(typeof(List<string>)))
                 {
-                    builder.Append(GetCombinedColumn((entry.Value as List<string>).ToArray()));
+                    List<string>? list = entry.Value as List<string>;
+                    Trace.Assert(list != null);
+                    builder.Append(GetCombinedColumn(list.ToArray()));
                 }
                 else
                 {
@@ -247,8 +249,11 @@ namespace Frameset.Core.Sql
             {
                 foreach (DictionaryEntry entry in orders)
                 {
-                    string column = entry.Key.ToString();
-                    bool ascDesc = bool.Parse(entry.Value.ToString());
+                    string? column = entry.Key.ToString();
+                    string? entryValue = entry.Value?.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(column) && !string.IsNullOrWhiteSpace(entryValue));
+                    bool ascDesc = bool.Parse(entryValue);
+
                     if (column.Contains('.'))
                     {
                         Tuple<Type, FieldContent> tuple = AliasColumn(column.Split('.'));
@@ -286,10 +291,10 @@ namespace Frameset.Core.Sql
             sqlBuilder.Append(Constants.SQL_SELECT);
             foreach (Tuple<Type, FieldContent> field in selectFields)
             {
-                if (entityTypeMap.TryGetValue(field.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _) && entityAliasMap.TryGetValue(field.Item1, out string tabAlias))
+                if (entityTypeMap.TryGetValue(field.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>>? _) && entityAliasMap.TryGetValue(field.Item1, out string? tabAlias))
                 {
                     sqlBuilder.Append(tabAlias).Append('.').Append(field.Item2.FieldName).Append(Constants.SQL_AS);
-                    if (columnAliasMap.TryGetValue(field.Item1, out Dictionary<string, string> aliasDict) && aliasDict.TryGetValue(field.Item2.PropertyName, out string aliasName))
+                    if (columnAliasMap.TryGetValue(field.Item1, out Dictionary<string, string>? aliasDict) && aliasDict.TryGetValue(field.Item2.PropertyName, out string? aliasName))
                     {
                         sqlBuilder.Append(aliasName);
                     }
@@ -319,7 +324,7 @@ namespace Frameset.Core.Sql
             sqlBuilder.Append(Constants.SQL_FROM);
             if (fromBaseType != null)
             {
-                if (entityTypeMap.TryGetValue(fromBaseType, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple) && entityAliasMap.TryGetValue(fromBaseType, out string tabAlias))
+                if (entityTypeMap.TryGetValue(fromBaseType, out Tuple<EntityContent, Dictionary<string, FieldContent>>? tuple) && entityAliasMap.TryGetValue(fromBaseType, out string? tabAlias))
                 {
                     sqlBuilder.Append(tuple.Item1.GetTableName()).Append(' ').Append(tabAlias);
                 }
@@ -330,10 +335,10 @@ namespace Frameset.Core.Sql
             {
                 foreach (TableJoin join in joins)
                 {
-                    if (entityTypeMap.TryGetValue(join.LeftClass, out Tuple<EntityContent, Dictionary<string, FieldContent>> _) && entityTypeMap.TryGetValue(join.RightClass, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple1))
+                    if (entityTypeMap.TryGetValue(join.LeftClass, out Tuple<EntityContent, Dictionary<string, FieldContent>>? _) && entityTypeMap.TryGetValue(join.RightClass, out Tuple<EntityContent, Dictionary<string, FieldContent>>? tuple1))
                     {
-                        entityAliasMap.TryGetValue(join.LeftClass, out string leftAlias);
-                        entityAliasMap.TryGetValue(join.RightClass, out string rightAlias);
+                        entityAliasMap.TryGetValue(join.LeftClass, out string? leftAlias);
+                        entityAliasMap.TryGetValue(join.RightClass, out string? rightAlias);
 
                         joinBuilder.Append(Constants.GetJoinType(join.TabJoinType)).Append(Constants.SQL_JOIN);
                         joinBuilder.Append(tuple1.Item1.GetTableName()).Append(' ').Append(rightAlias);
@@ -353,9 +358,9 @@ namespace Frameset.Core.Sql
             {
                 foreach (Tuple<Type, Constants.SqlOperator, FieldContent, SqlBuilder> tuple in inSubQuerys)
                 {
-                    if (entityTypeMap.TryGetValue(tuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> _))
+                    if (entityTypeMap.TryGetValue(tuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>>? _))
                     {
-                        entityAliasMap.TryGetValue(tuple.Item1, out string tabAlias);
+                        entityAliasMap.TryGetValue(tuple.Item1, out string? tabAlias);
                         whereBuilder.Append(Constants.SQL_AND).Append(tabAlias).Append('.').Append(tuple.Item3.FieldName).Append(Constants.OperatorValue(tuple.Item2)).Append("(");
                         tuple.Item4.QueryParamters = QueryParamters;
                         whereBuilder.Append(tuple.Item4.Build());
@@ -408,11 +413,11 @@ namespace Frameset.Core.Sql
             }
             selectFields.Add(Tuple.Create(entityType, field));
         }
-        private Tuple<Type, FieldContent> AliasColumn(string[] selParts, Action<Type, FieldContent> action = null)
+        private Tuple<Type, FieldContent> AliasColumn(string[] selParts, Action<Type, FieldContent>? action = null)
         {
-            if (entityNameMap.TryGetValue(selParts[0], out Type targetType) && entityTypeMap.TryGetValue(targetType, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple))
+            if (entityNameMap.TryGetValue(selParts[0], out Type? targetType) && entityTypeMap.TryGetValue(targetType, out Tuple<EntityContent, Dictionary<string, FieldContent>>? tuple))
             {
-                if (tuple.Item2.TryGetValue(selParts[1], out FieldContent content))
+                if (tuple.Item2.TryGetValue(selParts[1], out FieldContent? content))
                 {
                     if (action != null)
                     {
@@ -441,11 +446,11 @@ namespace Frameset.Core.Sql
                 {
                     string[] selParts = column.Split('.');
                     Tuple<Type, FieldContent> selectColumnTuple = AliasColumn(selParts);
-                    if (entityTypeMap.TryGetValue(selectColumnTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>> tuple))
+                    if (entityTypeMap.TryGetValue(selectColumnTuple.Item1, out Tuple<EntityContent, Dictionary<string, FieldContent>>? tuple))
                     {
-                        if (tuple.Item2.TryGetValue(selParts[1], out FieldContent content))
+                        if (tuple.Item2.TryGetValue(selParts[1], out FieldContent? content))
                         {
-                            entityAliasMap.TryGetValue(selectColumnTuple.Item1, out string tabAlias);
+                            entityAliasMap.TryGetValue(selectColumnTuple.Item1, out string? tabAlias);
                             columnBuilder.Append(tabAlias).Append('.').Append(content.FieldName);
                         }
                         else
@@ -457,7 +462,7 @@ namespace Frameset.Core.Sql
                     {
                         //EntityContent entityContent = EntityReflectUtils.GetEntityInfo(selectColumnTuple.Item1);
                         Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(selectColumnTuple.Item1);
-                        fieldDict.TryGetValue(selParts[1], out FieldContent content);
+                        fieldDict.TryGetValue(selParts[1], out FieldContent? content);
                         Trace.Assert(content != null, "");
                         columnBuilder.Append(content.FieldName);
                     }
@@ -483,7 +488,7 @@ namespace Frameset.Core.Sql
 
         private void WrapField(StringBuilder builder, Tuple<Type, FieldContent> field)
         {
-            if (entityAliasMap.TryGetValue(field.Item1, out string tabAlias))
+            if (entityAliasMap.TryGetValue(field.Item1, out string? tabAlias))
             {
                 builder.Append(tabAlias).Append(".").Append(field.Item2.FieldName);
             }

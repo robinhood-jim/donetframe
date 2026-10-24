@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Parquet;
 using Parquet.Schema;
 using System.Collections;
+using System.Diagnostics;
 
 namespace Frameset.Common.Data.Writer
 {
@@ -118,7 +119,8 @@ namespace Frameset.Common.Data.Writer
             for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
             {
                 Array array = chunckMap[i].ToArray(fields[i].ClrType);
-                tasks.Add(groupWriter?.WriteColumnAsync(new Parquet.Data.DataColumn(fields[i], array)));
+                Trace.Assert(groupWriter != null, "");
+                tasks.Add(groupWriter.WriteColumnAsync(new Parquet.Data.DataColumn(fields[i], array)));
             }
             foreach (var item in tasks)
             {

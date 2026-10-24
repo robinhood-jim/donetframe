@@ -5,8 +5,8 @@ namespace Frameset.Core.Annotation
     [AttributeUsage(AttributeTargets.Class, AllowMultiple = false)]
     public class MappingEntityAttribute : Attribute
     {
-        public string TableName { get; set; }
-        public string Schema { get; set; }
+        public string TableName { get; set; } = null!;
+        public string Schema { get; set; } = null!;
         public string DsName { get; set; } = "core";
         public bool IfExplicit { get; set; } = false;
 

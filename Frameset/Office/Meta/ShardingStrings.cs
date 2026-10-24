@@ -12,7 +12,7 @@ namespace Frameset.Office.Meta
         {
             get; internal set;
         } = new List<ShardingString>();
-        internal Stream inputStream;
+        internal Stream inputStream = null!;
         internal ShardingStrings(Stream inputStream)
         {
             this.inputStream = inputStream;

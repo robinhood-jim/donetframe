@@ -28,9 +28,9 @@ namespace Frameset.Core.Context
                 Log.Error("{Message}", ex.Message);
             }
         }
-        public static T GetConfig<T>(string key)
+        public static T? GetConfig<T>(string key)
         {
-            keyValues.TryGetValue(key, out object retConfig);
+            keyValues.TryGetValue(key, out object? retConfig);
             if (retConfig != null)
             {
                 Trace.Assert(typeof(T) == retConfig.GetType(), "");

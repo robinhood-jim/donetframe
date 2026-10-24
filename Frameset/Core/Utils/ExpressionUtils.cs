@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq.Expressions;
 using System.Reflection;
 
@@ -11,21 +12,21 @@ namespace Frameset.Core.Utils
         public static Func<O> GetExpressionFunction<O>()
         {
             Type returnType = typeof(O);
-            Func<O> retFun;
-            if (!funcMap.TryGetValue(returnType, out Func<dynamic> func))
+            Func<O>? retFun;
+            if (!funcMap.TryGetValue(returnType, out Func<dynamic>? func))
             {
                 NewExpression constructExpression = Expression.New(typeof(O));
                 Expression<Func<O>> lamadaExpression = Expression.Lambda<Func<O>>(constructExpression);
                 retFun = lamadaExpression.Compile();
-                funcMap.TryAdd(returnType, retFun as Func<dynamic>);
+                func = retFun as Func<dynamic>;
+                Trace.Assert(func != null);
+                funcMap.TryAdd(returnType, func);
             }
-            else
-            {
-                retFun = func as Func<O>;
-            }
+            retFun = func as Func<O>;
+            Trace.Assert(retFun != null);
             return retFun;
         }
-        public static ConstructorInfo GetConstructionInfo<V>(Type[] constructionTypes)
+        public static ConstructorInfo? GetConstructionInfo<V>(Type[] constructionTypes)
         {
             return typeof(V).GetConstructor(BindingFlags.Instance | BindingFlags.Public, null,
                    CallingConventions.HasThis,

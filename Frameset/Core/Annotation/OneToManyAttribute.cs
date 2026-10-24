@@ -12,7 +12,7 @@ namespace Frameset.Core.Annotation
         public string JoinColumn
         {
             get; set;
-        }
+        } = null!;
         public CascadeType Cascade
         {
             get; set;

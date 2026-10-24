@@ -5,7 +5,7 @@
         public string FieldName
         {
             get; internal set;
-        }
+        } = null!;
         public int ValidValue
         {
             get; internal set;

@@ -15,7 +15,7 @@ namespace Frameset.Core.Utils
 {
     public static class ModelSqlGenerator
     {
-        public static void GenerateSql(Constants.DbType dbType, AbstractSqlDialect dialect, Stream stream, Dictionary<string, object> additionalCfgMap = null)
+        public static void GenerateSql(Constants.DbType dbType, AbstractSqlDialect dialect, Stream stream, Dictionary<string, object>? additionalCfgMap = null)
         {
             List<Type> allTypes = ScanModelTypes();
             using (StreamWriter writer = new StreamWriter(stream))
@@ -55,7 +55,7 @@ namespace Frameset.Core.Utils
             return retList;
 
         }
-        internal static string GenerateCreatSql(EntityContent entityContent, IList<FieldContent> fields, AbstractSqlDialect dialect, Dictionary<string, object> additionalCfgMap)
+        internal static string GenerateCreatSql(EntityContent entityContent, IList<FieldContent> fields, AbstractSqlDialect dialect, Dictionary<string, object>? additionalCfgMap)
         {
             StringBuilder builder = new StringBuilder();
             builder.Append("CREATE TABLE ").Append(entityContent.GetTableName()).Append("(\n");

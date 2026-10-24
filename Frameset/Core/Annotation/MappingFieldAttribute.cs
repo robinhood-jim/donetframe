@@ -6,8 +6,8 @@ namespace Frameset.Core.Annotation
     [AttributeUsage(AttributeTargets.Property | AttributeTargets.Field, AllowMultiple = false)]
     public class MappingFieldAttribute : Attribute
     {
-        private string _field;
-        private string _sequenceName;
+        private string _field = null!;
+        private string _sequenceName = null!;
         private int _precise;
         private int _scale;
 

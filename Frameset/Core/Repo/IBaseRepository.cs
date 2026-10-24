@@ -18,13 +18,13 @@ namespace Frameset.Core.Repo
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        bool SaveEntity(V entity, Action<V> insertBeforeAction = null, Func<DbCommand, V, bool> insertAfterAction = null);
+        bool SaveEntity(V entity, Action<V>? insertBeforeAction = null, Func<DbCommand, V, bool>? insertAfterAction = null);
         /// <summary>
         /// Single Table Update
         /// </summary>
         /// <param name="entity"></param>
         /// <returns></returns>
-        bool UpdateEntity(V entity, Action<V> updateBeforeAction = null, Func<DbCommand, V, bool> updateAfterAction = null);
+        bool UpdateEntity(V entity, Action<V>? updateBeforeAction = null, Func<DbCommand, V, bool>? updateAfterAction = null);
         /// <summary>
         /// Single Table Delete
         /// </summary>
@@ -60,7 +60,7 @@ namespace Frameset.Core.Repo
         /// <param name="values"></param>
         /// <param name="orderByStr"></param>
         /// <returns></returns>
-        List<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null);
+        List<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null);
         /// <summary>
         /// Query With Mybatis xml config
         /// </summary>
@@ -117,7 +117,7 @@ namespace Frameset.Core.Repo
         /// <typeparam name="O"></typeparam>
         /// <param name="condition"></param>
         /// <returns></returns>
-        List<O> QueryByCondition<O>(FilterCondition condition, PageQuery query = null);
+        List<O> QueryByCondition<O>(FilterCondition condition, PageQuery? query = null);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
         /// </summary>

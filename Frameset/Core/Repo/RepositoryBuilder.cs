@@ -5,7 +5,7 @@ using System.Data.Common;
 
 namespace Frameset.Core.Repo
 {
-    public class RepositoryBuilder<V, P> where V : BaseEntity
+    public class RepositoryBuilder<V, P> where V : BaseEntity where P : notnull
     {
         private readonly BaseRepository<V, P> repository;
         public RepositoryBuilder()

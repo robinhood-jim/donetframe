@@ -6,378 +6,380 @@ using Google.Protobuf.Reflection;
 using System.Diagnostics;
 using System.Reflection;
 
-namespace Frameset.Common.Protobuf.Utils;
-
-public class DynamicMessage : IMessage
+namespace Frameset.Common.Protobuf.Utils
 {
-    private MessageDefinition definition;
-    private List<DataSetColumnMeta>? columnMetas;
-    private readonly ConstructorInfo? constructorInfo = typeof(MessageDescriptor).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(DescriptorProto), typeof(FileDescriptor), typeof(int), typeof(GeneratedClrTypeInfo)]);
-    public Dictionary<string, object> DataContent
-    {
-        get; set;
-    } = [];
 
-    public MessageDescriptor Descriptor => GetMessage();
-
-    public DynamicMessage(MessageDefinition definition)
+    public class DynamicMessage : IMessage
     {
-        this.definition = definition;
-    }
-
-    public DynamicMessage(MessageDefinition definition, IList<DataSetColumnMeta> metas)
-    {
-        this.definition = definition;
-        columnMetas = (List<DataSetColumnMeta>)metas;
-    }
-    private MessageDescriptor GetMessage()
-    {
-        MessageDescriptor? messageDescriptor = constructorInfo?.Invoke([definition.descriptor, null, 0, null]) as MessageDescriptor;
-        Trace.Assert(messageDescriptor != null, "");
-        return messageDescriptor;
-
-    }
-    public void SetField(int num, object value)
-    {
-        if (definition.fieldIdMap.TryGetValue(num, out FieldDescriptorProto? field))
+        private MessageDefinition definition;
+        private List<DataSetColumnMeta>? columnMetas;
+        private readonly ConstructorInfo? constructorInfo = typeof(MessageDescriptor).GetConstructor(BindingFlags.NonPublic | BindingFlags.Instance, [typeof(DescriptorProto), typeof(FileDescriptor), typeof(int), typeof(GeneratedClrTypeInfo)]);
+        public Dictionary<string, object> DataContent
         {
-            DataContent.TryAdd(field.Name, value);
+            get; set;
+        } = [];
+
+        public MessageDescriptor Descriptor => GetMessage();
+
+        public DynamicMessage(MessageDefinition definition)
+        {
+            this.definition = definition;
         }
-    }
-    public void SetField(string fieldName, object value)
-    {
-        if (definition.fieldNameMap.TryGetValue(fieldName, out _))
-        {
-            DataContent.TryAdd(fieldName, value);
-        }
-    }
-    public void Clear()
-    {
-        DataContent.Clear();
-    }
 
-    public bool MergeDelimitedFromNew(Stream inputStream)
-    {
-        DataContent.Clear();
-        int length = ReadRawVarint32(inputStream);
-        if (length != -1)
+        public DynamicMessage(MessageDefinition definition, IList<DataSetColumnMeta> metas)
         {
-            byte[] buffer = new byte[length];
-            inputStream.ReadExactly(buffer, 0, length);
-            using (CodedInputStream inputStream1 = new CodedInputStream(buffer))
+            this.definition = definition;
+            columnMetas = (List<DataSetColumnMeta>)metas;
+        }
+        private MessageDescriptor GetMessage()
+        {
+            MessageDescriptor? messageDescriptor = constructorInfo?.Invoke([definition.descriptor, null, 0, null]) as MessageDescriptor;
+            Trace.Assert(messageDescriptor != null, "");
+            return messageDescriptor;
+
+        }
+        public void SetField(int num, object value)
+        {
+            if (definition.fieldIdMap.TryGetValue(num, out FieldDescriptorProto? field))
             {
-                MergeFrom(inputStream1);
+                DataContent.TryAdd(field.Name, value);
+            }
+        }
+        public void SetField(string fieldName, object value)
+        {
+            if (definition.fieldNameMap.TryGetValue(fieldName, out _))
+            {
+                DataContent.TryAdd(fieldName, value);
+            }
+        }
+        public void Clear()
+        {
+            DataContent.Clear();
+        }
+
+        public bool MergeDelimitedFromNew(Stream inputStream)
+        {
+            DataContent.Clear();
+            int length = ReadRawVarint32(inputStream);
+            if (length != -1)
+            {
+                byte[] buffer = new byte[length];
+                inputStream.ReadExactly(buffer, 0, length);
+                using (CodedInputStream inputStream1 = new CodedInputStream(buffer))
+                {
+                    MergeFrom(inputStream1);
+                }
+                return true;
+            }
+            return false;
+        }
+        private static int ReadRawVarint32(Stream stream)
+        {
+            int b = stream.ReadByte();
+            if (b == -1) return -1;
+
+            int result = b & 0x7f;
+            if ((b & 0x80) == 0) return result;
+
+            int shift = 7;
+            while (shift < 32)
+            {
+                b = stream.ReadByte();
+                if (b == -1) throw new EndOfStreamException("Varint unexpected end");
+                result |= (b & 0x7f) << shift;
+                if ((b & 0x80) == 0) return result;
+                shift += 7;
+            }
+            throw new ArgumentException("Varint overflow limit");
+        }
+
+        public void MergeFrom(CodedInputStream input)
+        {
+            DataContent.Clear();
+            if (input.IsAtEnd)
+            {
+                return;
+            }
+            for (int i = 0; i < definition.descriptor.Field.Count; i++)
+            {
+                FieldDescriptorProto proto = definition.descriptor.Field[i];
+                DataSetColumnMeta? columnMeta = columnMetas?[i];
+                if (!ReadObject(input, proto, columnMeta))
+                {
+                    break;
+                }
+            }
+
+        }
+        public bool ReadFrom(CodedInputStream input)
+        {
+            DataContent.Clear();
+            for (int i = 0; i < definition.descriptor.Field.Count; i++)
+            {
+                FieldDescriptorProto proto = definition.descriptor.Field[i];
+                DataSetColumnMeta? columnMeta = columnMetas?[i];
+                if (!ReadObject(input, proto, columnMeta))
+                {
+                    return false;
+                }
             }
             return true;
         }
-        return false;
-    }
-    private static int ReadRawVarint32(Stream stream)
-    {
-        int b = stream.ReadByte();
-        if (b == -1) return -1;
 
-        int result = b & 0x7f;
-        if ((b & 0x80) == 0) return result;
-
-        int shift = 7;
-        while (shift < 32)
+        public void WriteTo(CodedOutputStream output)
         {
-            b = stream.ReadByte();
-            if (b == -1) throw new EndOfStreamException("Varint unexpected end");
-            result |= (b & 0x7f) << shift;
-            if ((b & 0x80) == 0) return result;
-            shift += 7;
-        }
-        throw new ArgumentException("Varint overflow limit");
-    }
-
-    public void MergeFrom(CodedInputStream input)
-    {
-        DataContent.Clear();
-        if (input.IsAtEnd)
-        {
-            return;
-        }
-        for (int i = 0; i < definition.descriptor.Field.Count; i++)
-        {
-            FieldDescriptorProto proto = definition.descriptor.Field[i];
-            DataSetColumnMeta? columnMeta = columnMetas?[i];
-            if (!ReadObject(input, proto, columnMeta))
+            for (int i = 0; i < definition.descriptor.Field.Count; i++)
             {
-                break;
+                FieldDescriptorProto proto = definition.descriptor.Field[i];
+                DataSetColumnMeta? columnMeta = columnMetas?[i];
+                if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
+                {
+                    WriteObject(output, proto, columnMeta, value);
+                }
+                else
+                {
+                    throw new ArgumentException("field {0} is Null", proto.Name);
+                }
             }
         }
 
-    }
-    public bool ReadFrom(CodedInputStream input)
-    {
-        DataContent.Clear();
-        for (int i = 0; i < definition.descriptor.Field.Count; i++)
+        public int CalculateSize()
         {
-            FieldDescriptorProto proto = definition.descriptor.Field[i];
-            DataSetColumnMeta? columnMeta = columnMetas?[i];
-            if (!ReadObject(input, proto, columnMeta))
+            int totalCount = 0;
+            foreach (FieldDescriptorProto proto in definition.descriptor.Field)
+            {
+                if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
+                {
+                    totalCount += CalculateSize(proto, value);
+                }
+                else
+                {
+                    throw new ArgumentException("field {0} is Null", proto.Name);
+                }
+            }
+            return totalCount;
+        }
+        public T ConvertToModel<T>()
+        {
+            T retObj = Activator.CreateInstance<T>();
+            Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
+            foreach (var entry in methodMap)
+            {
+                if (DataContent.TryGetValue(entry.Key, out object? value) && value != null)
+                {
+                    entry.Value.SetMethod.Invoke(retObj, [ConvertUtil.ParseByType(entry.Value.ParamType, value)]);
+                }
+            }
+            return retObj;
+        }
+        public void ParseFrom<T>(T model)
+        {
+            DataContent.Clear();
+            Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
+            TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
+            foreach (var entry in methodMap)
+            {
+                object? value = entry.Value.GetMethod.Invoke(model, []);
+                if (value != null)
+                {
+                    if (entry.Value.ParamType != typeof(DateTime) && entry.Value.ParamType != typeof(DateTimeOffset))
+                    {
+                        DataContent.TryAdd(entry.Key, value);
+                    }
+                    else
+                    {
+                        DateTime time = (DateTime)value;
+                        DateTimeOffset dateTime = new DateTimeOffset(time, timeZoneInfo.BaseUtcOffset);
+                        DataContent.TryAdd(entry.Key, dateTime.ToUnixTimeMilliseconds());
+                    }
+                }
+            }
+        }
+
+        private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor, DataSetColumnMeta? columnMeta, object value)
+        {
+            switch (fieldDescriptor.Type)
+            {
+                case FieldDescriptorProto.Types.Type.Float:
+                    float val = Convert.ToSingle(value);
+                    codedOutput.WriteFloat(val);
+                    break;
+                case FieldDescriptorProto.Types.Type.Int32:
+                case FieldDescriptorProto.Types.Type.Sint32:
+                    int intval = Convert.ToInt32(value);
+                    codedOutput.WriteInt32(intval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Int64:
+                case FieldDescriptorProto.Types.Type.Sint64:
+                    long? longval = null;
+                    if (columnMeta != null && Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType))
+                    {
+                        longval = WrapDateTime(value);
+                    }
+                    else
+                    {
+                        longval = Convert.ToInt64(value);
+                    }
+                    codedOutput.WriteInt64(longval.Value);
+                    break;
+                case FieldDescriptorProto.Types.Type.Fixed64:
+                    long fixlongval = Convert.ToInt64(value);
+                    codedOutput.WriteSFixed64(fixlongval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Fixed32:
+                    int fixintval = Convert.ToInt32(value);
+                    codedOutput.WriteSFixed32(fixintval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Bool:
+                    bool boolval = Convert.ToBoolean(value);
+                    codedOutput.WriteBool(boolval);
+                    break;
+                case FieldDescriptorProto.Types.Type.String:
+                    string? strVal = Convert.ToString(value);
+                    codedOutput.WriteString(strVal);
+                    break;
+                case FieldDescriptorProto.Types.Type.Double:
+                    double dVal = Convert.ToDouble(value);
+                    codedOutput.WriteDouble(dVal);
+                    break;
+                case FieldDescriptorProto.Types.Type.Bytes:
+                    if (!(value is byte[]))
+                    {
+                        throw new ArgumentException("{0} should be a byte[]", fieldDescriptor.Name);
+                    }
+                    codedOutput.WriteBytes(ByteString.CopyFrom((byte[])value));
+                    break;
+                case FieldDescriptorProto.Types.Type.Message:
+                    codedOutput.WriteRawMessage((IMessage)value);
+                    break;
+                default:
+                    break;
+            }
+        }
+        private bool ReadObject(CodedInputStream codedInput, FieldDescriptorProto fieldDescriptor, DataSetColumnMeta? columnMeta)
+        {
+            object value = null!;
+            if (codedInput.IsAtEnd)
             {
                 return false;
             }
-        }
-        return true;
-    }
-
-    public void WriteTo(CodedOutputStream output)
-    {
-        for (int i = 0; i < definition.descriptor.Field.Count; i++)
-        {
-            FieldDescriptorProto proto = definition.descriptor.Field[i];
-            DataSetColumnMeta? columnMeta = columnMetas?[i];
-            if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
+            switch (fieldDescriptor.Type)
             {
-                WriteObject(output, proto, columnMeta, value);
+                case FieldDescriptorProto.Types.Type.Float:
+                    value = codedInput.ReadFloat();
+                    break;
+                case FieldDescriptorProto.Types.Type.Int32:
+                case FieldDescriptorProto.Types.Type.Sint32:
+                    value = codedInput.ReadInt32();
+                    break;
+                case FieldDescriptorProto.Types.Type.Int64:
+                case FieldDescriptorProto.Types.Type.Sint64:
+                    value = codedInput.ReadInt64();
+                    if (columnMeta != null && (Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType) || Constants.MetaType.DATE.Equals(columnMeta.ColumnType)))
+                    {
+                        value = DateTimeOffset.FromUnixTimeMilliseconds((long)value).LocalDateTime;
+                    }
+                    break;
+                case FieldDescriptorProto.Types.Type.Fixed64:
+                    value = codedInput.ReadSFixed64();
+                    if (columnMeta != null && (Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType) || Constants.MetaType.DATE.Equals(columnMeta.ColumnType)))
+                    {
+                        value = DateTimeOffset.FromUnixTimeMilliseconds((long)value).LocalDateTime;
+                    }
+                    break;
+                case FieldDescriptorProto.Types.Type.Fixed32:
+                    value = codedInput.ReadSFixed32();
+                    break;
+                case FieldDescriptorProto.Types.Type.Bool:
+                    value = codedInput.ReadBool();
+                    break;
+                case FieldDescriptorProto.Types.Type.String:
+                    value = codedInput.ReadString();
+                    break;
+                case FieldDescriptorProto.Types.Type.Bytes:
+                    value = codedInput.ReadBytes();
+                    break;
+                case FieldDescriptorProto.Types.Type.Double:
+                    value = codedInput.ReadDouble();
+                    break;
+                case FieldDescriptorProto.Types.Type.Message:
+                    //TODO
+                    codedInput.ReadRawMessage((IMessage)value);
+                    break;
+                default:
+                    break;
+            }
+            DataContent.TryAdd(fieldDescriptor.Name, value);
+            return true;
+        }
+        private int CalculateSize(FieldDescriptorProto fieldDescriptor, object value)
+        {
+            int calculateSize = 0;
+            switch (fieldDescriptor.Type)
+            {
+                case FieldDescriptorProto.Types.Type.Float:
+                    float val = Convert.ToSingle(value);
+                    calculateSize = CodedOutputStream.ComputeFloatSize(val);
+                    break;
+                case FieldDescriptorProto.Types.Type.Int32:
+                case FieldDescriptorProto.Types.Type.Sint32:
+                    int intval = Convert.ToInt32(value);
+                    calculateSize = CodedOutputStream.ComputeInt32Size(intval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Int64:
+                case FieldDescriptorProto.Types.Type.Sint64:
+                    long longval = WrapDateTime(value);
+                    calculateSize = CodedOutputStream.ComputeInt64Size(longval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Fixed64:
+                    ulong fixlongval = Convert.ToUInt64(value);
+                    calculateSize = CodedOutputStream.ComputeFixed64Size(fixlongval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Fixed32:
+                    uint fixintval = Convert.ToUInt32(value);
+                    calculateSize = CodedOutputStream.ComputeFixed32Size(fixintval);
+                    break;
+                case FieldDescriptorProto.Types.Type.Bool:
+                    bool boolval = Convert.ToBoolean(value);
+                    calculateSize = CodedOutputStream.ComputeBoolSize(boolval);
+                    break;
+                case FieldDescriptorProto.Types.Type.String:
+                    string? strVal = Convert.ToString(value);
+                    calculateSize = CodedOutputStream.ComputeStringSize(strVal);
+                    break;
+                case FieldDescriptorProto.Types.Type.Bytes:
+                    if (!(value is byte[]))
+                    {
+                        throw new ArgumentException("{0} should be a byte[]", fieldDescriptor.Name);
+                    }
+                    calculateSize = CodedOutputStream.ComputeBytesSize(ByteString.CopyFrom((byte[])value));
+                    break;
+                case FieldDescriptorProto.Types.Type.Message:
+                    //TODO
+                    calculateSize = ((IMessage)value).CalculateSize();
+                    break;
+                case FieldDescriptorProto.Types.Type.Double:
+                    double dVal = Convert.ToDouble(value);
+                    calculateSize = CodedOutputStream.ComputeDoubleSize(dVal);
+                    break;
+                default:
+                    break;
+            }
+            return calculateSize;
+        }
+
+        private long WrapDateTime(object value)
+        {
+            if (value.GetType().Equals(typeof(DateTime)))
+            {
+                return new DateTimeOffset((DateTime)value).ToUnixTimeMilliseconds();
             }
             else
             {
-                throw new ArgumentException("field {0} is Null", proto.Name);
+                return (long)ConvertUtil.ParseByType(typeof(long), value);
             }
         }
-    }
-
-    public int CalculateSize()
-    {
-        int totalCount = 0;
-        foreach (FieldDescriptorProto proto in definition.descriptor.Field)
-        {
-            if (DataContent.TryGetValue(proto.Name, out object? value) && value != null)
-            {
-                totalCount += CalculateSize(proto, value);
-            }
-            else
-            {
-                throw new ArgumentException("field {0} is Null", proto.Name);
-            }
-        }
-        return totalCount;
-    }
-    public T ConvertToModel<T>()
-    {
-        T retObj = Activator.CreateInstance<T>();
-        Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
-        foreach (var entry in methodMap)
-        {
-            if (DataContent.TryGetValue(entry.Key, out object? value) && value != null)
-            {
-                entry.Value.SetMethod.Invoke(retObj, [ConvertUtil.ParseByType(entry.Value.ParamType, value)]);
-            }
-        }
-        return retObj;
-    }
-    public void ParseFrom<T>(T model)
-    {
-        DataContent.Clear();
-        Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
-        TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
-        foreach (var entry in methodMap)
-        {
-            object? value = entry.Value.GetMethod.Invoke(model, []);
-            if (value != null)
-            {
-                if (entry.Value.ParamType != typeof(DateTime) && entry.Value.ParamType != typeof(DateTimeOffset))
-                {
-                    DataContent.TryAdd(entry.Key, value);
-                }
-                else
-                {
-                    DateTime time = (DateTime)value;
-                    DateTimeOffset dateTime = new DateTimeOffset(time, timeZoneInfo.BaseUtcOffset);
-                    DataContent.TryAdd(entry.Key, dateTime.ToUnixTimeMilliseconds());
-                }
-            }
-        }
-    }
-
-    private void WriteObject(CodedOutputStream codedOutput, FieldDescriptorProto fieldDescriptor, DataSetColumnMeta? columnMeta, object value)
-    {
-        switch (fieldDescriptor.Type)
-        {
-            case FieldDescriptorProto.Types.Type.Float:
-                float val = Convert.ToSingle(value);
-                codedOutput.WriteFloat(val);
-                break;
-            case FieldDescriptorProto.Types.Type.Int32:
-            case FieldDescriptorProto.Types.Type.Sint32:
-                int intval = Convert.ToInt32(value);
-                codedOutput.WriteInt32(intval);
-                break;
-            case FieldDescriptorProto.Types.Type.Int64:
-            case FieldDescriptorProto.Types.Type.Sint64:
-                long? longval = null;
-                if (columnMeta != null && Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType))
-                {
-                    longval = WrapDateTime(value);
-                }
-                else
-                {
-                    longval = Convert.ToInt64(value);
-                }
-                codedOutput.WriteInt64(longval.Value);
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed64:
-                long fixlongval = Convert.ToInt64(value);
-                codedOutput.WriteSFixed64(fixlongval);
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed32:
-                int fixintval = Convert.ToInt32(value);
-                codedOutput.WriteSFixed32(fixintval);
-                break;
-            case FieldDescriptorProto.Types.Type.Bool:
-                bool boolval = Convert.ToBoolean(value);
-                codedOutput.WriteBool(boolval);
-                break;
-            case FieldDescriptorProto.Types.Type.String:
-                string? strVal = Convert.ToString(value);
-                codedOutput.WriteString(strVal);
-                break;
-            case FieldDescriptorProto.Types.Type.Double:
-                double dVal = Convert.ToDouble(value);
-                codedOutput.WriteDouble(dVal);
-                break;
-            case FieldDescriptorProto.Types.Type.Bytes:
-                if (!(value is byte[]))
-                {
-                    throw new ArgumentException("{0} should be a byte[]", fieldDescriptor.Name);
-                }
-                codedOutput.WriteBytes(ByteString.CopyFrom((byte[])value));
-                break;
-            case FieldDescriptorProto.Types.Type.Message:
-                codedOutput.WriteRawMessage((IMessage)value);
-                break;
-            default:
-                break;
-        }
-    }
-    private bool ReadObject(CodedInputStream codedInput, FieldDescriptorProto fieldDescriptor, DataSetColumnMeta? columnMeta)
-    {
-        object value = null!;
-        if (codedInput.IsAtEnd)
-        {
-            return false;
-        }
-        switch (fieldDescriptor.Type)
-        {
-            case FieldDescriptorProto.Types.Type.Float:
-                value = codedInput.ReadFloat();
-                break;
-            case FieldDescriptorProto.Types.Type.Int32:
-            case FieldDescriptorProto.Types.Type.Sint32:
-                value = codedInput.ReadInt32();
-                break;
-            case FieldDescriptorProto.Types.Type.Int64:
-            case FieldDescriptorProto.Types.Type.Sint64:
-                value = codedInput.ReadInt64();
-                if (columnMeta != null && (Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType) || Constants.MetaType.DATE.Equals(columnMeta.ColumnType)))
-                {
-                    value = DateTimeOffset.FromUnixTimeMilliseconds((long)value).LocalDateTime;
-                }
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed64:
-                value = codedInput.ReadSFixed64();
-                if (columnMeta != null && (Constants.MetaType.TIMESTAMP.Equals(columnMeta.ColumnType) || Constants.MetaType.DATE.Equals(columnMeta.ColumnType)))
-                {
-                    value = DateTimeOffset.FromUnixTimeMilliseconds((long)value).LocalDateTime;
-                }
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed32:
-                value = codedInput.ReadSFixed32();
-                break;
-            case FieldDescriptorProto.Types.Type.Bool:
-                value = codedInput.ReadBool();
-                break;
-            case FieldDescriptorProto.Types.Type.String:
-                value = codedInput.ReadString();
-                break;
-            case FieldDescriptorProto.Types.Type.Bytes:
-                value = codedInput.ReadBytes();
-                break;
-            case FieldDescriptorProto.Types.Type.Double:
-                value = codedInput.ReadDouble();
-                break;
-            case FieldDescriptorProto.Types.Type.Message:
-                //TODO
-                codedInput.ReadRawMessage((IMessage)value);
-                break;
-            default:
-                break;
-        }
-        DataContent.TryAdd(fieldDescriptor.Name, value);
-        return true;
-    }
-    private int CalculateSize(FieldDescriptorProto fieldDescriptor, object value)
-    {
-        int calculateSize = 0;
-        switch (fieldDescriptor.Type)
-        {
-            case FieldDescriptorProto.Types.Type.Float:
-                float val = Convert.ToSingle(value);
-                calculateSize = CodedOutputStream.ComputeFloatSize(val);
-                break;
-            case FieldDescriptorProto.Types.Type.Int32:
-            case FieldDescriptorProto.Types.Type.Sint32:
-                int intval = Convert.ToInt32(value);
-                calculateSize = CodedOutputStream.ComputeInt32Size(intval);
-                break;
-            case FieldDescriptorProto.Types.Type.Int64:
-            case FieldDescriptorProto.Types.Type.Sint64:
-                long longval = WrapDateTime(value);
-                calculateSize = CodedOutputStream.ComputeInt64Size(longval);
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed64:
-                ulong fixlongval = Convert.ToUInt64(value);
-                calculateSize = CodedOutputStream.ComputeFixed64Size(fixlongval);
-                break;
-            case FieldDescriptorProto.Types.Type.Fixed32:
-                uint fixintval = Convert.ToUInt32(value);
-                calculateSize = CodedOutputStream.ComputeFixed32Size(fixintval);
-                break;
-            case FieldDescriptorProto.Types.Type.Bool:
-                bool boolval = Convert.ToBoolean(value);
-                calculateSize = CodedOutputStream.ComputeBoolSize(boolval);
-                break;
-            case FieldDescriptorProto.Types.Type.String:
-                string? strVal = Convert.ToString(value);
-                calculateSize = CodedOutputStream.ComputeStringSize(strVal);
-                break;
-            case FieldDescriptorProto.Types.Type.Bytes:
-                if (!(value is byte[]))
-                {
-                    throw new ArgumentException("{0} should be a byte[]", fieldDescriptor.Name);
-                }
-                calculateSize = CodedOutputStream.ComputeBytesSize(ByteString.CopyFrom((byte[])value));
-                break;
-            case FieldDescriptorProto.Types.Type.Message:
-                //TODO
-                calculateSize = ((IMessage)value).CalculateSize();
-                break;
-            case FieldDescriptorProto.Types.Type.Double:
-                double dVal = Convert.ToDouble(value);
-                calculateSize = CodedOutputStream.ComputeDoubleSize(dVal);
-                break;
-            default:
-                break;
-        }
-        return calculateSize;
-    }
-
-    private long WrapDateTime(object value)
-    {
-        if (value.GetType().Equals(typeof(DateTime)))
-        {
-            return new DateTimeOffset((DateTime)value).ToUnixTimeMilliseconds();
-        }
-        else
-        {
-            return (long)ConvertUtil.ParseByType(typeof(long), value);
-        }
-    }
 
 
+    }
 }

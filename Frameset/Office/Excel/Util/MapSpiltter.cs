@@ -6,6 +6,7 @@ using Frameset.Office.Excel.Meta;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Frameset.Office.Excel.Util
@@ -55,12 +56,17 @@ namespace Frameset.Office.Excel.Util
         public override void ConstructReturn()
         {
             Dictionary<string, object> dict = Current;
-            dict?.Clear();
-            for (int i = 0; i < prop.CellProps.Count; i++)
+            if (dict != null)
             {
-                if (cells[i] != null && cells[i].GetValue() != null)
+                dict.Clear();
+                for (int i = 0; i < prop.CellProps.Count; i++)
                 {
-                    dict.TryAdd(prop.CellProps[i].ColumnCode, cells[i].GetValue());
+                    if (cells[i] != null && cells[i].GetValue() != null)
+                    {
+                        object? objValue = cells[i].GetValue();
+                        Trace.Assert(objValue != null);
+                        dict.TryAdd(prop.CellProps[i].ColumnCode, objValue);
+                    }
                 }
             }
         }
@@ -81,7 +87,7 @@ namespace Frameset.Office.Excel.Util
         public Action<T, EntityEnumerator<T>> ConstuctAction
         {
             get; set;
-        }
+        } = null!;
 
         public EntityEnumerator(WorkBook workBook, Stream stream, ExcelSheetProp sheetProp, bool reuseCurrent = true) : base(workBook, stream, sheetProp, reuseCurrent)
         {
@@ -94,7 +100,7 @@ namespace Frameset.Office.Excel.Util
             {
                 for (int i = 0; i < prop.CellProps.Count; i++)
                 {
-                    if (methodParam.TryGetValue(prop.CellProps[i].ColumnCode, out MethodParam param))
+                    if (methodParam.TryGetValue(prop.CellProps[i].ColumnCode, out MethodParam? param))
                     {
                         if (cells[i] != null && cells[i].GetValue() != null)
                         {

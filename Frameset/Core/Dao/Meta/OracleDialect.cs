@@ -7,6 +7,7 @@ using Oracle.ManagedDataAccess.Client;
 using System;
 using System.Collections.Generic;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
@@ -48,7 +49,7 @@ namespace Frameset.Core.Dao.Meta
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (OracleCommand command = new OracleCommand(executeSql, (OracleConnection)connection))
             {
-                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+                return Convert.ToInt64(command.ExecuteScalar());
             }
         }
         public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
@@ -114,7 +115,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string GeneratePageSql(string baseSql, PageQuery query)
         {
-            if (query != null && query.PageSize > 0)
+            if (query.PageSize > 0)
             {
                 bool forUpdate = baseSql.ToLower().EndsWith("for update");
                 Tuple<long, long> startEnds = GetStartEndRecord(query);
@@ -154,21 +155,22 @@ namespace Frameset.Core.Dao.Meta
                 return GetNoPageSql(baseSql, query);
             }
         }
-        public override void AppendAdditionalScript(StringBuilder builder, Dictionary<string, object> paramMap)
+        public override void AppendAdditionalScript(StringBuilder builder, Dictionary<string, object>? paramMap)
         {
-            if (!paramMap.IsNullOrEmpty())
+            if (paramMap != null && !paramMap.IsNullOrEmpty())
             {
 
-                paramMap.TryGetValue("tablespace", out object tableSapce);
+                paramMap.TryGetValue("tablespace", out object? tableSapce);
                 if (tableSapce != null && !tableSapce.ToString().IsNullOrEmpty())
                 {
                     builder.Append(" TABLESPACE ").Append(tableSapce.ToString());
                 }
-                paramMap.TryGetValue("storageConfig", out object storageMap);
+                paramMap.TryGetValue("storageConfig", out object? storageMap);
                 if (storageMap != null)
                 {
                     builder.Append(" storage (\n");
-                    Dictionary<string, string> storageCfgMap = storageMap as Dictionary<string, string>;
+                    Dictionary<string, string>? storageCfgMap = storageMap as Dictionary<string, string>;
+                    Trace.Assert(storageCfgMap != null);
                     foreach (var entry in storageCfgMap)
                     {
                         builder.Append(entry.Key).Append(" ").Append(entry.Value).Append("\n");

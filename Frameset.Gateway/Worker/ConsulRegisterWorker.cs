@@ -15,8 +15,8 @@ public class ConsulRegisterWorker : IHostedService
     private readonly IConfiguration configuration;
     private readonly IOptionsMonitor<GatewayConfig> configMointor;
     private IDisposable? changeToken;
-    private GatewayConfig activeConfig=null!;
-    private string gatewayId=null!;
+    private GatewayConfig activeConfig = null!;
+    private string gatewayId = null!;
 
     public ConsulRegisterWorker(IConsulClient consulClient, IConfiguration configuration, IOptionsMonitor<GatewayConfig> configMointor)
     {

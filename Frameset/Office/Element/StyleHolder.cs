@@ -28,7 +28,7 @@ namespace Frameset.Office.Element
             fonts.Remove(fonts.First(x => x.Value == 0).Key, out oVal);
             fonts.TryAdd(font, 0);
         }
-        static int CacheStuff<T>(ConcurrentDictionary<T, int> cache, T key, Func<T, int> indexFunc)
+        static int CacheStuff<T>(ConcurrentDictionary<T, int> cache, T key, Func<T, int> indexFunc) where T : notnull
         {
             int retVal;
             if (!cache.TryGetValue(key, out retVal))
@@ -39,13 +39,13 @@ namespace Frameset.Office.Element
             return retVal;
 
         }
-        static int CacheStuff<T>(ConcurrentDictionary<T, int> cache, T key)
+        static int CacheStuff<T>(ConcurrentDictionary<T, int> cache, T key) where T : notnull
         {
             return CacheStuff<T>(cache, key, (key) => cache.Count);
         }
-        public static int MergeCellStyle(int currentStyle, string numberFormat, Font font, Fill fill, Border border, Alignment alignment)
+        public static int MergeCellStyle(int currentStyle, string numberFormat, Font font, Fill fill, Border border, Alignment? alignment)
         {
-            CellStyle origin = !styles.IsNullOrEmpty() ? styles.First(x => x.Value == currentStyle).Key : null;
+            CellStyle? origin = !styles.IsNullOrEmpty() ? styles.First(x => x.Value == currentStyle).Key : null;
             CellStyle style = new CellStyle(origin, cachedValueFormat(numberFormat), cacheFont(font), cacheBorder(border), cacheFill(fill), alignment);
             return CacheStuff(styles, style);
         }
@@ -89,7 +89,7 @@ namespace Frameset.Office.Element
 
             w.Append("</styleSheet>");
         }
-        private static void WriteContent<T>(XmlBufferWriter w, ConcurrentDictionary<T, int> cache, string name, Action<KeyValuePair<T, int>> consumer)
+        private static void WriteContent<T>(XmlBufferWriter w, ConcurrentDictionary<T, int> cache, string name, Action<KeyValuePair<T, int>> consumer) where T : notnull
         {
             w.Append("<").Append(name).Append(" count=\"").Append(cache.Count).Append("\">");
             if (cache.Count > 1)

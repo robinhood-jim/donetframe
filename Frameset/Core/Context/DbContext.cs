@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Common;
 using Frameset.Core.Dao;
+using Frameset.Core.Dao.Handler;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
 using Frameset.Core.Model;
@@ -49,6 +50,12 @@ namespace Frameset.Core.Context
 
         public override bool SaveEntity<V>(V entity)
         {
+            IMetaObjectHandler handler = GetObjectHandler();
+            if (handler != null)
+            {
+                Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(typeof(V));
+                handler.InsertFill(new MetaObject(entity, fieldDict));
+            }
             if (IsAutoCommit())
             {
                 InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entity);
@@ -65,13 +72,22 @@ namespace Frameset.Core.Context
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            if (!entityPkMap.TryGetValue(typeof(V), out FieldContent pkColumn))
+            if (!entityPkMap.TryGetValue(typeof(V), out FieldContent? pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + typeof(V).Name);
             }
+            object? pkObj = pkColumn.PropertyInfo.GetValue(entity);
+            Trace.Assert(pkObj != null);
+            P pk = (P)pkObj;
 
-            V origin = GetById<V, P>((P)pkColumn.GetMethod.Invoke(entity, null));
+            V origin = GetById<V, P>(pk);
             Trace.Assert(origin != null, "id not found in entity");
+            IMetaObjectHandler handler = GetObjectHandler();
+            if (handler != null)
+            {
+                Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(entityType);
+                handler.InsertFill(new MetaObject(entity, fieldDict));
+            }
 
             if (IsAutoCommit())
             {
@@ -96,7 +112,7 @@ namespace Frameset.Core.Context
             {
                 if (IsAutoCommit())
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", default(V), (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", Activator.CreateInstance<V>(), (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
                 }
                 GetCurrrentUpdateEntry().Delete<V, P>(pks);
                 return pks.Count;
@@ -111,12 +127,13 @@ namespace Frameset.Core.Context
             {
                 Tuple<string, List<DbParameter>> tuple =
                         SqlUtils.GetRemoveCondition(GetDao(), entityType, fieldName, sqlOperator, values);
-                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1, null,
+                V obj = Activator.CreateInstance<V>();
+                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1, obj,
                         (command, v) => GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray()));
             }
             List<V> list = QueryModelsByField<V>(fieldName, sqlOperator, values);
             FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(entityType);
-            List<object> pkList = list.Select(x => pkColumn.GetMethod.Invoke(x, null)).ToList();
+            List<object?>? pkList = list.Select(x => pkColumn.GetMethod.Invoke(x, null)).ToList();
             GetCurrrentUpdateEntry().Delete<V, P>([.. pkList.Cast<P>()]);
             return pkList.Count;
         }
@@ -127,11 +144,12 @@ namespace Frameset.Core.Context
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
-            if (!entityPkMap.TryGetValue(typeof(V), out FieldContent pkColumn))
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
+            if (!entityPkMap.TryGetValue(typeof(V), out FieldContent? pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + typeof(V).Name);
             }
+            Trace.Assert(tuple != null);
             if (!pks.IsNullOrEmpty())
             {
                 StringBuilder builder = new StringBuilder("update ").Append(SqlUtils.GetTableWithSchema(tuple.Item1)).Append(" set ").Append(logicColumn).Append('=').Append(status).Append(" where ").Append(pkColumn.FieldName).Append(" in (");
@@ -147,7 +165,8 @@ namespace Frameset.Core.Context
                 string removeSql = builder.Append(idsBuilder.ToString().AsSpan(0, idsBuilder.Length - 1)).ToString();
                 if (IsAutoCommit())
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, null, (command, v) =>
+                    V obj = Activator.CreateInstance<V>();
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, obj, (command, v) =>
                     {
                         return GetDao().Execute(command, removeSql, parameters);
                     });
@@ -165,9 +184,12 @@ namespace Frameset.Core.Context
         {
             Type entityType = typeof(V);
             V entity = GetByIdSimple<V, P>(pk, ignoreLogic);
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
-            CrudUtils.WrapSubEntity<V>(this, typeof(V), [entity], tuple.Item2);
-            return entity;
+            if (entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
+            {
+                CrudUtils.WrapSubEntity<V>(this, typeof(V), [entity], tuple.Item2);
+                return entity;
+            }
+            throw new NotSupportedException();
         }
         public override long InsertBatch<V>(IEnumerable<V> models, CancellationToken token)
         {
@@ -202,7 +224,7 @@ namespace Frameset.Core.Context
                 throw new BaseSqlException(ex.Message);
             }
         }
-        public override List<V> QueryByCondition<V>(FilterCondition condition, PageQuery query = null)
+        public override List<V> QueryByCondition<V>(FilterCondition condition, PageQuery? query = null)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
@@ -214,8 +236,10 @@ namespace Frameset.Core.Context
                     List<V> retList = GetDao().QueryByCondition<V>(command, condition, query);
                     if (!retList.IsNullOrEmpty())
                     {
-                        entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
-                        CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
+                        if (entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
+                        {
+                            CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
+                        }
                     }
                     return retList;
                 }
@@ -263,13 +287,14 @@ namespace Frameset.Core.Context
             }
         }
 
-        public override List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        public override List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null)
         {
             Type entityType = typeof(V);
             List<V> retList = QueryModelsByFieldSimple<V>(propertyName, oper, values, orderByStr);
             if (!retList.IsNullOrEmpty())
             {
-                entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+                entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
+                Trace.Assert(tuple != null, "");
                 CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
             }
             return retList;
@@ -301,10 +326,9 @@ namespace Frameset.Core.Context
                         long totalCount = GetDao().QueryByLong(command, dbParameters);
                         command.CommandText = querySql;
                         List<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
-                        if (!list.IsNullOrEmpty())
+                        if (!list.IsNullOrEmpty() && entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
                         {
-                            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
-                            CrudUtils.WrapSubEntity<V>(this, typeof(V), list, tuple.Item2);
+                            CrudUtils.WrapSubEntity(this, typeof(V), list, tuple.Item2);
                         }
                         PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize, list);
 
@@ -312,7 +336,7 @@ namespace Frameset.Core.Context
                     }
                 }
             }
-            return null;
+            return new PageDTO<V>(0, 0);
         }
 
         public override PageDTO<O> QueryPage<V, O>(PageQuery query)
@@ -332,10 +356,10 @@ namespace Frameset.Core.Context
         public override void ManyToOne(Type subType, string fieldName, Type parentType)
         {
             RegisterExists([subType, parentType]);
-            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>> tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent> dict))
+            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>>? tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent>? dict))
             {
                 tuple.Item1.ParentEntitys.Add(parentType);
-                if (dict.TryGetValue(fieldName, out FieldContent fieldContent))
+                if (dict.TryGetValue(fieldName, out FieldContent? fieldContent))
                 {
                     fieldContent.IsManyToOne = true;
                     fieldContent.ParentEntity = parentType;
@@ -349,15 +373,15 @@ namespace Frameset.Core.Context
         public override void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH)
         {
             RegisterExists([subType, parentType]);
-            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>> tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent> dict))
+            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>>? tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent>? dict))
             {
                 tuple.Item1.ParentEntitys.Add(parentType);
-                if (dict.TryGetValue(fieldName, out FieldContent fieldContent))
+                if (dict.TryGetValue(fieldName, out FieldContent? fieldContent))
                 {
                     fieldContent.IsManyToOne = true;
                     fieldContent.ParentEntity = parentType;
                     fieldContent.Cascade = cascadeType;
-                    if (EntityReflectUtils.GetRelationMap().TryGetValue(parentType, out Dictionary<Type, string> childMap))
+                    if (EntityReflectUtils.GetRelationMap().TryGetValue(parentType, out Dictionary<Type, string>? childMap))
                     {
                         childMap.TryAdd(subType, relationColumn);
                     }
@@ -375,42 +399,57 @@ namespace Frameset.Core.Context
 
         public override void SaveChanges()
         {
+            if (IsAutoCommit())
+            {
+                throw new NotSupportedException("SaveChanges must call with not AutoCommit");
+            }
+            CheckThreadTransaction(out IUnitofWork? unitofWork);
+            Trace.Assert(unitofWork != null);
             try
             {
                 UpdateEntry entry = GetCurrrentUpdateEntry();
                 if (entry != null && !entry.EffectEntrys.IsNullOrEmpty())
                 {
-                    int effectRow = RepositoryHelper.ExecuteInTransaction(GetDao(), (connection, transaction) =>
+                    DbConnection connection = unitofWork.GetConnection();
+                    CheckOpen(connection);
+                    using DbCommand command = GetDao().GetDialect().GetDbCommand(connection);
+                    command.Transaction = unitofWork.GetOrBeginTransaction();
+                    int takeAffect = 0;
+                    foreach (EffectEntry entry1 in entry.EffectEntrys)
                     {
-                        DbCommand command = GetDao().GetDialect().GetDbCommand(connection, "", transaction);
-                        int takeAffect = 0;
-                        foreach (EffectEntry entry in entry.EffectEntrys)
-                        {
-                            takeAffect += TakeAction(command, entry);
-                        }
-                        return takeAffect;
-                    });
+                        takeAffect += TakeAction(command, entry1);
+                    }
+                    unitofWork.Commit();
+
                     if (Log.IsEnabled(LogEventLevel.Debug))
                     {
-                        Log.Debug("Save changes Effect row {EffectRow}", effectRow);
+                        Log.Debug("Save changes Effect row {EffectRow}", takeAffect);
                     }
                     entry.EffectEntrys.Clear();
                 }
                 else
                 {
-                    Log.Error("no operation contained! Save Change does no effect!");
+                    unitofWork.Commit();
+                    //Log.Error("no operation contained! Save Change does no effect!");
                 }
+            }
+            catch (Exception ex)
+            {
+                unitofWork.Rollback();
+                throw new BaseSqlException(ex.Message);
             }
             finally
             {
-                requestChanges.Remove(Thread.CurrentThread, out _);
+                requestChanges.TryRemove(Thread.CurrentThread, out _);
+                unitofWork.Dispose();
+                unitOfWorkDict.TryRemove(Thread.CurrentThread, out _);
             }
         }
 
         private UpdateEntry GetCurrrentUpdateEntry()
         {
-            WaitForRefreshTimer();
-            if (requestChanges.TryGetValue(Thread.CurrentThread, out UpdateEntry entry))
+            WaitForRefreshTimer().GetAwaiter().GetResult();
+            if (requestChanges.TryGetValue(Thread.CurrentThread, out UpdateEntry? entry))
             {
                 return entry;
             }
@@ -421,12 +460,12 @@ namespace Frameset.Core.Context
             }
             return entry;
         }
-        private async void WaitForRefreshTimer()
+        private async Task WaitForRefreshTimer()
         {
             while (refreshTag.Get())
             {
                 Log.Information("refesh thread running,Waiting");
-                await Task.Delay(100).ConfigureAwait(false);
+                await Task.Delay(100);
             }
         }
         private int TakeAction(DbCommand command, EffectEntry entry)
@@ -483,11 +522,11 @@ namespace Frameset.Core.Context
             if (!oneToManys.IsNullOrEmpty())
             {
                 FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(superEntity.GetType());
-                object id = pkColumn.GetMethod.Invoke(superEntity, null);
-
+                object? id = pkColumn.GetMethod.Invoke(superEntity, null);
+                Trace.Assert(id != null);
                 foreach (FieldContent content in oneToManys.ToList())
                 {
-                    IList<dynamic> list = (IList<dynamic>)content.GetMethod.Invoke(superEntity, null);
+                    List<dynamic>? list = content.GetMethod.Invoke(superEntity, null) as List<dynamic>;
                     string subColumn = content.RealtionColumn;
                     if (list != null && !list.IsNullOrEmpty())
                     {
@@ -497,7 +536,7 @@ namespace Frameset.Core.Context
                         GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
 
                         Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
-                        if (!subFieldMap.TryGetValue(subColumn, out FieldContent realtionContent))
+                        if (!subFieldMap.TryGetValue(subColumn, out FieldContent? realtionContent))
                         {
                             throw new BaseSqlException("refrence column " + subColumn + " not defined in entity " + subType.Name);
                         }
@@ -505,7 +544,8 @@ namespace Frameset.Core.Context
                         foreach (object voObj in list)
                         {
                             var sid = subPkColumn.GetMethod.Invoke(voObj, null);
-                            BaseEntity subEntity = voObj as BaseEntity;
+                            BaseEntity? subEntity = voObj as BaseEntity;
+                            Trace.Assert(subEntity != null);
                             //数据存在
                             if (sid != null)
                             {
@@ -566,7 +606,7 @@ namespace Frameset.Core.Context
                     string subColumn = content.RealtionColumn;
                     Type subType = content.ParamType.GetGenericArguments()[0];
                     Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
-                    if (!subFieldMap.TryGetValue(subColumn, out FieldContent relationContent))
+                    if (!subFieldMap.TryGetValue(subColumn, out FieldContent? relationContent))
                     {
                         throw new BaseSqlException("refrence column " + subColumn + " not defined in entity " + subType.Name);
                     }
@@ -577,8 +617,9 @@ namespace Frameset.Core.Context
             return effectRow;
         }
 
-        private void OnTimerEvent(object source)
+        private void OnTimerEvent(object? source)
         {
+            Trace.Assert(source != null);
             if (!refreshTag.Get())
             {
                 refreshTag.Set(true);
@@ -596,7 +637,7 @@ namespace Frameset.Core.Context
                     {
                         deleteList.ForEach(x =>
                         {
-                            while (!requestChanges.TryRemove(x, out _))
+                            while (!requestChanges.TryRemove(x, out _) && unitOfWorkDict.TryRemove(x, out _))
                             {
                                 Thread.Sleep(2);
                             }

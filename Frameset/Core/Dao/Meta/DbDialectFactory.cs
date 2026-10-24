@@ -8,7 +8,7 @@ namespace Frameset.Core.Dao.Meta
 {
     public class DbDialectFactory
     {
-        static Dictionary<Constants.DbType, AbstractSqlDialect> metaMap = new Dictionary<Constants.DbType, AbstractSqlDialect>();
+        static readonly Dictionary<Constants.DbType, AbstractSqlDialect> metaMap =[];
         static DbDialectFactory()
         {
             metaMap.Add(Constants.DbType.Mysql, new MySqlDialect());
@@ -21,14 +21,12 @@ namespace Frameset.Core.Dao.Meta
         }
         public static AbstractSqlDialect GetInstance(Constants.DbType dbType)
         {
-            AbstractSqlDialect dialect = null;
-            metaMap.TryGetValue(dbType, out dialect);
-            if (dialect == null)
+            if (metaMap.TryGetValue(dbType, out AbstractSqlDialect? dialect))
             {
-                Log.Error("unRegister " + dbType + "!");
-                throw new ConfigMissingException("unknow dbType");
+                return dialect;
             }
-            return dialect;
+            Log.Error("unRegister " + dbType + "!");
+            throw new ConfigMissingException("unknow dbType");
         }
     }
 }

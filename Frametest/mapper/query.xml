@@ -18,9 +18,9 @@
         select
         <include refid="sqlpart1" />
          from t_test where 1=1
-        <script lang="js" id="test1" resultMap="rsMap1">
+        <script lang="js" id="test1">
             var returnstr="";
-            if(Name!=null){
+            if(Name!=null && Name!=''){
                 returnstr+=" and name like @Name";
             }
             if(Description!=null){

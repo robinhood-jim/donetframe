@@ -12,7 +12,7 @@ using System.Diagnostics;
 
 namespace Frameset.Web.Controller
 {
-    public class AbstractCrudController<V, P> : AbstractControllerBase where V : BaseEntity
+    public class AbstractCrudController<V, P> : AbstractControllerBase where V : BaseEntity where P : notnull
     {
         protected IDbContext dbContext;
         protected Type modelType;

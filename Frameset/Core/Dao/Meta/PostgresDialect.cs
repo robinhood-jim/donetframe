@@ -46,7 +46,7 @@ namespace Frameset.Core.Dao.Meta
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (NpgsqlCommand command = new NpgsqlCommand(executeSql, (NpgsqlConnection)connection))
             {
-                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+                return Convert.ToInt64(command.ExecuteScalar());
             }
         }
         public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
@@ -55,7 +55,7 @@ namespace Frameset.Core.Dao.Meta
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(typeof(V));
             string copySql = GenerateCopySql(typeof(V));
             IEnumerable<FieldContent> selectFields = fields.TakeWhile(x => !string.IsNullOrWhiteSpace(x.SequenceName));
-            FieldContent seqeunceField = !selectFields.IsNullOrEmpty() ? selectFields.First() : null;
+            FieldContent? seqeunceField = !selectFields.IsNullOrEmpty() ? selectFields.First() : null;
             long seqCurrent = 0;
             if (seqeunceField != null)
             {
@@ -85,7 +85,7 @@ namespace Frameset.Core.Dao.Meta
                         }
                         else
                         {
-                            object value = content.GetMethod.Invoke(model, []);
+                            object? value = content.GetMethod.Invoke(model, []);
                             if (value != null)
                             {
                                 FillValue(writer, value, content.DataType);
@@ -138,7 +138,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string GeneratePageSql(string baseSql, PageQuery query)
         {
-            if (query != null && query.PageSize != 0)
+            if (query.PageSize != 0)
             {
                 Tuple<long, long> startEnd = GetStartEndRecord(query);
                 StringBuilder builder = new StringBuilder(baseSql.Trim());

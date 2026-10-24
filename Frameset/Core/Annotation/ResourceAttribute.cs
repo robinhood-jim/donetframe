@@ -8,7 +8,7 @@ namespace Frameset.Core.Annotation
         public String ResourceName
         {
             get; set;
-        }
+        } = null!;
         public ResourceAttribute()
         {
 

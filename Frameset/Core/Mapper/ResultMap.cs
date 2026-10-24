@@ -1,6 +1,6 @@
-﻿using System;
+﻿using Frameset.Core.Utils;
+using System;
 using System.Collections.Generic;
-using System.Reflection;
 
 namespace Frameset.Core.Mapper
 {
@@ -8,9 +8,20 @@ namespace Frameset.Core.Mapper
     {
         public ResultMap(string modelType)
         {
-            ModelType = Assembly.GetEntryAssembly()?.GetType(modelType);
+            if (string.Equals(modelType, "Map", StringComparison.OrdinalIgnoreCase))
+            {
+                ModelType = typeof(Dictionary<string, object>);
+            }
+            else
+            {
+                Type? type = ClassUtils.GetUserType(modelType);
+                if (type != null)
+                {
+                    ModelType = type;
+                }
+            }
         }
-        public Type ModelType
+        public Type? ModelType
         {
             get; set;
         }

@@ -14,8 +14,8 @@ public class NacosRegisterWorker : IHostedService
     private readonly INacosNamingService namingService;
     private readonly IConfiguration configuration;
     private IOptionsMonitor<GatewayConfig> optionsMonitor;
-    private GatewayConfig activeConfig=null!;
-    private string gatewayId=null!;
+    private GatewayConfig activeConfig = null!;
+    private string gatewayId = null!;
     private IDisposable? changeToken;
 
     public NacosRegisterWorker(INacosNamingService namingService,

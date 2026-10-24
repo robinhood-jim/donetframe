@@ -1,4 +1,5 @@
-﻿using Microsoft.IdentityModel.Tokens;
+﻿using Frameset.Core.Context;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
 using System.Text;
@@ -8,7 +9,7 @@ namespace Frameset.Core.Dao.Utils
     public class EntityContent
     {
         private string _tableName;
-        private string _schema;
+
         private string _dsName;
 
 
@@ -17,7 +18,7 @@ namespace Frameset.Core.Dao.Utils
             get => this._tableName;
             set
             {
-                this._tableName = value?.ToString();
+                this._tableName = value.ToString();
             }
         }
         public Type EntityType
@@ -25,20 +26,17 @@ namespace Frameset.Core.Dao.Utils
             get;
             set;
         }
-        public string Schema
+        public string? Schema
         {
-            get => this._schema;
-            set
-            {
-                this._schema = value?.ToString();
-            }
+            get;
+            set;
         }
         public string DsName
         {
             get => this._dsName;
             set
             {
-                this._dsName = value?.ToString();
+                this._dsName = value.ToString();
             }
         }
 
@@ -52,14 +50,21 @@ namespace Frameset.Core.Dao.Utils
         } = false;
 
 
-        public EntityContent(Type className, string tableName, string schema, string dsName)
+        public EntityContent(Type className, string tableName, string? schema, string? dsName)
         {
             this.EntityType = className;
             this._tableName = tableName;
-            this._schema = schema;
-            if (!dsName.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(schema))
+            {
+                this.Schema = schema;
+            }
+            if (!string.IsNullOrWhiteSpace(dsName))
             {
                 this._dsName = dsName;
+            }
+            else
+            {
+                this._dsName = DbContextFactory.CONTEXTDEFAULTNAME;
             }
         }
         public string GetTableName()

@@ -1,4 +1,5 @@
-﻿using Serilog;
+﻿using Frameset.Core.Exceptions;
+using Serilog;
 using System;
 using System.Collections.Generic;
 using System.Diagnostics;
@@ -23,7 +24,8 @@ namespace Frameset.Core.Security
 
         public static RSACryptoServiceProvider LoadDefaultPrivateKey()
         {
-            string userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).FullName;
+            string? userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))?.FullName;
+            Trace.Assert(!string.IsNullOrWhiteSpace(userPath));
             string privateKeyPath = userPath + Path.DirectorySeparatorChar + Environment.UserName + Path.DirectorySeparatorChar + ".ssh" + Path.DirectorySeparatorChar + "id_rsa";
 
             if (File.Exists(privateKeyPath))
@@ -51,11 +53,11 @@ namespace Frameset.Core.Security
                 return provider;
                 //provider.ImportPkcs8PrivateKey(new ReadOnlySpan<byte>(Convert.FromBase64String(content)), out _);
             }
-            return null;
+            throw new NotSupportedException();
         }
         public static RSACryptoServiceProvider LoadDefaultPublicKey()
         {
-            string userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).FullName;
+            string? userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))?.FullName;
             string publicKeyPath = userPath + Path.DirectorySeparatorChar + Environment.UserName + Path.DirectorySeparatorChar + ".ssh" + Path.DirectorySeparatorChar + "id_rsa.pub";
 
 
@@ -81,15 +83,15 @@ namespace Frameset.Core.Security
                 {
                     RSAParameters parameters = ParseFromOpenSSHPublic(binaryData);
                     provider.ImportParameters(parameters);
+                    return provider;
                 }
                 catch (Exception ex)
                 {
                     Log.Error(ex.Message);
+                    throw new ConfigMissingException(ex.Message);
                 }
-
-                return provider;
             }
-            return null;
+            throw new ConfigMissingException("path not found!");
         }
         public static RSACryptoServiceProvider LoadPrivateByPem(Stream stream)
         {
@@ -142,8 +144,9 @@ namespace Frameset.Core.Security
             catch (Exception ex)
             {
                 Log.Error(ex.Message);
+                throw new ConfigMissingException(ex.Message);
             }
-            return null;
+
         }
         public static RSACryptoServiceProvider LoadPublicByPem(string content)
         {
@@ -158,8 +161,8 @@ namespace Frameset.Core.Security
             catch (Exception ex)
             {
                 Log.Error(ex.Message);
+                throw new ConfigMissingException(ex.Message);
             }
-            return null;
         }
         public static byte[] Encrypt(RSACryptoServiceProvider provider, byte[] content)
         {
@@ -179,7 +182,9 @@ namespace Frameset.Core.Security
         }
         public static bool VerfiyData(RSACryptoServiceProvider provide, byte[] data, byte[] signBytes)
         {
-            return provide.VerifyData(data, CryptoConfig.MapNameToOID(SIGNSIGNATURE), signBytes);
+            string? signature = CryptoConfig.MapNameToOID(SIGNSIGNATURE);
+            Trace.Assert(!string.IsNullOrWhiteSpace(signature));
+            return provide.VerifyData(data, signature, signBytes);
         }
         public static Tuple<RSACryptoServiceProvider, string, string> GenerateKeys()
         {
@@ -191,7 +196,7 @@ namespace Frameset.Core.Security
         private static string ExtractPrivate(string privateKey)
         {
             using StringReader reader = new(privateKey);
-            string lineStr = null;
+            string? lineStr = null;
             StringBuilder builder = new StringBuilder();
             while ((lineStr = reader.ReadLine()) != null)
             {
@@ -206,7 +211,7 @@ namespace Frameset.Core.Security
         private static string ExtractPublic(string publicKey)
         {
             using StringReader reader = new(publicKey);
-            string lineStr = null;
+            string? lineStr = null;
             StringBuilder builder = new StringBuilder();
             while ((lineStr = reader.ReadLine()) != null)
             {
@@ -222,7 +227,7 @@ namespace Frameset.Core.Security
         private static string FormatNoHeadFooter(Stream input)
         {
             using StreamReader reader = new StreamReader(input);
-            string lineStr = string.Empty;
+            string? lineStr = string.Empty;
             StringBuilder builder = new StringBuilder();
             while ((lineStr = reader.ReadLine()) != null)
             {

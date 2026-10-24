@@ -26,14 +26,14 @@ namespace Frameset.Core.Scripts
         private static bool _isDisposed;
         public class SchemaCompilationData
         {
-            public Type ContextType { get; set; }
-            public byte[] AssemblyBytes { get; set; }
-            public Assembly CompiledAssembly { get; set; }
+            public Type ContextType { get; set; } = null!;
+            public byte[] AssemblyBytes { get; set; } = null!;
+            public Assembly CompiledAssembly { get; set; } = null!;
             public string ClassName
             {
                 get; set;
-            }
-            public string Key { get; set; }
+            } = null!;
+            public string Key { get; set; } = null!;
         }
 
         static CSScriptExpression()
@@ -47,7 +47,7 @@ namespace Frameset.Core.Scripts
             AssemblyLoadContext.Default.Resolving += DefaultContext_Resolving;
             AppDomain.CurrentDomain.ProcessExit += (sender, e) => ShutdownAndCleanMemory();
         }
-        private static Assembly DefaultContext_Resolving(AssemblyLoadContext context, AssemblyName assemblyName)
+        private static Assembly? DefaultContext_Resolving(AssemblyLoadContext context, AssemblyName assemblyName)
         {
             // Search through our static cache items to find the loaded binary assembly matching the runtime request name
             var matchedSchema = _compiledTypeCache.Values
@@ -59,7 +59,7 @@ namespace Frameset.Core.Scripts
             }
 
             // Fallback: search by name inside the context
-            return loadContext?.Assemblies
+            return loadContext.Assemblies
                 .FirstOrDefault(a => a.FullName == assemblyName.FullName);
         }
         public static SchemaCompilationData ConstructDynamicType(IList<DataSetColumnMeta> columnMetas, string expression)
@@ -102,7 +102,7 @@ namespace Frameset.Core.Scripts
                     stream.Seek(0, SeekOrigin.Begin);
                     var assembly = loadContext.LoadFromStream(stream);
                     Type[] types = assembly.GetTypes();
-                    Type retType = null;
+                    Type? retType = null;
                     foreach (Type selType in types)
                     {
                         if (selType.Name.Equals(className))
@@ -152,7 +152,7 @@ namespace Frameset.Core.Scripts
             foreach (DataSetColumnMeta meta in columnMetas)
             {
                 var field = dynamicType.GetField(meta.ColumnCode);
-                if (field != null && valueDict.TryGetValue(meta.ColumnCode, out object value) && value != null)
+                if (field != null && valueDict.TryGetValue(meta.ColumnCode, out object? value) && value != null)
                 {
                     field.SetValue(invokeObj, ConvertUtil.ConvertStringToTargetObject(value, meta));
                 }
@@ -170,7 +170,7 @@ namespace Frameset.Core.Scripts
                 if (loadContext != null)
                 {
                     loadContext.Unload();
-                    loadContext = null;
+                    loadContext = null!;
                 }
                 _isDisposed = true;
             }

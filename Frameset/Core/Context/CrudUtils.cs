@@ -5,6 +5,7 @@ using Frameset.Core.Model;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 
 
@@ -26,17 +27,19 @@ namespace Frameset.Core.Context
                     {
                         Type parentType = content.ParentEntity;
                         string realtionColumn = content.RealtionColumn;
-                        object relationId = null;
-                        if (fieldMap.TryGetValue(realtionColumn, out FieldContent relationContent))
+
+                        if (fieldMap.TryGetValue(realtionColumn, out FieldContent? relationContent))
                         {
-                            relationId = relationContent.GetMethod.Invoke(entity, null);
+                            object? relationId = relationContent.GetMethod.Invoke(entity, null);
+                            Trace.Assert(relationId != null);
+                            object parentVo = dbContext.GetByIdSimple(parentType, relationId);
+                            content.SetMethod.Invoke(entity, [parentVo]);
                         }
                         else
                         {
                             throw new BaseSqlException("refrence column " + realtionColumn + " not exists!");
                         }
-                        object parentVo = dbContext.GetByIdSimple(parentType, relationId);
-                        content.SetMethod.Invoke(entity, [parentVo]);
+
                     }
                 }
             }
@@ -49,14 +52,15 @@ namespace Frameset.Core.Context
                     foreach (FieldContent content in contentList)
                     {
                         Type subType = content.SubType;
-                        object id = pkColumn.GetMethod.Invoke(entity, null);
-                        if (EntityReflectUtils.GetRelationMap().TryGetValue(entityType, out Dictionary<Type, string> subEntityMaps) && subEntityMaps.TryGetValue(subType, out string relationColumn))
+                        object? id = pkColumn.GetMethod.Invoke(entity, null);
+                        Trace.Assert(id != null);
+                        if (EntityReflectUtils.GetRelationMap().TryGetValue(entityType, out Dictionary<Type, string>? subEntityMaps) && subEntityMaps.TryGetValue(subType, out string? relationColumn))
                         {
                             Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
-                            if (subFieldMap.TryGetValue(relationColumn, out FieldContent relationContent))
+                            if (subFieldMap.TryGetValue(relationColumn, out FieldContent? relationContent))
                             {
                                 List<BaseEntity> entities = dbContext.QueryModelsByFieldSimple(subType, relationColumn, Constants.SqlOperator.EQ, new object[] { id }, null);
-                                object obj = ConvertUtil.GetListsByType<BaseEntity>(typeof(List<>), subType, entities);
+                                object? obj = ConvertUtil.GetListsByType<BaseEntity>(typeof(List<>), subType, entities);
                                 content.SetMethod.Invoke(entity, [obj]);
                             }
                             else

@@ -21,7 +21,7 @@ namespace Frameset.Office.Excel.Meta
         public string SheetName
         {
             get; internal set;
-        }
+        } = null!;
         public int StartRow
         {
             get; internal set;
@@ -41,7 +41,7 @@ namespace Frameset.Office.Excel.Meta
         public string TemplateFile
         {
             get; internal set;
-        }
+        } = null!;
         public IList<ExcelCellProp> CellProps
         {
             get; internal set;
@@ -62,7 +62,7 @@ namespace Frameset.Office.Excel.Meta
         public Type EntityType
         {
             get; internal set;
-        }
+        } = null!;
         public int? FlushOutBufferSize
         {
             get; set;
@@ -98,7 +98,8 @@ namespace Frameset.Office.Excel.Meta
                 {
                     if (attributes[i].GetType().Equals(typeof(ExcelSheetAttribute)))
                     {
-                        ExcelSheetAttribute sheetAttribute = attributes[i] as ExcelSheetAttribute;
+                        ExcelSheetAttribute? sheetAttribute = attributes[i] as ExcelSheetAttribute;
+                        Trace.Assert(sheetAttribute != null);
                         propDef.MaxRows = sheetAttribute.MaxRows != -1 ? sheetAttribute.MaxRows : 500000;
                         propDef.SheetName ??= sheetAttribute.Name ?? "sheet1";
                         propDef.FillHeader = sheetAttribute.FillHeader;
@@ -127,6 +128,7 @@ namespace Frameset.Office.Excel.Meta
                             parseAttribute(propAttr, cellProp, columnName, totalNum);
                         }
                         FieldBuilder builder = new(entityType);
+                        Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
                         builder.Property(prop).PropertyName(propName).FieldName(columnName).DataType(metaType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                         propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                         cellMap.TryAdd(cellProp.Index, cellProp);
@@ -168,7 +170,7 @@ namespace Frameset.Office.Excel.Meta
             }
             return propDef;
         }
-        public static ExcelSheetProp FromDataReader(IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null)
+        public static ExcelSheetProp FromDataReader(IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string>? nameMapping = null)
         {
             Trace.Assert(reader.FieldCount > 0, "empty reader");
             ExcelSheetProp prop = new ExcelSheetProp();
@@ -177,9 +179,9 @@ namespace Frameset.Office.Excel.Meta
                 string propName = reader.GetName(i);
                 string columName = propName;
                 Constants.MetaType metaType = EntityReflectUtils.AdjustType(reader.GetFieldType(i));
-                if (!nameMapping.IsNullOrEmpty())
+                if (nameMapping != null && !nameMapping.IsNullOrEmpty() && nameMapping.TryGetValue(propName, out string? mapColumName))
                 {
-                    nameMapping.TryGetValue(propName, out columName);
+                    columName = mapColumName;
                 }
                 ExcelCellProp cellProp = new(columName, propName, metaType);
                 if (Constants.MetaType.DATE.Equals(metaType) || Constants.MetaType.TIMESTAMP.Equals(metaType))
@@ -199,7 +201,8 @@ namespace Frameset.Office.Excel.Meta
 
                 if (propAttr[i].GetType().Equals(typeof(ExcelColumnAttribute)))
                 {
-                    ExcelColumnAttribute a = propAttr[i] as ExcelColumnAttribute;
+                    ExcelColumnAttribute? a = propAttr[i] as ExcelColumnAttribute;
+                    Trace.Assert(a != null);
                     cellProp.ColumnName = a.ColumnName ?? columnName;
                     orderPos = a.Order != -1 ? a.Order : totalNum;
                     cellProp.Format = a.Format;
@@ -213,15 +216,21 @@ namespace Frameset.Office.Excel.Meta
                 }
                 else if (propAttr[i].GetType().Equals(typeof(ExcelColumnNameAttribute)))
                 {
-                    cellProp.ColumnName = (propAttr[i] as ExcelColumnNameAttribute).ColumnName;
+                    ExcelColumnNameAttribute? nameAttribute = propAttr[i] as ExcelColumnNameAttribute;
+                    Trace.Assert(nameAttribute != null);
+                    cellProp.ColumnName = nameAttribute.ColumnName;
                 }
                 else if (propAttr[i].Equals(typeof(ExcelColumnIndexAttribute)))
                 {
-                    orderPos = (propAttr[i] as ExcelColumnIndexAttribute).Index;
+                    ExcelColumnIndexAttribute? indexAttribute = propAttr[i] as ExcelColumnIndexAttribute;
+                    Trace.Assert(indexAttribute != null);
+                    orderPos = indexAttribute.Index;
                 }
                 else if (propAttr[i].Equals(typeof(ExcelFormulaAttribute)))
                 {
-                    cellProp.Formula = (propAttr[i] as ExcelFormulaAttribute).Formula;
+                    ExcelFormulaAttribute? formulaAttribute = propAttr[i] as ExcelFormulaAttribute;
+                    Trace.Assert(formulaAttribute != null);
+                    cellProp.Formula = formulaAttribute.Formula;
                 }
             }
             cellProp.Index = orderPos;
@@ -314,11 +323,11 @@ namespace Frameset.Office.Excel.Meta
         public string ColumnName
         {
             get; internal set;
-        }
+        } = null!;
         public string ColumnCode
         {
             get; internal set;
-        }
+        } = null!;
         public Constants.MetaType ColumnType
         {
             get; internal set;
@@ -326,11 +335,11 @@ namespace Frameset.Office.Excel.Meta
         public string Formula
         {
             get; internal set;
-        }
+        } = null!;
         public string Format
         {
             get; internal set;
-        }
+        } = null!;
         public bool NeedMerge
         {
             get; internal set;

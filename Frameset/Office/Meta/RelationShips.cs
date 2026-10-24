@@ -38,7 +38,7 @@ namespace Frameset.Office.Meta
         public string TargetMode
         {
             get; internal set;
-        }
+        } = null!;
         public RelationShip(string id, string target, string type)
         {
             this.Id = id;

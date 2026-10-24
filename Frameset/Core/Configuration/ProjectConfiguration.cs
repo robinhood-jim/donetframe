@@ -22,13 +22,13 @@ namespace Frameset.Core.Configuration
     public class ProjectConfiguration : IDisposable
     {
         private Dictionary<string, object> configDict = [];
-        private string etcdHostUrl;
+        private string etcdHostUrl = null!;
         private EtcdServiceClient client = null!;
         private string appName = DEFAULT;
         private string mapperPath = null!;
         private string etcdWorkerBasePath = "/service/";
         private string etcdmasterPath = "/service/master";
-        private string realIp;
+        private string realIp = null!;
         private bool masterAck = false;
         private TaskCompletionSource<bool> tcs = new TaskCompletionSource<bool>();
         private Dictionary<string, Dictionary<string, string>> fileSystemConfig = [];
@@ -44,10 +44,10 @@ namespace Frameset.Core.Configuration
         public static readonly string DEFAULT = "default";
         public static readonly string DBTYPE = "dbType";
         public static readonly byte[] ALIVE = { 0x00, 0x00, 0x7F, 0x7F };
-        private CancellationTokenSource cancellation;
-        private string yamlPath;
+        private CancellationTokenSource cancellation = null!;
+        private string yamlPath = null!;
         //proxy Function to support Tracing 
-        private Func<string, AbstractSqlDialect> proxyFunc;
+        private Func<string, AbstractSqlDialect> proxyFunc = null!;
         public ProjectConfiguration(string yamlConfigFile)
         {
             this.yamlPath = yamlConfigFile;
@@ -70,21 +70,28 @@ namespace Frameset.Core.Configuration
             }
             using StreamReader reader = File.OpenText(yamlPath);
             configDict = deserializer.Deserialize<Dictionary<string, object>>(reader);
-            object dataSourceDict = null;
-            configDict.TryGetValue(DATASOURCE, out dataSourceDict);
-            configDict.TryGetValue(SERVERHOST, out object serverHostObj);
-            configDict.TryGetValue(APPNAME, out object appNameObj);
-            configDict.TryGetValue(MAPPERPATH, out object mapperPathObj);
-            configDict.TryGetValue(USERMULTIPLEFS, out object userMFSObj);
+            configDict.TryGetValue(DATASOURCE, out object? dataSourceDict);
+            configDict.TryGetValue(SERVERHOST, out object? serverHostObj);
+            configDict.TryGetValue(APPNAME, out object? appNameObj);
+            configDict.TryGetValue(MAPPERPATH, out object? mapperPathObj);
+            configDict.TryGetValue(USERMULTIPLEFS, out object? userMFSObj);
 
-            if (appNameObj != null && !string.IsNullOrWhiteSpace(appNameObj.ToString()))
+            if (appNameObj != null)
             {
-                appName = appNameObj.ToString();
+                string? appNameStr = appNameObj.ToString();
+                if (!string.IsNullOrWhiteSpace(appNameStr))
+                {
+                    appName = appNameStr;
+                }
             }
-            if (mapperPathObj != null && !string.IsNullOrWhiteSpace(mapperPathObj.ToString()))
+            if (mapperPathObj != null)
             {
-                mapperPath = mapperPathObj.ToString();
-                SqlMapperConfigure.DoInit(mapperPath);
+                string? mapperPathStr = mapperPathObj.ToString();
+                if (!string.IsNullOrWhiteSpace(mapperPathStr))
+                {
+                    mapperPath = mapperPathStr;
+                    SqlMapperConfigure.DoInit(mapperPath);
+                }
             }
             if (userMFSObj != null && !string.IsNullOrWhiteSpace(userMFSObj.ToString()))
             {
@@ -93,41 +100,53 @@ namespace Frameset.Core.Configuration
 
             if (serverHostObj != null)
             {
-                etcdHostUrl = serverHostObj.ToString();
+                string? serverHostStr = serverHostObj.ToString();
+                Trace.Assert(!string.IsNullOrWhiteSpace(serverHostStr));
+                etcdHostUrl = serverHostStr;
                 client = new(etcdHostUrl);
             }
             if (dataSourceDict != null)
             {
-                Dictionary<object, object> sourceDict = dataSourceDict as Dictionary<object, object>;
+                Dictionary<object, object>? sourceDict = dataSourceDict as Dictionary<object, object>;
+                Trace.Assert(sourceDict != null, "");
                 foreach (var entry in sourceDict)
                 {
-                    string key = entry.Key.ToString();
-                    Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
+                    string? key = entry.Key.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(key));
+                    Dictionary<object, object>? dict1 = entry.Value as Dictionary<object, object>;
                     Dictionary<string, object> tmpDict = [];
-                    foreach (KeyValuePair<object, object> pair in dict1)
+                    Trace.Assert(dict1 != null, "");
+                    foreach (var pair in dict1)
                     {
-                        tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
+                        string? keyStr = pair.Key.ToString();
+                        Trace.Assert(!string.IsNullOrWhiteSpace(keyStr));
+                        tmpDict.TryAdd(keyStr, pair.Value);
                     }
-                    tmpDict.TryGetValue(DBTYPE, out object dbTypeObj);
-                    Trace.Assert(dbTypeObj != null && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()), "missing config dbType");
-                    DAOFactory.RegisterJdbcDao(key, tmpDict, proxyFunc?.Invoke(dbTypeObj.ToString()));
+                    tmpDict.TryGetValue(DBTYPE, out object? dbTypeObj);
+                    Trace.Assert(dbTypeObj != null && proxyFunc != null && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()), "missing config dbType");
+                    string? dbTypeStr = dbTypeObj.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(dbTypeStr));
+                    DAOFactory.RegisterJdbcDao(key, tmpDict, proxyFunc.Invoke(dbTypeStr));
                 }
             }
             //fileSystem 配置
             if (configDict.ContainsKey(FILESYSTEMS))
             {
-                configDict.TryGetValue(FILESYSTEMS, out object fsParam);
-                Dictionary<object, object> dict = fsParam as Dictionary<object, object>;
+                configDict.TryGetValue(FILESYSTEMS, out object? fsParam);
+                Dictionary<object, object>? dict = fsParam as Dictionary<object, object>;
                 if (!useMultipleFileSystem)
                 {
+                    Trace.Assert(dict != null);
                     AddFileSystemConfig(DEFAULT, dict);
                 }
                 else
                 {
+                    Trace.Assert(dict != null, "");
                     foreach (var entry in dict)
                     {
-                        string fsName = entry.Key.ToString();
-                        Dictionary<object, object> fsDict = entry.Value as Dictionary<object, object>;
+                        string? fsName = entry.Key.ToString();
+                        Dictionary<object, object>? fsDict = entry.Value as Dictionary<object, object>;
+                        Trace.Assert(fsDict != null && !string.IsNullOrWhiteSpace(fsName), "");
                         AddFileSystemConfig(fsName, fsDict);
                     }
                 }
@@ -147,38 +166,45 @@ namespace Frameset.Core.Configuration
             Dictionary<string, string> targetDict = [];
             foreach (var entry in inputDict)
             {
-                targetDict.TryAdd(entry.Key.ToString(), entry.Value.ToString());
+                string? key = entry.Key.ToString();
+                string? value = entry.Value.ToString();
+                Trace.Assert(!string.IsNullOrWhiteSpace(key) && !string.IsNullOrWhiteSpace(value));
+                targetDict.TryAdd(key, value);
             }
             fileSystemConfig.TryAdd(fsName, targetDict);
         }
-        public T GetConfig<T>(string key)
+        public T? GetConfig<T>(string key)
         {
-            configDict.TryGetValue(key, out object retConfig);
-            if (retConfig != null)
+            if (configDict.TryGetValue(key, out object? retConfig))
             {
-                if (typeof(T) == retConfig.GetType())
+                if (retConfig != null)
                 {
-                    return (T)retConfig;
-                }
-                else
-                {
-                    Dictionary<object, object> targetDict = retConfig as Dictionary<object, object>;
-                    dynamic retObj = Activator.CreateInstance<T>();
-                    Dictionary<string, MethodParam> methodDict = AnnotationUtils.ReflectObject(typeof(T));
-                    foreach (var entry in targetDict)
+                    if (typeof(T) == retConfig.GetType())
                     {
-                        if (methodDict.ContainsKey(entry.Key.ToString()))
-                        {
-                            MethodParam param = methodDict[entry.Key.ToString()];
-                            param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
-                        }
+                        return (T)retConfig;
                     }
-                    return retObj;
+                    else
+                    {
+                        Dictionary<object, object>? targetDict = retConfig as Dictionary<object, object>;
+                        dynamic? retObj = Activator.CreateInstance<T>();
+                        Dictionary<string, MethodParam> methodDict = AnnotationUtils.ReflectObject(typeof(T));
+                        Trace.Assert(targetDict != null, "");
+                        foreach (var entry in targetDict)
+                        {
+                            string? keyStr = entry.Key.ToString();
+                            Trace.Assert(!string.IsNullOrWhiteSpace(keyStr));
+                            if (methodDict.TryGetValue(keyStr, out MethodParam? param))
+                            {
+                                param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                            }
+                        }
+                        return retObj;
+                    }
                 }
             }
             return default;
         }
-        public Dictionary<string, string> GetFileSystemConfig(string name = null)
+        public Dictionary<string, string> GetFileSystemConfig(string? name = null)
         {
             string fsName = name ?? DEFAULT;
             return fileSystemConfig[fsName];
@@ -193,7 +219,7 @@ namespace Frameset.Core.Configuration
                 //监听发送的消息
                 EtcdListener();
                 //等待license 服务器响应是否允许运行，否则卡死
-                WaitForMasterAck().ConfigureAwait(true);
+                WaitForMasterAck().GetAwaiter().GetResult();
                 //验证license 是否有效，公钥验签
                 if (!LicenseUtils.ValidateLicense())
                 {
@@ -283,7 +309,7 @@ namespace Frameset.Core.Configuration
         }
         private void WritePublicKey(byte[] content)
         {
-            string userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).FullName;
+            string? userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))?.FullName;
             string keyPath = userPath + Path.DirectorySeparatorChar + Environment.UserName + Path.DirectorySeparatorChar + ".robin" + Path.DirectorySeparatorChar + "publickey.pem";
             StringBuilder builder = new StringBuilder();
             builder.Append("-----BEGIN PUBLIC KEY-----").Append("\n");
@@ -295,7 +321,7 @@ namespace Frameset.Core.Configuration
         }
         private void WriteLicenseFile(byte[] content)
         {
-            string userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile)).FullName;
+            string? userPath = Directory.GetParent(Environment.GetFolderPath(Environment.SpecialFolder.UserProfile))?.FullName;
             string licensePath = userPath + Path.DirectorySeparatorChar + Environment.UserName + Path.DirectorySeparatorChar + ".robin" + Path.DirectorySeparatorChar + ".license";
             using FileStream stream = File.OpenWrite(licensePath);
             stream.Write(content);

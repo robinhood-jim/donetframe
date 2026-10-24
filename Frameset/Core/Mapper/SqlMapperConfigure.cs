@@ -1,9 +1,9 @@
-﻿using Frameset.Core.Mapper.Handler;
+﻿using Frameset.Core.Exceptions;
+using Frameset.Core.Mapper.Handler;
 using Frameset.Core.Mapper.Segment;
 using Microsoft.IdentityModel.Tokens;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Xml;
 
 namespace Frameset.Core.Mapper
@@ -21,7 +21,7 @@ namespace Frameset.Core.Mapper
         private static Dictionary<string, MapperConfig> configMap = new();
         private static Dictionary<string, Dictionary<string, AbstractSegment>> executeMap = new();
 
-        private static List<string> operType = new[] { "select", "update", "delete", "insert" }.ToList();
+        private static List<string> operType = ["select", "update", "delete", "insert"];
 
         public static void DoInit(string mapperPath)
         {
@@ -43,7 +43,7 @@ namespace Frameset.Core.Mapper
                 using (XmlReader xmlReader = XmlReader.Create(stream))
                 {
                     doc.Load(xmlReader);
-                    XmlNode pnode = doc.SelectSingleNode("mapper");
+                    XmlNode? pnode = doc.SelectSingleNode("mapper");
                     if (pnode == null)
                     {
                         return;
@@ -98,15 +98,15 @@ namespace Frameset.Core.Mapper
         }
         public static AbstractSegment GetExecuteSegment(string nameSpace, string id)
         {
-            if (executeMap.TryGetValue(nameSpace, out Dictionary<string, AbstractSegment> segmentMap) && segmentMap != null && !segmentMap.IsNullOrEmpty() && segmentMap.TryGetValue(id, out AbstractSegment segment))
+            if (executeMap.TryGetValue(nameSpace, out Dictionary<string, AbstractSegment>? segmentMap) && segmentMap != null && !segmentMap.IsNullOrEmpty() && segmentMap.TryGetValue(id, out AbstractSegment? segment))
             {
                 return segment;
             }
-            return null;
+            throw new ConfigMissingException($"id {id} not found in mapper xml");
         }
-        public static ResultMap GetResultMap(string nameSpace, string id)
+        public static ResultMap? GetResultMap(string nameSpace, string id)
         {
-            if (configMap.TryGetValue(nameSpace, out MapperConfig config) && config != null && config.ReslutMap.TryGetValue(id, out ResultMap map))
+            if (configMap.TryGetValue(nameSpace, out MapperConfig? config) && config != null && config.ReslutMap.TryGetValue(id, out ResultMap? map))
             {
                 return map;
             }
@@ -114,11 +114,11 @@ namespace Frameset.Core.Mapper
         }
         public static string GetSqlPart(string nameSpace, string id)
         {
-            if (configMap.TryGetValue(nameSpace, out MapperConfig config) && config != null && config.SqlMap.TryGetValue(id, out string retstr) && !string.IsNullOrWhiteSpace(retstr))
+            if (configMap.TryGetValue(nameSpace, out MapperConfig? config) && config != null && config.SqlMap.TryGetValue(id, out string? retstr) && !string.IsNullOrWhiteSpace(retstr))
             {
                 return retstr;
             }
-            return null;
+            throw new ConfigMissingException($"sqlpart id {id} not found in mapper xml");
         }
 
     }

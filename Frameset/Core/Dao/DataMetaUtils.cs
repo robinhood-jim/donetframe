@@ -26,9 +26,21 @@ namespace Frameset.Core.Dao
                     foreach (DataRow row in tables.Rows)
                     {
                         ColumnMeta meta = new ColumnMeta();
-                        meta.ColumnName = row["COLUMN_NAME"].ToString();
-                        meta.DataType = row["DATA_TYPE"].ToString();
-                        meta.ColumnType = row["COLUMN_TYPE"].ToString();
+                        string? columnName = row["COLUMN_NAME"].ToString();
+                        if (!string.IsNullOrWhiteSpace(columnName))
+                        {
+                            meta.ColumnName = columnName;
+                        }
+                        string? dataType = row["DATA_TYPE"].ToString();
+                        if (!string.IsNullOrWhiteSpace(dataType))
+                        {
+                            meta.DataType = dataType;
+                        }
+                        string? columnType = row["COLUMN_TYPE"].ToString();
+                        if (!string.IsNullOrWhiteSpace(columnType))
+                        {
+                            meta.ColumnType = columnType;
+                        }
                         meta.Nullable = !string.Equals("NO", row["IS_NULLABLE"].ToString(), StringComparison.OrdinalIgnoreCase);
                         if (row["EXTRA"] != DBNull.Value)
                         {
@@ -46,7 +58,11 @@ namespace Frameset.Core.Dao
                         }
                         if (row["COLUMN_COMMENT"] != DBNull.Value)
                         {
-                            meta.Comment = row["COLUMN_COMMENT"].ToString();
+                            string? comment = row["COLUMN_COMMENT"].ToString();
+                            if (!string.IsNullOrWhiteSpace(comment))
+                            {
+                                meta.Comment = comment;
+                            }
                         }
                         list.Add(meta);
                     }
@@ -71,14 +87,26 @@ namespace Frameset.Core.Dao
                     foreach (DataRow row in tables.Rows)
                     {
                         TableMeta meta = new TableMeta();
-                        meta.TableName = row["TABLE_NAME"].ToString();
+                        string? tableName = row["TABLE_NAME"].ToString();
+                        if (!string.IsNullOrWhiteSpace(tableName))
+                        {
+                            meta.TableName = tableName;
+                        }
                         if (row["TABLE_SCHEMA"] != DBNull.Value)
                         {
-                            meta.Schema = row["TABLE_SCHEMA"].ToString();
+                            string? selectSchema = row["TABLE_SCHEMA"].ToString();
+                            if (!string.IsNullOrWhiteSpace(selectSchema))
+                            {
+                                meta.Schema = selectSchema;
+                            }
                         }
                         if (row["TABLE_COMMENT"] != DBNull.Value)
                         {
-                            meta.Remark = row["TABLE_COMMENT"].ToString();
+                            string? comment = row["TABLE_COMMENT"].ToString();
+                            if (!string.IsNullOrWhiteSpace(comment))
+                            {
+                                meta.Remark = comment;
+                            }
                         }
 
                         list.Add(meta);
@@ -169,15 +197,15 @@ namespace Frameset.Core.Dao
         public string ColumnName
         {
             get; set;
-        }
+        } = null!;
         public string ColumnType
         {
             get; set;
-        }
+        } = null!;
         public string DataType
         {
             get; set;
-        }
+        } = null!;
         public bool PrimaryTag
         {
             get; set;
@@ -189,7 +217,7 @@ namespace Frameset.Core.Dao
         public string SequnceName
         {
             get; set;
-        }
+        } = null!;
         public bool Nullable
         {
             get; set;
@@ -197,21 +225,21 @@ namespace Frameset.Core.Dao
         public string Comment
         {
             get; set;
-        }
+        } = null!;
     }
     public class TableMeta
     {
         public string TableName
         {
             get; set;
-        }
+        } = null!;
         public string Schema
         {
             get; set;
-        }
+        } = null!;
         public string Remark
         {
             get; set;
-        }
+        } = null!;
     }
 }

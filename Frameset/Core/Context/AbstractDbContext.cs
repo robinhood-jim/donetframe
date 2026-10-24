@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Common;
 using Frameset.Core.Dao;
+using Frameset.Core.Dao.Handler;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
 using Frameset.Core.Mapper;
@@ -33,13 +34,14 @@ namespace Frameset.Core.Context
         internal readonly Dictionary<Type, Dictionary<string, FieldContent>> fieldContentMap = [];
         internal readonly Dictionary<Type, List<Type>> subTypeMap = [];
         internal readonly Dictionary<Type, FieldContent> entityPkMap = [];
-        internal string dsName;
-        internal ThreadLocal<string> temporaryDsName;
-        internal ThreadLocal<bool> autoCommitStatus;
+        internal string dsName = null!;
+        internal ThreadLocal<string> temporaryDsName = null!;
+        internal ThreadLocal<bool> autoCommitStatus = null!;
 
         internal ConcurrentDictionary<Thread, UpdateEntry> requestChanges = [];
-        internal IAdoDao dao;
-
+        internal ConcurrentDictionary<Thread, IUnitofWork> unitOfWorkDict = [];
+        protected IAdoDao dao = null!;
+        protected IMetaObjectHandler metaObjectHandler = null!;
         public string ContextName
         {
             get; set;
@@ -48,26 +50,51 @@ namespace Frameset.Core.Context
 
         public bool ExecuteOperation(Action<IAdoDao, DbCommand> action)
         {
-            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            IUnitofWork? unitofWork = null;
+            bool autoCommit = IsAutoCommit();
+            if (!autoCommit)
             {
-                connection.Open();
-                DbTransaction transaction = connection.BeginTransaction();
-                try
+                CheckThreadTransaction(out unitofWork);
+                Trace.Assert(unitofWork != null);
+            }
+            GetConnectionAndTransaction(unitofWork, autoCommit, out DbConnection? connection, out DbTransaction? transaction);
+            Trace.Assert(connection != null);
+            Trace.Assert(transaction != null);
+            try
+            {
+                using DbCommand command = GetDao().GetDialect().GetDbCommand(connection);
+                command.Transaction = transaction;
+                action.Invoke(GetDao(), command);
+                if (autoCommit)
                 {
-                    DbCommand command = GetDao().GetDialect().GetDbCommand(connection);
-                    command.Transaction = transaction;
-                    action.Invoke(GetDao(), command);
                     transaction.Commit();
-                    return true;
                 }
-                catch (Exception ex)
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Rollback(transaction);
+                throw new BaseSqlException(ex.Message);
+            }
+            finally
+            {
+                if (autoCommit)
                 {
-                    transaction.Rollback();
-                    throw new BaseSqlException(ex.Message);
+                    DoClear(connection,transaction);
                 }
             }
         }
-        public List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject)
+
+        private void GetConnectionAndTransaction(IUnitofWork? unitofWork, bool autoCommit, out DbConnection? connection, out DbTransaction? transaction)
+        {
+            connection = autoCommit ? GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()) : unitofWork?.GetConnection();
+            Trace.Assert(connection != null);
+            CheckOpen(connection);
+            transaction = autoCommit ? connection.BeginTransaction() : unitofWork?.GetOrBeginTransaction();
+            Trace.Assert(transaction != null);
+        }
+
+        public List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject, List<string>? inputParameters = null)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, queryId);
             if (segment != null)
@@ -76,7 +103,7 @@ namespace Frameset.Core.Context
                 SqlSelectSegment sqlsegment = (SqlSelectSegment)segment;
                 Dictionary<string, object> paramMap = new Dictionary<string, object>();
 
-                if (queryObject.GetType().Equals(typeof(Dictionary<string, object>)))
+                if (queryObject.GetType().IsTypeDictionary())
                 {
                     paramMap = (Dictionary<string, object>)queryObject;
                 }
@@ -84,13 +111,21 @@ namespace Frameset.Core.Context
                 {
                     ConvertUtil.ToDict(queryObject, paramMap);
                 }
+                if (inputParameters != null && !inputParameters.IsNullOrEmpty())
+                {
+                    foreach (string parameter in inputParameters)
+                    {
+                        paramMap.TryAdd(parameter, null);
+                    }
+                }
                 string executeSql = segment.ReturnSqlPart(paramMap);
+                LogUtils.Debug($"QueryMapper: {executeSql}");
                 using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
                 {
                     connection.Open();
                     using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, executeSql))
                     {
-                        return GetDao().QueryMapper(sqlsegment, paramMap, nameSpace, command, queryObject);
+                        return GetDao().QueryMapper(sqlsegment, paramMap, nameSpace, command);
                     }
                 }
             }
@@ -99,6 +134,7 @@ namespace Frameset.Core.Context
                 throw new ConfigMissingException("id " + queryId + " does not found in namespace " + nameSpace);
             }
         }
+
         public int ExecuteMapper(string nameSpace, string exeId, object input)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, exeId);
@@ -106,41 +142,73 @@ namespace Frameset.Core.Context
             {
                 Trace.Assert(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
                 Trace.Assert(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
+                IUnitofWork? unitofWork = null;
+                bool autoCommit = IsAutoCommit();
+                if (!autoCommit)
+                {
+                    CheckThreadTransaction(out unitofWork);
+                    Trace.Assert(unitofWork != null);
+                }
+                GetConnectionAndTransaction(unitofWork, autoCommit, out DbConnection? connection, out DbTransaction? transaction);
+                Trace.Assert(connection != null);
+                Trace.Assert(transaction != null);
 
-                Type retType = null;
-                RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam> methodMap);
+                RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam>? methodMap);
                 if (!retMap)
                 {
-                    methodMap = AnnotationUtils.ReflectObject(retType);
+                    ResultMap? map = SqlMapperConfigure.GetResultMap(nameSpace, ((CompositeSegment)segment).ResultMap);
+                    Trace.Assert(map != null && map.ModelType != null);
+                    methodMap = AnnotationUtils.ReflectObject(map.ModelType);
                 }
-                return RepositoryHelper.ExecuteInTransaction(GetDao(), builder.ToString(), (command) =>
+                int ret = 0;
+                try
                 {
+                    using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, builder.ToString());
                     foreach (var item in paramMap)
                     {
                         command.Parameters.Add(GetDao().GetDialect().WrapParameter("@" + item.Key, item.Value));
                     }
                     if (returnInsert)
                     {
-                        object genId = command.ExecuteScalar();
-                        if (genId != null)
+                        object? genId = command.ExecuteScalar();
+                        if (genId != null && methodMap != null)
                         {
                             if (!retMap)
                             {
-                                methodMap.TryGetValue(generateKey, out MethodParam param);
-                                param?.SetMethod.Invoke(input, new object[] { ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId) });
+                                if (methodMap.TryGetValue(generateKey, out MethodParam? param))
+                                {
+                                    param.SetMethod.Invoke(input, new object[] { ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId) });
+                                }
                             }
                             else
                             {
                                 paramMap.TryAdd(generateKey, ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId));
                             }
                         }
-                        return 1;
+                        ret = 1;
                     }
                     else
                     {
-                        return command.ExecuteNonQuery();
+                        ret = command.ExecuteNonQuery();
                     }
-                });
+                    if (autoCommit)
+                    {
+                        transaction.Commit();
+                    }
+                }
+                catch (Exception ex)
+                {
+                    Rollback(transaction);
+                    throw new BaseSqlException(ex.Message);
+                }
+                finally
+                {
+                    if (autoCommit)
+                    {
+                        DoClear(connection, transaction);
+                    }
+                }
+                return ret;
             }
             else
             {
@@ -150,31 +218,35 @@ namespace Frameset.Core.Context
         internal BaseEntity GetByIdSimple(Type entityType, object pk, bool ignoreLogic = false)
         {
             CheckTypeExists(entityType);
-            if (!entityPkMap.TryGetValue(entityType, out FieldContent pkColumn))
+            if (!entityPkMap.TryGetValue(entityType, out FieldContent? pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + entityType.Name);
             }
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
             Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk, ignoreLogic);
             List<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
-            object entity = Activator.CreateInstance(entityType);
+            object? entity = Activator.CreateInstance(entityType);
+            Trace.Assert(tuple != null && entity != null);
             ConstructEntity(list, tuple, entity);
-            return entity as BaseEntity;
+            BaseEntity? baseEntity = entity as BaseEntity;
+            Trace.Assert(baseEntity != null, "");
+            return baseEntity;
         }
 
 
-        protected V GetByIdSimple<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity
+        protected V GetByIdSimple<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity where P : notnull
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            if (!entityPkMap.TryGetValue(entityType, out FieldContent pkColumn))
+            if (!entityPkMap.TryGetValue(entityType, out FieldContent? pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + entityType.Name);
             }
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>> tuple);
+            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
             Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk, ignoreLogic);
             List<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, selectSqlTuple.Item2.ToArray());
             V entity = Activator.CreateInstance<V>();
+            Trace.Assert(tuple != null && entity != null);
             ConstructEntity(list, tuple, entity);
             return entity;
         }
@@ -208,7 +280,7 @@ namespace Frameset.Core.Context
                 }
             }
         }
-        internal List<V> QueryModelsByFieldSimple<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        internal List<V> QueryModelsByFieldSimple<V>(string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null)
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
@@ -227,9 +299,8 @@ namespace Frameset.Core.Context
             }
             return [];
         }
-        internal List<BaseEntity> QueryModelsByFieldSimple(Type entityType, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        internal List<BaseEntity> QueryModelsByFieldSimple(Type entityType, string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null)
         {
-
             CheckTypeExists(entityType);
             List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             if (!fields.IsNullOrEmpty())
@@ -271,9 +342,11 @@ namespace Frameset.Core.Context
 
         public string GetDsName()
         {
-            if (temporaryDsName.IsValueCreated)
+            if (temporaryDsName != null && temporaryDsName.IsValueCreated)
             {
-                return temporaryDsName.Value;
+                string? retDsName = temporaryDsName.Value;
+                Trace.Assert(!string.IsNullOrWhiteSpace(retDsName));
+                return retDsName;
             }
             else
             {
@@ -284,7 +357,9 @@ namespace Frameset.Core.Context
         {
             if (temporaryDsName != null && temporaryDsName.IsValueCreated)
             {
-                IAdoDao tempDao = DAOFactory.GetAdoDao(temporaryDsName.Value);
+                string? retDsName = temporaryDsName.Value;
+                Trace.Assert(!string.IsNullOrWhiteSpace(retDsName));
+                IAdoDao tempDao = DAOFactory.GetAdoDao(retDsName);
                 if (tempDao == null)
                 {
                     throw new BaseSqlException("dsName " + dsName + " not registered!");
@@ -316,6 +391,13 @@ namespace Frameset.Core.Context
         public void SetAutoCommit(bool autoCommit)
         {
             autoCommitStatus = new ThreadLocal<bool>(() => autoCommit);
+            if (autoCommit)
+            {
+                if (unitOfWorkDict.TryRemove(Thread.CurrentThread, out IUnitofWork? unitofWork))
+                {
+                    unitofWork.Dispose();
+                }
+            }
         }
         protected bool IsAutoCommit()
         {
@@ -325,6 +407,7 @@ namespace Frameset.Core.Context
             }
             return true;
         }
+
         protected int IncrementExecute(int effectRow, bool executeOK)
         {
             if (executeOK)
@@ -358,22 +441,52 @@ namespace Frameset.Core.Context
         }
         public int Execute(string sql, DbParameter[] parameters)
         {
-            IAdoDao queryDao = GetDao();
-            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            IUnitofWork? unitofWork = null;
+            bool autoCommit = IsAutoCommit();
+            if (!autoCommit)
             {
-                connection.Open();
-                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
+                CheckThreadTransaction(out unitofWork);
+                Trace.Assert(unitofWork != null);
+            }
+            GetConnectionAndTransaction(unitofWork, autoCommit, out DbConnection? connection, out DbTransaction? transaction);
+            Trace.Assert(connection != null);
+            Trace.Assert(transaction != null);
+            CheckOpen(connection);
+            int returnVal = -1;
+            try
+            {
+                using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql);
+                returnVal = GetDao().Execute(command, sql, parameters);
+                if (autoCommit)
                 {
-                    return queryDao.Execute(command, sql, parameters);
+                    transaction.Commit();
                 }
             }
+            catch (Exception ex)
+            {
+                Rollback(transaction);
+                throw new NotSupportedException(ex.Message);
+            }
+            finally
+            {
+                if (autoCommit)
+                {
+                    DoClear(connection,transaction);
+                }
+            }
+            return returnVal;
+
+        }
+        protected IMetaObjectHandler GetObjectHandler()
+        {
+            return metaObjectHandler ?? RegServiceContext.GetBean<IMetaObjectHandler>();
         }
 
-        public abstract V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity;
+        public abstract V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity where P : notnull;
 
         public abstract long InsertBatch<V>(IEnumerable<V> models, CancellationToken token) where V : BaseEntity;
 
-        public abstract List<V> QueryByCondition<V>(FilterCondition condition, PageQuery query = null) where V : BaseEntity;
+        public abstract List<V> QueryByCondition<V>(FilterCondition condition, PageQuery? query = null) where V : BaseEntity;
 
         public abstract List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
@@ -381,7 +494,7 @@ namespace Frameset.Core.Context
 
         public abstract List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter);
 
-        public abstract List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
+        public abstract List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null) where V : BaseEntity;
 
         public abstract PageDTO<V> QueryModelsPage<V>(PageQuery query) where V : BaseEntity;
 
@@ -389,13 +502,13 @@ namespace Frameset.Core.Context
 
         public abstract int RemoveByFields<V, P>(string fieldName, Constants.SqlOperator sqlOperator, object[] values) where V : BaseEntity;
 
-        public abstract int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity;
+        public abstract int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity where P : notnull;
 
-        public abstract int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status) where V : BaseEntity;
+        public abstract int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status) where V : BaseEntity where P : notnull;
         public abstract void SaveChanges();
 
         public abstract bool SaveEntity<V>(V entity) where V : BaseEntity;
-        public abstract bool UpdateEntity<V, P>(V entity) where V : BaseEntity;
+        public abstract bool UpdateEntity<V, P>(V entity) where V : BaseEntity where P : notnull;
         public abstract void ManyToOne(Type subType, string fieldName, Type parentType);
         public abstract void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
         protected List<Type> ScanPackage()
@@ -408,7 +521,7 @@ namespace Frameset.Core.Context
                 try
                 {
                     retList.AddRange(assembly.GetTypes()
-                                .Where(t => t.IsClass && !t.IsAbstract && ((t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 && ((MappingEntityAttribute)t.GetCustomAttribute(typeof(MappingEntityAttribute))).DsName.Equals(ContextName)) || t.GetCustomAttributes(typeof(TableAttribute), false).Length > 0))
+                                .Where(t => t.IsClass && !t.IsAbstract && ((t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 && (t.GetCustomAttribute(typeof(MappingEntityAttribute)) as MappingEntityAttribute).DsName.Equals(ContextName)) || t.GetCustomAttributes(typeof(TableAttribute), false).Length > 0))
                                 .ToList());
                 }
                 catch (Exception ex)
@@ -432,8 +545,8 @@ namespace Frameset.Core.Context
                     EntityContent content = EntityReflectUtils.GetEntityInfo(type);
                     List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(type);
                     Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(type);
-                    IEnumerable<FieldContent> pkList = fields.Where(x => x.IfPrimary);
-                    FieldContent pkColumn = !pkList.IsNullOrEmpty() ? pkList.First() : null;
+                    IEnumerable<FieldContent>? pkList = fields.Where(x => x.IfPrimary);
+                    FieldContent? pkColumn = !pkList.IsNullOrEmpty() ? pkList.First() : null;
                     if (pkColumn == null)
                     {
                         LogUtils.Error($"Entity {type.Name} does not have primary key,Skipped");
@@ -443,7 +556,7 @@ namespace Frameset.Core.Context
                     while (enumerator.MoveNext())
                     {
                         FieldContent oneToManyColumn = enumerator.Current;
-                        if (subTypeMap.TryGetValue(oneToManyColumn.ParentEntity, out List<Type> subTypes))
+                        if (subTypeMap.TryGetValue(oneToManyColumn.ParentEntity, out List<Type>? subTypes))
                         {
                             subTypes.Add(type);
                         }
@@ -457,6 +570,48 @@ namespace Frameset.Core.Context
                     fieldContentMap.TryAdd(type, fieldMap);
                 }
             }
+        }
+        protected void CheckOpen(DbConnection connection)
+        {
+            if (connection.State != ConnectionState.Open)
+            {
+                connection.Open();
+            }
+        }
+        protected void CheckThreadTransaction(out IUnitofWork? unitofWork)
+        {
+            if (!unitOfWorkDict.TryGetValue(Thread.CurrentThread, out unitofWork))
+            {
+                unitofWork = new UnitofWork(GetDao());
+                unitOfWorkDict.TryAdd(Thread.CurrentThread, unitofWork);
+            }
+            unitofWork?.GetOrBeginTransaction();
+        }
+        protected void Rollback(DbTransaction transaction)
+        {
+            if (!IsAutoCommit())
+            {
+                CheckThreadTransaction(out IUnitofWork? unitofWork);
+                unitofWork?.Rollback();
+                unitOfWorkDict.TryRemove(Thread.CurrentThread, out _);
+            }
+            else
+            {
+                transaction.Rollback();
+            }
+        }
+        protected void DoClear(DbConnection? connection,DbTransaction? transaction)
+        {
+            transaction?.Dispose();
+            if (connection != null) {
+                if (connection.State == ConnectionState.Open)
+                {
+                    connection.Close();
+                }
+                connection.Dispose();
+            }
+            transaction = null;
+            connection = null;
         }
     }
 }

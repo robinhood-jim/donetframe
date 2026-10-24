@@ -7,7 +7,7 @@ namespace Frameset.Core.Dao.Utils
         public string SelectColumns
         {
             get; set;
-        }
+        } = null!;
 
         public Dictionary<string, object> NewColumns
         {
@@ -17,18 +17,18 @@ namespace Frameset.Core.Dao.Utils
         public string GroupBy
         {
             get; set;
-        }
+        } = null!;
         public Dictionary<string, object> Having
         {
             get; set;
-        }
+        } = null!;
         public string OrderBy
         {
             get; set;
-        }
+        } = null!;
         public Dictionary<string, object> Parameters
         {
             get; set;
-        }
+        } = null!;
     }
 }

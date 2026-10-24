@@ -10,12 +10,12 @@ namespace Frameset.Office.Excel.Util
         private static BigDecimal BD_MILISEC_RND = new BigDecimal(500000.0);
         private static BigDecimal BD_SECOND_RND = new BigDecimal(5.0E8);
         private static int BAD_DATE = -1;
-        public static int SECONDS_PER_MINUTE = 60;
-        public static int MINUTES_PER_HOUR = 60;
-        public static int HOURS_PER_DAY = 24;
-        public static int SECONDS_PER_DAY = (HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE);
-        public static long DAY_MILLISECONDS = SECONDS_PER_DAY * 1000L;
-        public static double MILL_DAY = 8.6E7;
+        public static readonly int SECONDS_PER_MINUTE = 60;
+        public static readonly int MINUTES_PER_HOUR = 60;
+        public static readonly int HOURS_PER_DAY = 24;
+        public static readonly int SECONDS_PER_DAY = (HOURS_PER_DAY * MINUTES_PER_HOUR * SECONDS_PER_MINUTE);
+        public static readonly long DAY_MILLISECONDS = SECONDS_PER_DAY * 1000L;
+        public static readonly double MILL_DAY = 8.6E7;
 
         public static double ConvertDateTime(DateTime dateTime)
         {

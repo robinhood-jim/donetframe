@@ -21,11 +21,11 @@ namespace Frameset.Web.Controller
         }
         public AbstractController()
         {
-            repository = default(R);
+            repository = default!;
         }
         public JsonResult SaveEntity(object input)
         {
-            Trace.Assert(input != null);
+            Trace.Assert(input != null && repository != null);
             bool saveOk = false;
             if (input.GetType().Equals(typeof(V)))
             {
@@ -39,7 +39,7 @@ namespace Frameset.Web.Controller
         }
         public JsonResult UpdateEntity(object input)
         {
-            Trace.Assert(input != null);
+            Trace.Assert(input != null && repository != null);
             bool saveOk = false;
             if (input.GetType().Equals(typeof(V)))
             {
@@ -54,10 +54,12 @@ namespace Frameset.Web.Controller
 
         public PageDTO<T> QueryPage<T>(PageQuery query)
         {
+            Trace.Assert(repository != null);
             return repository.QueryPage<T>(query);
         }
         public JsonResult GetEntity(P id)
         {
+            Trace.Assert(repository != null);
             V vo = repository.GetById(id);
             if (vo != null)
             {
@@ -70,6 +72,7 @@ namespace Frameset.Web.Controller
         }
         public JsonResult RemoveEntity(P id)
         {
+            Trace.Assert(repository != null);
             return OutputMsg(repository.RemoveEntity([id]));
         }
 
@@ -77,15 +80,15 @@ namespace Frameset.Web.Controller
         {
             V retObj = Activator.CreateInstance<V>();
             Dictionary<string, MethodParam> paramMap = AnnotationUtils.ReflectObject(typeof(V));
-            if (input.GetType().Equals(typeof(Dictionary<string, object>)))
+            if (input.GetType().IsTypeDictionary())
             {
                 foreach (var entry in (Dictionary<string, object>)input)
                 {
                     string key = StringUtils.Capitalize(entry.Key);
-                    MethodParam? param = null;
-                    paramMap.TryGetValue(key, out param);
-                    param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
-
+                    if (paramMap.TryGetValue(key, out MethodParam? param))
+                    {
+                        param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                    }
                 }
             }
             else
@@ -93,10 +96,9 @@ namespace Frameset.Web.Controller
                 Dictionary<string, MethodParam> sourceMethodMap = AnnotationUtils.ReflectObject(input.GetType());
                 foreach (var entry in sourceMethodMap)
                 {
-                    if (entry.Value != null)
+                    if (entry.Value != null && paramMap.TryGetValue(entry.Key, out MethodParam? param))
                     {
-                        paramMap.TryGetValue(entry.Key, out MethodParam? param);
-                        param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
+                        param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
                     }
                 }
             }

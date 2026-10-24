@@ -3,23 +3,63 @@
 
 =========
 #### Introduction
-Based on Net Frame 8.Now including basic ORM frame support (including EF Core and Data Annotation Support).This may be most simplify code to intergrate ORM ability，
-Support Logic Delete Attribute and dao datasource Aspect defined
-Stream Reader/Writer for Excel and word. Customer Ioc Support to support AutoWire Service and support recursive AutoWired.
-United FileSystem and Data File Reader and Write,Support CSV/XML/JSON/AVRO/PARQUET/ORC File Format
-Add Serverless Function for dynamic load and unload DLL at runtime
-Customer MVC Frame to easy develop WebApi
-Bigdate Support for Nosql ElasticSearch/Cassandra/MongoDb/Hbase
+Based on Net Frame 8.Slight developer solution to Handle Asp.net or Winform project.It will help C# develop to easily construct a Enterprise Framework.
 
-- Core SubModule
-## Specification
+## Features:
+I.ORM (including EF Core and Data Annotation Support).This may be most simplify code to intergrate ORM ability，Support Logic Delete Attribute and dao datasource Aspect defined
+II.DAO->DbContext->Service three Data Access Layer to afford flexiable MVC develop;
+IIT.Stream Reader/Writer for Excel and word. Customer Ioc Support to support AutoWire Service and support recursive AutoWired.
+IV.United FileSystem and Data File Reader and Write,Support CSV/XML/JSON/AVRO/PARQUET/ORC File Format
+V.Add Serverless Function for dynamic load and unload DLL at runtime
+VI.Customer MVC Frame to easy develop WebApi
+VII.Bigdate Support for Nosql ElasticSearch/Cassandra/MongoDb/Hbase
+VIII.Customer NioGateway support Hot update configuration;
+IX.Based on ETCD License distribute tools；
+X. Tracing tools to enable uninvaded Probe tracing;
+XI.VUE + Asp.net back service MVC demo based on mutliple tenant support.
+
+## Core SubModule:
+
+<b>Specification</b>
 - Customer Annotation MappingEntity MappingField
 - Global DAOFactory Manager Datasource;
-- Single JdbcDao per DataSource;
-- Service Layer BaseRepository，with basic CRUD operator,can enhace or override;
-- Mybatis xml query ability,with js script enabled;
-- Intergarte with propluar Database system;
+- Single AdoDao per DataSource;
+- DAO->DbContext->Service three Data Access Layer,<b>No Logic code No Service class needed to be extended!!!</b>;
+- Mybatis xml query ability,with js script enabled(ClearScriptV8);
+- Intergarte with propluar Database system(SqlServer/MySql/Oracle/Postgresql/ClickHouse/DB2);
 - Support EF core Annotation
+- Support Logic Delete column
+- Support OneToMany and ManytoOne on Querys
+- <b>Customer DbContext Thread safe!!!</b>
+- Streaming reading and Writing to Excel and Word
+
+## Common SubModule:
+
+- Read/Write File format(CSV/XML/JSON/AVRO/PARQUET) using FileSystem(Local/FTP/SFTP/WebHDFS/AmazonS3)
+- <b>Protobuf multiple Records Support with Dynamic Shema</b>
+- Hdfs access with libhdfs support (under developing)
+
+
+## Common SubModule:
+
+- Read/Write File format(CSV/XML/JSON/AVRO/PARQUET) using FileSystem(Local/FTP/SFTP/WebHDFS/AmazonS3)
+- <b>Protobuf multiple Records Support with Dynamic Shema</b>
+- Hdfs access with libhdfs support (under developing)
+
+## Tracing SubModule:
+
+- Using ProxySqlDialect to add sql and parameters to Tracing;
+- Using HarmonyLib to intercept DbCommand operations;
+
+## Gateway SubModule:
+
+- Using Kerstel to handle HTTP request and act as Gateway ;
+- Using Service discovery with Consul and Nacos,support Hot configuration update with routers;
+
+## Web SubModule:
+
+- Serverless Function Supported ;
+- Controller based and DB Model define;
 
 ## Examples
 - DataSource Configration
@@ -133,7 +173,8 @@ repository.ExecuteMapper("Frameset.Test", "insert1", vo);
 ```
 - Common SubModule
 
-- Read/Write File format(CSV/XML/JSON/AVRO/PARQUET) using FileSystem(Local/FTP/SFTP/WebHDFS/AmazonS3)
+
+
 Read From FileSystem
 ```java
  DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
@@ -199,3 +240,4 @@ Add Class with Method with Attribute ServerlessFunc,and pack to DLL
 ```
 then use DynamicFunctionLoader RegisterFunction to register at runtime
 you can call through /serverless/{functionName} to call DLL function dynamic
+

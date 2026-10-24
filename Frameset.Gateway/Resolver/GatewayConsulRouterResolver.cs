@@ -20,15 +20,15 @@ public class GatewayConsulRouterResolver
         this.consulClient = consulClient;
         this.configuration = configuration;
         useConsulDiscovery = true;
-        
+
     }
     public GatewayConsulRouterResolver(INacosNamingService namingService, IConfiguration configuration)
     {
         this.configuration = configuration;
         this.namingService = namingService;
-       
+
         useNacosDiscovery = true;
-        
+
     }
 
     public async Task<string> ResolveUrlAsync(RouteDefine routeDefine, string url)

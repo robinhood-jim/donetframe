@@ -108,7 +108,7 @@ namespace Frameset.Core.Common
             SEASON,
             YEAR
         }
-        public static readonly List<String> DBTYPES = new List<String> { "Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse" };
+        public static readonly List<String> DBTYPES = ["Mysql", "Oracle", "Postgres", "db2", "SqlServer", "Sybase", "ClickHouse"];
         public static MetaType MetaTypeof(string columnType)
         {
             MetaType metaType = MetaType.STRING;
@@ -126,7 +126,7 @@ namespace Frameset.Core.Common
         public static MetaType MetaTypeOfType(Type targetType)
         {
             MetaType metaType;
-            if (targetType.IsGenericType || targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
+            if (targetType.IsGenericType && targetType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
                 targetType = targetType.GetGenericArguments()[0];
             }
@@ -244,7 +244,7 @@ namespace Frameset.Core.Common
         }
         public static SqlOperator Parse(string cmpOper)
         {
-            return cmpOper.ToLower() switch
+            return cmpOper.ToLower().Trim() switch
             {
                 ">" => SqlOperator.GT,
                 "<" => SqlOperator.LT,
@@ -256,6 +256,13 @@ namespace Frameset.Core.Common
                 "notin" => SqlOperator.NOTIN,
                 "exists" => SqlOperator.EXISTS,
                 "notexists" => SqlOperator.NOTEXISTS,
+                "like" => SqlOperator.LIKE,
+                "llike" => SqlOperator.LLIKE,
+                "rlike" => SqlOperator.RLIKE,
+                "union" => SqlOperator.UNION,
+                "unionall" => SqlOperator.UNIONALL,
+                "null" => SqlOperator.ISNULL,
+                "notnull" => SqlOperator.NOTNULL,
                 _ => SqlOperator.EQ
             };
         }

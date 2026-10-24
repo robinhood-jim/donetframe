@@ -17,7 +17,7 @@ namespace Frameset.Core.Db
         [Obsolete]
         public static DbConnection GetConnection(string connectStr, String dbType)
         {
-            DbConnection connection = null;
+            DbConnection? connection = null;
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
 
             switch (dbTypes)
@@ -38,13 +38,14 @@ namespace Frameset.Core.Db
                     connection = new DB2Connection(connectStr);
                     break;
             }
+            Trace.Assert(connection != null);
             return connection;
 
         }
         [Obsolete]
         public static DbCommand GetDbCommand(DbConnection connection, String dbType, String sql)
         {
-            DbCommand command = null;
+            DbCommand? command = null;
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
@@ -70,12 +71,13 @@ namespace Frameset.Core.Db
                     break;
 
             }
+            Trace.Assert(command != null);
             return command;
         }
         [Obsolete]
         public static DbParameter WrapParameter(string dbType, int pos, object value)
         {
-            DbParameter parameter = null;
+            DbParameter? parameter = null;
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
@@ -95,13 +97,14 @@ namespace Frameset.Core.Db
                     parameter = new DB2Parameter("@" + Convert.ToString(pos), value);
                     break;
             }
+            Trace.Assert(parameter != null);
             return parameter;
 
         }
         [Obsolete]
         public static IDataAdapter WrapAdapater(string dbType)
         {
-            IDataAdapter dataAdapter = null;
+            IDataAdapter? dataAdapter = null;
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
@@ -118,12 +121,13 @@ namespace Frameset.Core.Db
                     dataAdapter = new SqlDataAdapter();
                     break;
             }
+            Trace.Assert(dataAdapter != null);
             return dataAdapter;
         }
         [Obsolete]
         public static DbParameter WrapParameter(string dbType, string column, object value)
         {
-            DbParameter parameter = null;
+            DbParameter? parameter = null;
             Constants.DbType dbTypes = Constants.DbTypeOf(dbType);
             switch (dbTypes)
             {
@@ -143,10 +147,9 @@ namespace Frameset.Core.Db
                     parameter = new DB2Parameter(column, value);
                     break;
             }
+            Trace.Assert(parameter != null);
             return parameter;
         }
-
-
 
     }
 }

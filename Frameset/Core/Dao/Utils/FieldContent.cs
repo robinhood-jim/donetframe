@@ -8,12 +8,12 @@ namespace Frameset.Core.Dao.Utils
 {
     public class FieldContent
     {
-        private string _fieldName;
-        private string _propertyName;
+        private string _fieldName = null!;
+        private string _propertyName = null!;
         public Type EntityType
         {
             get; set;
-        }
+        } = null!;
         public string FieldName
         {
             get => _fieldName;
@@ -50,23 +50,23 @@ namespace Frameset.Core.Dao.Utils
         public FieldInfo FieldInfomation
         {
             get; set;
-        }
-        public PropertyInfo PropertyInfomation
+        } = null!;
+        public PropertyInfo PropertyInfo
         {
             get; internal set;
-        }
+        } = null!;
         public MethodInfo GetMethod
         {
             get; internal set;
-        }
+        } = null!;
         public MethodInfo SetMethod
         {
             get; internal set;
-        }
+        } = null!;
         public Type ParamType
         {
             get; internal set;
-        }
+        } = null!;
         public int Precise
         {
             get; set;
@@ -94,7 +94,7 @@ namespace Frameset.Core.Dao.Utils
         public string SequenceName
         {
             get; internal set;
-        }
+        } = null!;
         public bool Exist
         {
             get; internal set;
@@ -106,7 +106,7 @@ namespace Frameset.Core.Dao.Utils
         public Type ParentEntity
         {
             get; set;
-        }
+        } = null!;
         public bool IsManyToOne
         {
             get; internal set;
@@ -122,7 +122,7 @@ namespace Frameset.Core.Dao.Utils
         public Type SubType
         {
             get; set;
-        }
+        } = null!;
         public CascadeType Cascade
         {
             get; set;
@@ -158,7 +158,7 @@ namespace Frameset.Core.Dao.Utils
         }
         public FieldBuilder Property(PropertyInfo info)
         {
-            content.PropertyInfomation = info;
+            content.PropertyInfo = info;
             return this;
         }
         public FieldBuilder FieldName(string fieldName)
@@ -247,7 +247,7 @@ namespace Frameset.Core.Dao.Utils
             content.IsManyToOne = true;
             content.ParentEntity = attribute.ParentType;
             content.RealtionColumn = attribute.ColumnName;
-            if (EntityReflectUtils.GetRelationMap().TryGetValue(attribute.ParentType, out Dictionary<Type, string> childMap))
+            if (EntityReflectUtils.GetRelationMap().TryGetValue(attribute.ParentType, out Dictionary<Type, string>? childMap))
             {
                 childMap.TryAdd(content.EntityType, attribute.ColumnName);
             }

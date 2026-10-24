@@ -20,7 +20,7 @@ namespace Frameset.Common.Data.Api
             this.define = define;
             string processFile = processPath ?? define.Path;
             char pathSeparator = pathSepearatorStr != null ? pathSepearatorStr.Value : Path.DirectorySeparatorChar;
-            FileMeta meta = define.MetaData;
+            FileMeta? meta = define.MetaData;
             if (meta == null)
             {
                 meta = FileUtil.Parse(processFile, pathSeparator);

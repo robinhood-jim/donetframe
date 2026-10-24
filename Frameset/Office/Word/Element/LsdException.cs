@@ -2,11 +2,11 @@
 {
     public class LsdException
     {
-        private string name;
-        private string qFormat;
-        private string semiHidden;
-        private string unhideWhenUsed;
-        private string uiPriority;
+        private string name = string.Empty;
+        private string qFormat = string.Empty;
+        private string semiHidden = string.Empty;
+        private string unhideWhenUsed = string.Empty;
+        private string uiPriority = string.Empty;
         private LsdException()
         {
 

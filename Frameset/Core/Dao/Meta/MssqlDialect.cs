@@ -43,7 +43,7 @@ namespace Frameset.Core.Dao.Meta
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (SqlCommand command = new SqlCommand(executeSql, (SqlConnection)connection))
             {
-                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+                return Convert.ToInt64(command.ExecuteScalar());
             }
         }
         public override long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
@@ -89,7 +89,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string GeneratePageSql(string baseSql, PageQuery query)
         {
-            if (query != null && query.PageSize > 0)
+            if (query.PageSize > 0)
             {
                 string rawSql = baseSql.Trim();
                 int pos = rawSql.ToLower().IndexOf("select");

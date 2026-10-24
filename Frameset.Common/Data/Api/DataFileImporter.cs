@@ -14,7 +14,7 @@ namespace Frameset.Common.Data.Api
         {
             string processFile = processPath ?? collectionDefine.Path;
             char pathSeparator = pathSepearatorStr != null ? pathSepearatorStr.Value : Path.DirectorySeparatorChar;
-            FileMeta meta = collectionDefine.MetaData;
+            FileMeta? meta = collectionDefine.MetaData;
             Constants.FileFormatType fileFormat = collectionDefine.FileFormat;
             if (meta == null)
             {
@@ -78,7 +78,7 @@ namespace Frameset.Common.Data.Api
         {
             string processFile = processPath ?? collectionDefine.Path;
             AbstractDataIterator<T> iterator = GetDataReader<T>(collectionDefine, processPath);
-            await foreach (var item in iterator.ReadAsync(processFile).ConfigureAwait(false))
+            await foreach (var item in iterator.ReadAsync(processFile))
             {
                 yield return item;
             }

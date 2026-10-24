@@ -2,9 +2,9 @@
 using Frameset.Office.Util;
 using Frameset.Office.Word.Element;
 using Frameset.Office.Word.Util;
-using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Frameset.Office.Word
@@ -12,9 +12,9 @@ namespace Frameset.Office.Word
     public sealed class Document : IDisposable
     {
         private readonly OpcPackage opcPackage;
-        private string documentPath;
-        private string fontTablePath;
-        private string stylePath;
+        private string? documentPath = null!;
+        private string? fontTablePath = null!;
+        private string? stylePath = null!;
         private readonly List<string> headerPaths = [];
         private readonly List<string> footerPaths = [];
         private readonly List<string> themePaths = [];
@@ -38,33 +38,34 @@ namespace Frameset.Office.Word
             {
                 while (reader.GoTo(() => reader.IsStartElement("Override")))
                 {
-                    string contentType = reader.GetAttribute("ContentType");
+                    string? contentType = reader.GetAttribute("ContentType");
+                    string? partName = reader.GetAttribute("PartName");
                     if (string.Equals(OpcPackage.WORD_DOCUMENT_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        documentPath = reader.GetAttribute("PartName");
+                        documentPath = partName;
                     }
                     else if (string.Equals(OpcPackage.WORD_FONTTABLE_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        fontTablePath = reader.GetAttribute("PartName");
+                        fontTablePath = partName;
                     }
                     else if (string.Equals(OpcPackage.WORD_STYLE_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        stylePath = reader.GetAttribute("PartName");
+                        stylePath = partName;
                     }
-                    else if (string.Equals(OpcPackage.WORD_HEADER_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(OpcPackage.WORD_HEADER_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(partName))
                     {
-                        headerPaths.Add(reader.GetAttribute("PartName"));
+                        headerPaths.Add(partName);
                     }
-                    else if (string.Equals(OpcPackage.WORD_FOOTER_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(OpcPackage.WORD_FOOTER_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(partName))
                     {
-                        footerPaths.Add(reader.GetAttribute("PartName"));
+                        footerPaths.Add(partName);
                     }
-                    else if (string.Equals(OpcPackage.WORD_THEME_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase))
+                    else if (string.Equals(OpcPackage.WORD_THEME_CONTENT_TYPE, contentType, StringComparison.OrdinalIgnoreCase) && !string.IsNullOrWhiteSpace(partName))
                     {
-                        themePaths.Add(reader.GetAttribute("PartName"));
+                        themePaths.Add(partName);
                     }
                 }
-                if (documentPath.IsNullOrEmpty())
+                if (!string.IsNullOrWhiteSpace(documentPath))
                 {
                     documentPath = "word/document.xml";
                 }
@@ -72,6 +73,7 @@ namespace Frameset.Office.Word
         }
         private void ExtractStyle()
         {
+            Trace.Assert(!string.IsNullOrWhiteSpace(stylePath));
             using (XMLStreamReader reader = new XMLStreamReader(opcPackage.GetEntryContent(stylePath)))
             {
                 reader.GotoElement("docDefaults");
@@ -230,6 +232,7 @@ namespace Frameset.Office.Word
         }
         public BodyElementEnumerator GetEnumerator()
         {
+            Trace.Assert(!string.IsNullOrWhiteSpace(documentPath));
             Stream inStream = opcPackage.GetEntryContent(documentPath);
             return new BodyElementEnumerator(this, inStream);
         }

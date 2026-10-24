@@ -23,22 +23,23 @@ namespace Frameset.Core.Repo
             int currentParamCount = 0;
             foreach (var item in query.Parameters)
             {
-                if (fieldMap.TryGetValue(item.Key, out FieldContent fieldContent) && fieldContent != null && item.Value != null)
+                if (fieldMap.TryGetValue(item.Key, out FieldContent? fieldContent) && fieldContent != null && item.Value != null)
                 {
+                    string? str = item.Value.ToString();
                     Constants.SqlOperator oper = Constants.SqlOperator.EQ;
 
                     List<object> values = [];
-                    if (item.Value == null && string.IsNullOrWhiteSpace(item.Value.ToString()))
+                    if (string.IsNullOrWhiteSpace(str))
                     {
                         continue;
                     }
-                    if (item.Value.ToString().Contains('%'))
+                    if (str.Contains('%'))
                     {
-                        if (item.Value.ToString().StartsWith('%'))
+                        if (str.StartsWith('%'))
                         {
                             oper = Constants.SqlOperator.LLIKE;
                         }
-                        else if (item.Value.ToString().EndsWith('%'))
+                        else if (str.EndsWith('%'))
                         {
                             oper = Constants.SqlOperator.RLIKE;
                         }
@@ -46,17 +47,17 @@ namespace Frameset.Core.Repo
                         {
                             oper = Constants.SqlOperator.LIKE;
                         }
-                        values.Add(item.Value.ToString().Replace("%", ""));
+                        values.Add(str);
                     }
-                    else if (item.Value.ToString().Contains("|"))
+                    else if (str.Contains('|'))
                     {
-                        string[] sep = item.Value.ToString().Split('|');
+                        string[] sep = str.Split('|');
                         oper = Constants.Parse(sep[0]);
                         values.Add(sep[1]);
                     }
                     else
                     {
-                        values.Add(item.Value.ToString());
+                        values.Add(str);
                     }
                     List<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fieldContent, builder, currentParamCount, out int addCount, oper, values.ToArray());
                     if (!parameters.IsNullOrEmpty())
@@ -77,7 +78,7 @@ namespace Frameset.Core.Repo
             }
             else if (!query.OrderField.IsNullOrEmpty())
             {
-                fieldMap.TryGetValue(query.OrderField, out FieldContent fieldContent);
+                fieldMap.TryGetValue(query.OrderField, out FieldContent? fieldContent);
                 if (fieldContent == null)
                 {
                     throw new OperationFailedException("orderField " + query.OrderField + " not in table!");
@@ -86,12 +87,12 @@ namespace Frameset.Core.Repo
             }
         }
         public static void ExecuteMapperBefore(IAdoDao dao, AbstractSegment segment, string nameSpace, object input, out StringBuilder builder,
-            out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam> methodMap)
+            out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam>? methodMap)
         {
             paramMap = new Dictionary<string, object>();
             CompositeSegment csegment = (CompositeSegment)segment;
             string rsMap = csegment.Parametertype;
-            Type retType;
+            Type? retType;
             if (!csegment.Parametertype.IsNullOrEmpty())
             {
                 ConvertUtil.ToDict(input, paramMap);
@@ -101,8 +102,8 @@ namespace Frameset.Core.Repo
                 paramMap = (Dictionary<string, object>)input;
             }
 
-            ResultMap map = SqlMapperConfigure.GetResultMap(nameSpace, rsMap);
-            retType = map != null ? map.ModelType : Type.GetType(rsMap);
+            ResultMap? map = SqlMapperConfigure.GetResultMap(nameSpace, rsMap);
+            retType = map != null ? map.ModelType : null;
 
             methodMap = null;
             retMap = false;
@@ -114,6 +115,7 @@ namespace Frameset.Core.Repo
             }
             else
             {
+                Trace.Assert(retType != null);
                 methodMap = AnnotationUtils.ReflectObject(retType);
             }
 
@@ -156,6 +158,10 @@ namespace Frameset.Core.Repo
                 transaction.Rollback();
                 throw new BaseSqlException(ex.Message);
             }
+            finally
+            {
+                transaction.Dispose();
+            }
         }
         public static int ExecuteInTransaction(IAdoDao dao, string sql, Func<DbCommand, int> func)
         {
@@ -176,13 +182,17 @@ namespace Frameset.Core.Repo
                     transaction.Rollback();
                     throw new BaseSqlException(ex.Message);
                 }
+                finally
+                {
+                    transaction.Dispose();
+                }
             }
         }
-        public static Tuple<StringBuilder, List<DbParameter>> QueryModelByFieldBefore(Type entityType, IAdoDao dao, IList<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null)
+        public static Tuple<StringBuilder, List<DbParameter>> QueryModelByFieldBefore(Type entityType, IAdoDao dao, List<FieldContent> fields, string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null)
         {
             List<FieldContent> contents = fields.Where(x =>
                 string.Equals(x.PropertyName, propertyName, StringComparison.OrdinalIgnoreCase)).ToList();
-            FieldContent fielContent = contents.Count > 0 ? contents[0] : null;
+            FieldContent? fielContent = contents.Count > 0 ? contents[0] : null;
             if (fielContent == null)
             {
                 List<FieldContent> contents1 = fields.Where(x =>
@@ -201,15 +211,18 @@ namespace Frameset.Core.Repo
             List<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
             //add logicColumn in query
-            if (logicColumn != null)
+            if (!propertyName.Equals(logicColumn.FieldName))
             {
-                builder.Append(" and ").Append(logicColumn.FieldName).Append("=@").Append(parameters.Count);
-                parameters.Add(dao.GetDialect().WrapParameter(parameters.Count, logicColumn.ValidValue));
-            }
+                if (logicColumn != null)
+                {
+                    builder.Append(" and ").Append(logicColumn.FieldName).Append("=@").Append(parameters.Count);
+                    parameters.Add(dao.GetDialect().WrapParameter(parameters.Count, logicColumn.ValidValue));
+                }
 
-            if (!orderByStr.IsNullOrEmpty())
-            {
-                builder.Append(" order by ").Append(orderByStr);
+                if (!orderByStr.IsNullOrEmpty())
+                {
+                    builder.Append(" order by ").Append(orderByStr);
+                }
             }
             return Tuple.Create(builder, parameters);
         }

@@ -14,7 +14,7 @@ namespace Frameset.Core.Utils
         private static Dictionary<char, int> operSymbolDict = [];
         private static char LEFTCHAR = '(';
         private static char RIGHTCHAR = ')';
-        private static ThreadLocal<Queue<string>> calculateQueue;
+        private static ThreadLocal<Queue<string>> calculateQueue = null!;
         static ReversePolishNotationUtils()
         {
             operSymbolDict.TryAdd(')', 0);
@@ -96,18 +96,19 @@ namespace Frameset.Core.Utils
             {
                 return null;
             }
-            if (calculateQueue == null || calculateQueue.IsValueCreated)
+            if (calculateQueue == null || !calculateQueue.IsValueCreated)
             {
                 calculateQueue = new ThreadLocal<Queue<string>>(() => []);
 
             }
-            calculateQueue.Value.Clear();
+            Trace.Assert(calculateQueue != null);
+            calculateQueue.Value?.Clear();
             string value;
             while (queue.Count > 0 && (value = queue.Dequeue()) != null)
             {
-                calculateQueue.Value.Enqueue(value);
+                calculateQueue.Value?.Enqueue(value);
             }
-            string element = calculateQueue.Value.Dequeue();
+            string? element = calculateQueue.Value?.Dequeue();
             Stack<double> stack = [];
             try
             {
@@ -115,7 +116,7 @@ namespace Frameset.Core.Utils
                 {
                     if (!operSymbolDict.TryGetValue(element[0], out _))
                     {
-                        if (valueDict.TryGetValue(element, out object selVal))
+                        if (valueDict.TryGetValue(element, out object? selVal))
                         {
                             stack.Push(Convert.ToDouble(selVal));
                         }
@@ -156,7 +157,7 @@ namespace Frameset.Core.Utils
                         stack.Push(result);
                     }
 
-                    if (calculateQueue.Value.Count > 0)
+                    if (calculateQueue.Value?.Count > 0)
                     {
                         element = calculateQueue.Value.Dequeue();
                     }
@@ -203,14 +204,15 @@ namespace Frameset.Core.Utils
                 }
             }
         }
-        private static bool IsNumber(string input) {
+        private static bool IsNumber(string input)
+        {
             bool canParse = true;
-            if(!long.TryParse(input,out _) || !int.TryParse(input, out _) || double.TryParse(input,out _))
+            if (!long.TryParse(input, out _) || !int.TryParse(input, out _) || double.TryParse(input, out _))
             {
                 canParse = false;
             }
             return canParse;
         }
     }
-    
+
 }

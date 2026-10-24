@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Dao.Meta;
+using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
@@ -16,22 +17,22 @@ namespace Frameset.Core.Dao.Utils
     public class EnumerableDataReader<T> : IDataReader
     {
         private List<DataSetColumnMeta> columnMetas = [];
-        private DataTable dataTable;
-        private IList<FieldContent> fields;
-        private IEnumerator<T> records;
+        private DataTable dataTable = null!;
+        private IList<FieldContent> fields = null!;
+        private IEnumerator<T>? records;
         private Type modelType;
         private bool usingMap = false;
 
         private Dictionary<string, MethodParam> methodMap = [];
-        private T current;
+        private T? current = default!;
         private bool active = true;
         protected ISqlDialect sqlDialect;
         protected DbConnection connection;
         protected IAdoDao dao;
-        protected EntityContent entityContent;
+        protected EntityContent entityContent = null!;
         protected string[] memberNames = [];
-        private string schema;
-        private string tableName;
+        private string? schema = null!;
+        private string tableName = null!;
         private Dictionary<string, string> mappingField = [];
 
         public EnumerableDataReader(IAdoDao dao, DbConnection connection, EntityContent entityContent, IList<FieldContent> fieldContents, IEnumerable<T> enums)
@@ -55,7 +56,7 @@ namespace Frameset.Core.Dao.Utils
                 meta.Primary = x.IfPrimary;
                 return meta;
             }));
-            schema = entityContent.Schema.IsNullOrEmpty() ? dao.GetCurrentSchema() : entityContent.Schema;
+            schema = entityContent.Schema != null && !string.IsNullOrWhiteSpace(entityContent.Schema) ? dao.GetCurrentSchema() : entityContent.Schema;
             memberNames = columnMetas.Select(x => x.ColumnCode).ToArray();
             mappingField = fields.ToDictionary(x => x.FieldName, x => x.PropertyName);
             tableName = entityContent.TableName;
@@ -86,7 +87,7 @@ namespace Frameset.Core.Dao.Utils
 
         public int Depth => 0;
 
-        public bool IsClosed => current.Equals(default(T));
+        public bool IsClosed => current == null || current.Equals(default(T));
 
         public int RecordsAffected => 0;
 
@@ -100,7 +101,7 @@ namespace Frameset.Core.Dao.Utils
         {
             active = false;
             current = default;
-            IDisposable disposable = records as IDisposable;
+            IDisposable? disposable = records as IDisposable;
             records = null;
             disposable?.Dispose();
         }
@@ -120,7 +121,7 @@ namespace Frameset.Core.Dao.Utils
             return (byte)this[i];
         }
 
-        public long GetBytes(int i, long fieldOffset, byte[] buffer, int bufferoffset, int length)
+        public long GetBytes(int i, long fieldOffset, byte[]? buffer, int bufferoffset, int length)
         {
             byte[] array = (byte[])this[i];
             int num = array.Length - (int)fieldOffset;
@@ -130,6 +131,7 @@ namespace Frameset.Core.Dao.Utils
             }
 
             int num2 = Math.Min(length, num);
+            Trace.Assert(buffer != null);
             Buffer.BlockCopy(array, (int)fieldOffset, buffer, bufferoffset, num2);
             return num2;
         }
@@ -139,7 +141,7 @@ namespace Frameset.Core.Dao.Utils
             return (char)this[i];
         }
 
-        public long GetChars(int i, long fieldoffset, char[] buffer, int bufferoffset, int length)
+        public long GetChars(int i, long fieldoffset, char[]? buffer, int bufferoffset, int length)
         {
             string text = (string)this[i];
             int num = text.Length - (int)fieldoffset;
@@ -149,6 +151,7 @@ namespace Frameset.Core.Dao.Utils
             }
 
             int num2 = Math.Min(length, num);
+            Trace.Assert(buffer != null);
             text.CopyTo((int)fieldoffset, buffer, bufferoffset, num2);
             return num2;
         }
@@ -338,12 +341,12 @@ namespace Frameset.Core.Dao.Utils
             DataSetColumnMeta meta = columnMetas[pos];
             if (usingMap)
             {
-                Dictionary<string, object> dict = current as Dictionary<string, object>;
-                if (dict.TryGetValue(meta.ColumnName, out object value))
+                Dictionary<string, object>? dict = current as Dictionary<string, object>;
+                if (dict != null && dict.TryGetValue(meta.ColumnName, out object? value))
                 {
                     return value;
                 }
-                return null;
+                throw new ConfigMissingException("");
             }
             else
             {
@@ -353,19 +356,24 @@ namespace Frameset.Core.Dao.Utils
                     {
                         return sqlDialect.QuerySequenceValue(dao, connection, meta.SequenceName);
                     }
-                    else if (methodMap.TryGetValue(meta.ColumnName, out MethodParam param))
+                    else if (methodMap.TryGetValue(meta.ColumnName, out MethodParam? param))
                     {
-                        return param.GetMethod.Invoke(current, []);
+                        object? obj = param.GetMethod?.Invoke(current, []);
+                        if (obj != null)
+                        {
+                            return obj;
+                        }
+                        throw new ConfigMissingException("object null");
                     }
                 }
-                return null;
+                throw new ConfigMissingException("");
             }
 
         }
         internal object GetByPos(int pos)
         {
             Trace.Assert(current != null, "");
-            string sourceColumn = null;
+            string? sourceColumn = null;
             if (!fields.IsNullOrEmpty())
             {
                 Trace.Assert(pos < fields.Count, "over max column size " + fields.Count);
@@ -380,7 +388,7 @@ namespace Frameset.Core.Dao.Utils
             {
                 return GetByName(sourceColumn);
             }
-            return null;
+            throw new NotSupportedException();
 
         }
         protected Type GetTypeByMeta(Constants.MetaType columnType)

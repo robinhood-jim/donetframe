@@ -52,7 +52,9 @@ namespace Frameset.Core.Repo
                 case Constants.SqlOperator.IN:
                     whereBuilder.Append(content.FieldName).Append(GetOperator(oper)).Append("(");
                     parameterSize = values.Length;
-                    List<object> inValues = values[0].ToString().Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.ParamType, input)).ToList();
+                    string? str = values[0].ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(str));
+                    List<object> inValues = str.Split(',').AsEnumerable<string>().Select(input => ConvertUtil.ParseByType(content.ParamType, input)).ToList();
                     inValues.ForEach(o =>
                     {
                         paramStartPos++;
@@ -69,7 +71,7 @@ namespace Frameset.Core.Repo
         }
         public static string GetOperator(Constants.SqlOperator oper)
         {
-            string retOper = null;
+            string? retOper = null;
             switch (oper)
             {
                 case Constants.SqlOperator.EQ:
@@ -104,7 +106,9 @@ namespace Frameset.Core.Repo
                 case Constants.SqlOperator.NOTIN:
                     retOper = " NOT IN ";
                     break;
-
+                default:
+                    retOper = "=";
+                    break;
             }
             return retOper;
 

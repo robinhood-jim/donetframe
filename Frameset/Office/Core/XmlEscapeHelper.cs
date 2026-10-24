@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Diagnostics;
 using System.Linq;
 using System.Text;
 
@@ -53,8 +54,9 @@ namespace Frameset.Office.Core
                 default:
                     if (c > 0x7e || c < 0x20)
                     {
-
-                        return "&#x".Concat(Convert.ToHexString(BitConverter.GetBytes(c))).Concat(";").ToString();
+                        string? str = "&#x".Concat(Convert.ToHexString(BitConverter.GetBytes(c))).Concat(";").ToString();
+                        Trace.Assert(!string.IsNullOrWhiteSpace(str));
+                        return str;
                     }
                     else
                     {

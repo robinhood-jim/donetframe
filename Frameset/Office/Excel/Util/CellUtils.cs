@@ -46,7 +46,7 @@ namespace Frameset.Office.Excel.Util
         public static string ReturnFormulaWithPos(Dictionary<string, List<CellFormula>> parseFormualMap, string formulaStr, int linePos)
         {
             StringBuilder builder = new StringBuilder();
-            if (!parseFormualMap.TryGetValue(formulaStr, out List<CellFormula> formulas))
+            if (!parseFormualMap.TryGetValue(formulaStr, out List<CellFormula>? formulas))
             {
                 MatchCollection matcher = Regex.Matches(formulaStr, pattern);
                 int currentPos = 0;
@@ -115,7 +115,7 @@ namespace Frameset.Office.Excel.Util
         public string Column
         {
             get; set;
-        }
+        } = string.Empty;
         public int Offset
         {
             get; set;
@@ -123,7 +123,7 @@ namespace Frameset.Office.Excel.Util
         public string OtherContent
         {
             get; set;
-        }
+        } = string.Empty;
         public CellFormula()
         {
 

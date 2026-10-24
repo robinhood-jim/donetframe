@@ -13,8 +13,8 @@ namespace Frameset.Core.Scripts
             .ReferenceDomainAssemblies()
             .ReferenceAssemblyOf<T>();
             Type type = typeof(T);
-            string packageName = string.Empty;
-            string className = string.Empty;
+            string? packageName = string.Empty;
+            string? className = string.Empty;
             bool useMap = false;
             if (type.Equals(typeof(Dictionary<string, object>)))
             {
@@ -27,7 +27,7 @@ namespace Frameset.Core.Scripts
                 packageName = type.Namespace;
                 className = type.Namespace + "." + type.Name;
             }
-            MethodDelegate<object> compiledFormula = null;
+            MethodDelegate<object>? compiledFormula = null;
 
             if (useMap)
             {

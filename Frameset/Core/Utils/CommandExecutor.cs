@@ -76,8 +76,8 @@ namespace Frameset.Core.Utils
             {
                 while (!reader.EndOfStream)
                 {
-                    string readLine = reader.ReadLine();
-                    if (readLine.Contains(specifyKey))
+                    string? readLine = reader.ReadLine();
+                    if (!string.IsNullOrWhiteSpace(readLine) && readLine.Contains(specifyKey))
                     {
                         if (builder.Length > 0)
                         {
@@ -105,7 +105,7 @@ namespace Frameset.Core.Utils
             {
                 while (!reader.EndOfStream)
                 {
-                    string readLine = reader.ReadLine();
+                    string? readLine = reader.ReadLine();
                     if (!string.IsNullOrWhiteSpace(readLine))
                     {
                         pos++;

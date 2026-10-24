@@ -62,19 +62,19 @@ namespace Frameset.Core.Context
         public BaseEntity Entity
         {
             get; set;
-        }
+        } = null!;
         public BaseEntity OriginEntity
         {
             get; set;
-        }
+        } = null!;
         public List<object> PkList
         {
             get; set;
-        }
+        } = null!;
         public string LogicColumn
         {
             get; set;
-        }
+        } = string.Empty;
         public int UpdateStatus
         {
             get; set;

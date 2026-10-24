@@ -2,6 +2,8 @@
 using Frameset.Core.Exceptions;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Model;
+using Frameset.Core.Reflect;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 
 using System;
@@ -19,7 +21,7 @@ namespace Frameset.Core.Common
         private static readonly string[] DEFAULTFORMATTER = { "yyyy-MM-dd", "yyyy-MM-dd HH:mm:ss", "MM-dd-yy" };
         public static object ParseByType(Type targetType, object input)
         {
-            object retVal = null;
+            object? retVal = null;
             Trace.Assert(input != null, "must not be null!");
 
             if (targetType.Equals(input.GetType()))
@@ -42,22 +44,22 @@ namespace Frameset.Core.Common
                     switch (Type.GetTypeCode(targetType))
                     {
                         case TypeCode.Int32:
-                            retVal = Int32.Parse(input.ToString());
+                            retVal = Convert.ToInt32(input);
                             break;
                         case TypeCode.Int16:
-                            retVal = Int16.Parse(input.ToString());
+                            retVal = Convert.ToInt16(input);
                             break;
                         case TypeCode.Int64:
-                            retVal = long.Parse(input.ToString());
+                            retVal = Convert.ToInt64(input);
                             break;
                         case TypeCode.Single:
-                            retVal = Convert.ToSingle(input.ToString());
+                            retVal = Convert.ToSingle(input);
                             break;
                         case TypeCode.Double:
-                            retVal = double.Parse(input.ToString());
+                            retVal = Convert.ToDouble(input);
                             break;
                         case TypeCode.Decimal:
-                            retVal = double.Parse(input.ToString());
+                            retVal = Convert.ToDouble(input);
                             break;
                         case TypeCode.DateTime:
                             DateTime? time = ParseDateTime(input);
@@ -74,7 +76,9 @@ namespace Frameset.Core.Common
                         default:
                             if (targetType.Equals(typeof(byte[])))
                             {
-                                retVal = Encoding.UTF8.GetBytes(input.ToString());
+                                string? str = input.ToString();
+                                Trace.Assert(!string.IsNullOrWhiteSpace(str), "");
+                                retVal = Encoding.UTF8.GetBytes(str);
                             }
                             else if (targetType.Equals(typeof(DateTimeOffset)))
                             {
@@ -100,10 +104,11 @@ namespace Frameset.Core.Common
                     }
                 }
             }
+            Trace.Assert(retVal != null, "");
             return retVal;
 
         }
-        public static DateTime? ParseDateTime(object dateStr, string formatter = null)
+        public static DateTime? ParseDateTime(object dateStr, string? formatter = null)
         {
             DateTime? retTime = null;
             if (dateStr.GetType().Equals(typeof(DateTime)))
@@ -129,7 +134,9 @@ namespace Frameset.Core.Common
                 }
                 foreach (string pattern in DEFAULTFORMATTER)
                 {
-                    Tuple<bool, DateTime> parseTuple = GuessTimeFormat(dateStr.ToString(), pattern);
+                    string? dateStr1 = dateStr.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(dateStr1));
+                    Tuple<bool, DateTime> parseTuple = GuessTimeFormat(dateStr1, pattern);
                     if (parseTuple.Item1)
                     {
                         retTime = parseTuple.Item2;
@@ -150,7 +157,7 @@ namespace Frameset.Core.Common
             {
                 return ((DateTimeOffset)dateTime).ToString(formatter);
             }
-            return null;
+            throw new NotSupportedException("type mistmatch");
         }
         public static Tuple<bool, DateTime> GuessTimeFormat(string dateStr, string pattern)
         {
@@ -167,7 +174,8 @@ namespace Frameset.Core.Common
                 List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
                 foreach (FieldContent fieldContent in fieldContents)
                 {
-                    object value = fieldContent.GetMethod.Invoke(obj, null);
+                    object? value = fieldContent.GetMethod.Invoke(obj, null);
+                    Trace.Assert(value != null, "");
                     dict.TryAdd(fieldContent.PropertyName, value);
                 }
             }
@@ -177,10 +185,46 @@ namespace Frameset.Core.Common
                 foreach (PropertyInfo prop in propertyInfos)
                 {
                     string name = prop.Name;
-                    MethodInfo info = prop.GetMethod;
-                    object value = info.Invoke(obj, null);
+                    MethodInfo? info = prop.GetMethod;
+                    object? value = info?.Invoke(obj, null);
+                    Trace.Assert(value != null, "");
                     dict.TryAdd(name, value);
                 }
+            }
+        }
+        public static void FromInput<T>(object input, out T retObj)
+        {
+            Type targetType = typeof(T);
+            retObj = Activator.CreateInstance<T>();
+            Dictionary<string, MethodParam> paramMap = AnnotationUtils.ReflectObject(targetType);
+            if (input.GetType().IsTypeDictionary())
+            {
+                Dictionary<string, object>? inputDict = input as Dictionary<string, object>;
+                Trace.Assert(inputDict != null, "");
+                foreach (var item in inputDict)
+                {
+                    string key = StringUtils.Capitalize(item.Key);
+                    if (paramMap.TryGetValue(key, out MethodParam? param) && item.Value != null)
+                    {
+                        param.PropertyInfo.SetValue(retObj, ConvertUtil.ParseByType(param.ParamType, item.Value));
+                    }
+                }
+            }
+            else
+            {
+                Dictionary<string, MethodParam> sourceMethodMap = AnnotationUtils.ReflectObject(input.GetType());
+                foreach (var entry in sourceMethodMap)
+                {
+                    if (entry.Value != null && paramMap.TryGetValue(entry.Key, out MethodParam? param))
+                    {
+                        object? invokeObj = entry.Value.GetMethod.Invoke(input, null);
+                        if (invokeObj != null)
+                        {
+                            param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, invokeObj) });
+                        }
+                    }
+                }
+
             }
         }
         public static void ToDictRef(object obj, out Dictionary<string, object> dict)
@@ -191,8 +235,11 @@ namespace Frameset.Core.Common
                 List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
                 foreach (FieldContent fieldContent in fieldContents)
                 {
-                    object value = fieldContent.GetMethod.Invoke(obj, null);
-                    dict.TryAdd(fieldContent.PropertyName, value);
+                    object? value = fieldContent.GetMethod.Invoke(obj, null);
+                    if (value != null)
+                    {
+                        dict.TryAdd(fieldContent.PropertyName, value);
+                    }
                 }
             }
             else
@@ -201,8 +248,9 @@ namespace Frameset.Core.Common
                 foreach (PropertyInfo prop in propertyInfos)
                 {
                     string name = prop.Name;
-                    MethodInfo info = prop.GetMethod;
-                    object value = info.Invoke(obj, null);
+                    MethodInfo? info = prop.GetMethod;
+                    object? value = info?.Invoke(obj, null);
+                    Trace.Assert(value != null, "");
                     dict.TryAdd(name, value);
                 }
             }
@@ -213,7 +261,7 @@ namespace Frameset.Core.Common
             List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(origin.GetType());
             foreach (FieldContent fieldContent in fieldContents)
             {
-                object value = fieldContent.GetMethod.Invoke(update, null);
+                object? value = fieldContent.GetMethod.Invoke(update, null);
                 if (value != null || update.GetDirties().Contains(fieldContent.PropertyName))
                 {
                     fieldContent.SetMethod.Invoke(origin, [value]);
@@ -221,17 +269,17 @@ namespace Frameset.Core.Common
             }
 
         }
-        public static object GetListsByType<V>(Type genericType, Type listType, List<V> input)
+        public static object? GetListsByType<V>(Type genericType, Type listType, List<V> input)
         {
             Trace.Assert(genericType.IsGenericType, "");
             Type constructType = genericType.MakeGenericType(listType);
-            object obj = Activator.CreateInstance(constructType);
-            MethodInfo info = constructType.GetMethod("Add");
+            object? obj = Activator.CreateInstance(constructType);
+            MethodInfo? info = constructType.GetMethod("Add");
             if (!input.IsNullOrEmpty())
             {
                 foreach (V entity in input)
                 {
-                    info.Invoke(obj, [entity]);
+                    info?.Invoke(obj, [entity]);
                 }
             }
             return obj;
@@ -239,25 +287,25 @@ namespace Frameset.Core.Common
         }
         public static object ConvertStringToTargetObject(object value, DataSetColumnMeta meta, string dateTimeFormatter = "yyyy-MM-dd HH:mm:ss")
         {
-            object retObj;
-
-            retObj = TranslateValue(value, meta.ColumnType, meta.ColumnCode, dateTimeFormatter);
+            object? retObj = TranslateValue(value, meta.ColumnType, meta.ColumnCode, dateTimeFormatter);
             if (retObj == null && meta.DefaultValue != null)
             {
                 retObj = meta.DefaultValue;
             }
+            Trace.Assert(retObj != null, "");
             return retObj;
         }
-        private static object TranslateValue(object valueObj, Constants.MetaType columnType, string columnName, string dateTimeFormatter)
+        private static object? TranslateValue(object valueObj, Constants.MetaType columnType, string columnName, string dateTimeFormatter)
         {
-            object retObj;
+            object? retObj;
             try
             {
                 if (valueObj == null)
                 {
                     return null;
                 }
-                string value = valueObj.ToString();
+                string? value = valueObj.ToString();
+                Trace.Assert(!string.IsNullOrWhiteSpace(value), "");
                 if (columnType.Equals(Constants.MetaType.INTEGER))
                 {
                     if (value.Contains('.'))

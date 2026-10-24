@@ -24,7 +24,7 @@ namespace Frameset.Core.Dao.Meta
 
         public override string GeneratePageSql(string baseSql, PageQuery query)
         {
-            if (query != null && query.PageSize != 0)
+            if (query.PageSize != 0)
             {
                 Tuple<long, long> startEnd = GetStartEndRecord(query);
                 StringBuilder builder = new StringBuilder(baseSql.Trim());

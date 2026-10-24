@@ -34,7 +34,7 @@ namespace Frameset.Core.Dao.Meta
             string executeSql = GetSqlCurrentSequenceValue(sequenceName);
             using (DB2Command command = new DB2Command(executeSql, (DB2Connection)connection))
             {
-                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+                return Convert.ToInt64(command.ExecuteScalar());
             }
         }
         internal DB2Dialect()
@@ -99,7 +99,7 @@ namespace Frameset.Core.Dao.Meta
         }
         public override string GeneratePageSql(string baseSql, PageQuery query)
         {
-            if (query != null && query.PageSize > 0)
+            if (query.PageSize > 0)
             {
                 Tuple<long, long> startEnds = GetStartEndRecord(query);
                 StringBuilder pagingSelect = GetPageSqlByRowNumber(baseSql, query);

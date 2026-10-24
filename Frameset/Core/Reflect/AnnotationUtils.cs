@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Frameset.Core.Reflect
@@ -11,17 +12,18 @@ namespace Frameset.Core.Reflect
         public static Dictionary<string, MethodParam> ReflectObject(Type targetObj)
         {
             PropertyInfo[] propertyInfos = targetObj.GetProperties();
-            if (!reflectMap.TryGetValue(targetObj.GetType(), out Dictionary<string, MethodParam> dict))
+            if (!reflectMap.TryGetValue(targetObj.GetType(), out Dictionary<string, MethodParam>? dict))
             {
                 dict = new();
                 foreach (PropertyInfo prop in propertyInfos)
                 {
                     string name = prop.Name;
+                    Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
                     MethodParam param = new()
                     {
-                        GetMethod = prop.GetGetMethod(),
-                        SetMethod = prop.GetSetMethod(),
-                        ParamType = prop.GetGetMethod().ReturnType,
+                        GetMethod = prop.GetMethod,
+                        SetMethod = prop.SetMethod,
+                        ParamType = prop.GetMethod.ReturnType,
                         PropertyInfo = prop
                     };
                     dict.TryAdd(name, param);
@@ -47,19 +49,19 @@ namespace Frameset.Core.Reflect
         public MethodInfo GetMethod
         {
             get; internal set;
-        }
+        } = null!;
         public MethodInfo SetMethod
         {
             get; internal set;
-        }
+        } = null!;
         public Type ParamType
         {
             get; internal set;
-        }
+        } = null!;
         public PropertyInfo PropertyInfo
         {
             get; internal set;
-        }
+        } = null!;
 
     }
 }

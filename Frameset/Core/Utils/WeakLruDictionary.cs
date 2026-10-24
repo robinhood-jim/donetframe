@@ -1,8 +1,10 @@
-﻿using Serilog;
+﻿using Frameset.Core.Exceptions;
+using Serilog;
 using System;
 using System.Collections;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.Linq;
 using System.Threading;
 
@@ -12,7 +14,7 @@ namespace Frameset.Core.Utils;
 /// </summary>
 /// <typeparam name="TKey"></typeparam>
 /// <typeparam name="TValue"></typeparam>
-public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDisposable where TValue : class
+public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDisposable where TValue : class where TKey : notnull
 {
     private readonly ConcurrentDictionary<TKey, WeakReference<TValue>> lruDict = [];
     private readonly ConcurrentDictionary<TKey, LinkedListNode<TKey>> nodeDict = [];
@@ -49,14 +51,12 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
             {
                 return value;
             }
-            else
-            {
-                return null;
-            }
+            throw new ConfigMissingException("key not found!");
         }
         set
         {
             CheckDisposed();
+            Trace.Assert(value != null, "");
             Add(key, value);
         }
     }
@@ -72,9 +72,9 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
     public void Add(TKey key, TValue value)
     {
         CheckDisposed();
-        if (nodeDict.TryGetValue(key, out LinkedListNode<TKey> listNode) && this.lruDict.TryGetValue(key, out WeakReference<TValue> refrence))
+        if (nodeDict.TryGetValue(key, out LinkedListNode<TKey>? listNode) && this.lruDict.TryGetValue(key, out WeakReference<TValue>? refrence))
         {
-            if (refrence.TryGetTarget(out TValue node))
+            if (refrence.TryGetTarget(out TValue? node))
             {
                 node = null!;
                 lruDict.TryRemove(key, out _);
@@ -171,7 +171,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         {
             if (lockTaken) _lruSpinLock.Exit();
         }
-        if (lruDict.TryRemove(key, out WeakReference<TValue> reference) && reference.TryGetTarget(out TValue node))
+        if (lruDict.TryRemove(key, out WeakReference<TValue>? reference) && reference.TryGetTarget(out TValue? node))
         {
             node = null!;
             return true;
@@ -187,13 +187,14 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
 
     public bool TryGetValue(TKey key, out TValue value)
     {
-        if (lruDict.TryGetValue(key, out var valueReference) && valueReference.TryGetTarget(out value))
+        if (lruDict.TryGetValue(key, out var valueReference) && valueReference.TryGetTarget(out TValue? value1))
         {
             bool lockTaken = false;
+            value = value1;
             try
             {
                 _lruSpinLock.Enter(ref lockTaken);
-                if (nodeDict.TryGetValue(key, out LinkedListNode<TKey> linkNode))
+                if (nodeDict.TryGetValue(key, out LinkedListNode<TKey>? linkNode))
                 {
                     _lruList.Remove(linkNode);
                     _lruList.AddLast(linkNode);
@@ -208,7 +209,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
             }
             return true;
         }
-        value = default;
+        value = default!;
         return false;
     }
 
@@ -269,7 +270,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
                 // 1. 从强引用链表和字典中移除
                 _lruList.RemoveFirst();
 
-                if (lruDict.TryRemove(evictedKey, out WeakReference<TValue> reference) && reference.TryGetTarget(out TValue removeNode))
+                if (lruDict.TryRemove(evictedKey, out WeakReference<TValue>? reference) && reference.TryGetTarget(out TValue? removeNode))
                 {
                     removeNode = null!;
                 }
@@ -277,29 +278,5 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
             }
         }
     }
-    internal class LRUNode
-    {
-        public TKey Key
-        {
-            get;
-            internal set;
-        }
-        public TValue Value
-        {
-            get;
-            internal set;
-        }
-        private LRUNode()
-        {
 
-        }
-
-        public LRUNode(TKey key, TValue value)
-        {
-            Key = key;
-            Value = value;
-        }
-
-
-    }
 }

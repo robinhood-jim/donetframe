@@ -7,7 +7,7 @@ namespace Frameset.Core.Query.Dto
         public long Page { get; set; }
         public long Limit { get; set; }
         public long Count { get; set; }
-        public string OrderField { get; set; }
+        public string OrderField { get; set; } = null!;
         public long Total { get; set; }
         public List<V> Results { get; set; } = new List<V>();
         public PageDTO(long total, long limit)

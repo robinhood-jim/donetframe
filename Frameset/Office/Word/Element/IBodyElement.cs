@@ -5,7 +5,7 @@ namespace Frameset.Office.Word.Element
     public interface IBodyElement
     {
         WordEnumType.BodyType GetBodyType();
-        RelationShip GetRelation();
+        RelationShip? GetRelation();
         WordEnumType.BodyElementType GetType();
     }
 }

@@ -11,11 +11,11 @@ namespace Frameset.Core.Annotation
         public List<string> Roles
         {
             get; set;
-        }
+        } = [];
         public List<string> PermissionKeys
         {
             get; set;
-        }
+        } = [];
         public PreAuthorizationAttribute(string roles)
         {
             Roles = roles.Split(',').ToList();

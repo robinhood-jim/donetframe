@@ -24,12 +24,10 @@ namespace Frameset.Core.Dao.Utils
         public static EntityContent GetEntityInfo(Type entityType)
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
-            EntityContent content;
 
-
-            if (!entityContentMap.TryGetValue(entityType, out content))
+            if (!entityContentMap.TryGetValue(entityType, out EntityContent? content))
             {
-                MappingEntityAttribute entity = (MappingEntityAttribute)entityType.GetCustomAttribute(typeof(MappingEntityAttribute));
+                MappingEntityAttribute? entity = entityType.GetCustomAttribute(typeof(MappingEntityAttribute)) as MappingEntityAttribute;
                 if (entity != null)
                 {
                     string tableName = entity.TableName;
@@ -40,7 +38,7 @@ namespace Frameset.Core.Dao.Utils
                 }
                 else
                 {
-                    TableAttribute attribute = (TableAttribute)entityType.GetCustomAttribute(typeof(TableAttribute));
+                    TableAttribute? attribute = entityType.GetCustomAttribute(typeof(TableAttribute)) as TableAttribute;
                     if (attribute != null)
                     {
                         content = new(entityType, attribute.Name, attribute.Schema, null);
@@ -52,6 +50,7 @@ namespace Frameset.Core.Dao.Utils
                     entityContentMap.Add(entityType, content);
                 }
             }
+            Trace.Assert(content != null);
             return content;
         }
         /**
@@ -60,9 +59,9 @@ namespace Frameset.Core.Dao.Utils
         public static List<FieldContent> GetFieldsContent(Type entityType)
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
-            List<FieldContent> fields;
+
             EntityContent entityContent = GetEntityInfo(entityType);
-            if (!fieldsListMap.TryGetValue(entityType, out fields))
+            if (!fieldsListMap.TryGetValue(entityType, out List<FieldContent>? fields))
             {
                 fields = [];
                 PropertyInfo[] propertyInfos = entityType.GetProperties();
@@ -80,7 +79,8 @@ namespace Frameset.Core.Dao.Utils
                         {
                             if (attributes[i].GetType().Equals(typeof(MappingFieldAttribute)))
                             {
-                                MappingFieldAttribute mappingField = attributes[i] as MappingFieldAttribute;
+                                MappingFieldAttribute? mappingField = attributes[i] as MappingFieldAttribute;
+                                Trace.Assert(mappingField != null);
                                 if (mappingField.Exist)
                                 {
                                     if (!Constants.MetaType.NONE.Equals(mappingField.DataType))
@@ -100,20 +100,24 @@ namespace Frameset.Core.Dao.Utils
                                     {
                                         builder.Increment(true);
                                     }
+                                    Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
                                     builder.Required(mappingField.IfRequired).DataType(dataType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                                 }
                             }
                             else if (attributes[i].GetType().Equals(typeof(ColumnAttribute)))
                             {
-                                ColumnAttribute a = attributes[i] as ColumnAttribute;
+                                ColumnAttribute? a = attributes[i] as ColumnAttribute;
+                                Trace.Assert(a != null);
                                 fieldName = !string.IsNullOrWhiteSpace(a.Name) ? a.Name : Core.Utils.StringUtils.CamelCaseLowConvert(propName);
+                                Trace.Assert(prop.DeclaringType != null && prop.GetMethod != null && prop.SetMethod != null);
                                 builder.PropertyName(propName).FieldName(fieldName).DataType(AdjustType(prop.DeclaringType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
 
                             }
                             else if (attributes[i].GetType().Equals(typeof(DatabaseGeneratedAttribute)))
                             {
-                                DatabaseGeneratedAttribute a = attributes[i] as DatabaseGeneratedAttribute;
+                                DatabaseGeneratedAttribute? a = attributes[i] as DatabaseGeneratedAttribute;
+                                Trace.Assert(a != null);
                                 if (a.DatabaseGeneratedOption.Equals(DatabaseGeneratedOption.Identity))
                                 {
                                     builder.Increment(true);
@@ -165,6 +169,7 @@ namespace Frameset.Core.Dao.Utils
                         }
                         else if (!entityContent.IfExplicit)
                         {
+                            Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
                             builder.PropertyName(propName).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                             fields.Add(builder.Build());
                         }
@@ -172,6 +177,7 @@ namespace Frameset.Core.Dao.Utils
                     else if (!entityContent.IfExplicit)
                     {
                         FieldBuilder builder = new(entityType);
+                        Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
                         builder.PropertyName(propName).DataType(dataType).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
                         fields.Add(builder.Build());
                     }
@@ -203,7 +209,7 @@ namespace Frameset.Core.Dao.Utils
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
             List<FieldContent> fields = GetFieldsContent(entityType);
-            if (!pkFieldMap.TryGetValue(entityType, out FieldContent content))
+            if (!pkFieldMap.TryGetValue(entityType, out FieldContent? content))
             {
                 if (!fields.IsNullOrEmpty())
                 {
@@ -214,6 +220,7 @@ namespace Frameset.Core.Dao.Utils
                     }
                 }
             }
+            Trace.Assert(content != null);
             return content;
         }
         /// <summary>
@@ -224,10 +231,10 @@ namespace Frameset.Core.Dao.Utils
         /// <returns> if not null,return LogicColumn config</returns>
         public static TableLogicColumn GetLogicColumnAndValue(IAdoDao dao, Type entityType)
         {
-            if (!logicMap.TryGetValue(entityType, out TableLogicColumn tableLogicColumn))
+            if (!logicMap.TryGetValue(entityType, out TableLogicColumn? tableLogicColumn))
             {
                 List<FieldContent> fields = GetFieldsContent(entityType);
-                FieldContent logicContent = ((List<FieldContent>)fields).Find(x => x.IfLogicColumn);
+                FieldContent? logicContent = fields.Find(x => x.IfLogicColumn);
                 if (logicContent != null)
                 {
                     tableLogicColumn = new TableLogicColumn()
@@ -251,6 +258,7 @@ namespace Frameset.Core.Dao.Utils
                     logicMap.TryAdd(entityType, tableLogicColumn);
                 }
             }
+            Trace.Assert(tableLogicColumn != null);
             return tableLogicColumn;
         }
 

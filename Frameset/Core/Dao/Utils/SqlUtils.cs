@@ -31,11 +31,11 @@ namespace Frameset.Core.Dao.Utils
             }
             builder.Append(entityContent.TableName);
             InsertSegment segment = new InsertSegment();
-            FieldContent appdenField = null;
+            FieldContent? appdendField = null;
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, vo.GetType());
             foreach (FieldContent content in fields)
             {
-                object realVal = content.GetMethod.Invoke(vo, null);
+                object? realVal = content.GetMethod.Invoke(vo, null);
                 if (realVal != null)
                 {
                     if (!content.IfIncrement && !content.IfSequence)
@@ -52,7 +52,7 @@ namespace Frameset.Core.Dao.Utils
                         valuesBuilder.Append(dao.GetDialect().GenerateSequenceFunc(content.SequenceName)).Append(",");
                         segment.Sequence = true;
                         segment.GenKeyMethod = content.SetMethod;
-                        appdenField = content;
+                        appdendField = content;
                     }
                     else if (content.IfIncrement)
                     {
@@ -79,9 +79,9 @@ namespace Frameset.Core.Dao.Utils
             {
                 builder.Append(dao.GetDialect().AppendKeyHolder());
             }
-            else if (segment.Sequence)
+            else if (segment.Sequence && appdendField != null)
             {
-                builder.Append(dao.GetDialect().AppendSequence(appdenField.SequenceName));
+                builder.Append(dao.GetDialect().AppendSequence(appdendField.SequenceName));
             }
             segment.InsertSql = builder.ToString();
             segment.Parameters = parameters;
@@ -100,7 +100,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append(entityContent.GetTableName());
             foreach (FieldContent content in fields)
             {
-                if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsPrimitive)
+                if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsFundmentalType())
                 {
                     columnsBuilder.Append(content.FieldName).Append(",");
                     valuesBuilder.Append("@" + content.FieldName).Append(",");
@@ -126,7 +126,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append(entityContent.GetTableName()).Append(" set ");
             foreach (FieldContent content in fields)
             {
-                object realVal = content.GetMethod.Invoke(update, null);
+                object? realVal = content.GetMethod.Invoke(update, null);
                 //GetDirty不为空，代表修改字段名在Dirty中，避免非空类型初始化有值导致判断失效
                 if (realVal == null)
                 {
@@ -137,7 +137,7 @@ namespace Frameset.Core.Dao.Utils
                 }
                 else
                 {
-                    object originVal = content.GetMethod.Invoke(origin, null);
+                    object? originVal = content.GetMethod.Invoke(origin, null);
                     if (!content.IfPrimary)
                     {
                         if (!realVal.Equals(originVal))
@@ -200,7 +200,7 @@ namespace Frameset.Core.Dao.Utils
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
             TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
             Dictionary<string, FieldContent> fieldMaps = EntityReflectUtils.GetFieldsMap(modelType);
-            if (!fieldMaps.TryGetValue(fieldName, out FieldContent fieldContent))
+            if (!fieldMaps.TryGetValue(fieldName, out FieldContent? fieldContent))
             {
                 throw new BaseSqlException("field " + fieldName + " not found in entity");
             }
@@ -278,7 +278,7 @@ namespace Frameset.Core.Dao.Utils
         {
             Trace.Assert(!condition.Values.IsNullOrEmpty(), "");
             StringBuilder aliasNameBuilder = new StringBuilder();
-            if (!entityAliasMap.IsNullOrEmpty() && entityAliasMap.TryGetValue(condition.TargetEntity.EntityType, out string aliasName))
+            if (!entityAliasMap.IsNullOrEmpty() && entityAliasMap.TryGetValue(condition.TargetEntity.EntityType, out string? aliasName))
             {
                 aliasNameBuilder.Append(aliasName).Append('.');
             }
@@ -392,22 +392,26 @@ namespace Frameset.Core.Dao.Utils
         public static List<object> WrapParameter(string columnName, Type columnType, Constants.SqlOperator sqlOper, object value)
         {
             List<object> retList = [];
-            switch (sqlOper)
+            string? str = value.ToString();
+            if (!string.IsNullOrWhiteSpace(str))
             {
-                case Constants.SqlOperator.IN:
-                case Constants.SqlOperator.NOTIN:
-                    string[] arr = value.ToString().Split(',');
-                    retList.AddRange(arr.ToList().Select(x => ConvertUtil.ParseByType(columnType, x)).ToList());
-                    break;
-                case Constants.SqlOperator.BT:
-                    string[] arr1 = value.ToString().Split(',');
-                    Trace.Assert(arr1.Length >= 2, "");
-                    retList.Add(ConvertUtil.ParseByType(columnType, arr1[0]));
-                    retList.Add(ConvertUtil.ParseByType(columnType, arr1[1]));
-                    break;
-                default:
-                    retList.Add(ConvertUtil.ParseByType(columnType, value.ToString()));
-                    break;
+                switch (sqlOper)
+                {
+                    case Constants.SqlOperator.IN:
+                    case Constants.SqlOperator.NOTIN:
+                        string[] arr = str.Split(',');
+                        retList.AddRange(arr.ToList().Select(x => ConvertUtil.ParseByType(columnType, x)).ToList());
+                        break;
+                    case Constants.SqlOperator.BT:
+                        string[] arr1 = str.Split(',');
+                        Trace.Assert(arr1.Length >= 2, "");
+                        retList.Add(ConvertUtil.ParseByType(columnType, arr1[0]));
+                        retList.Add(ConvertUtil.ParseByType(columnType, arr1[1]));
+                        break;
+                    default:
+                        retList.Add(ConvertUtil.ParseByType(columnType, str));
+                        break;
+                }
             }
             return retList;
         }
@@ -419,11 +423,11 @@ namespace Frameset.Core.Dao.Utils
         public string InsertSql
         {
             get; set;
-        }
+        } = null!;
         public IList<DbParameter> Parameters
         {
             get; set;
-        }
+        } = [];
         public bool Increment
         {
             get; set;
@@ -435,11 +439,11 @@ namespace Frameset.Core.Dao.Utils
         public MethodInfo GenKeyMethod
         {
             get; set;
-        }
+        } = null!;
         public IList<object> ParamObjects
         {
             get; set;
-        }
+        } = null!;
 
     }
     public class UpdateSegment
@@ -447,15 +451,15 @@ namespace Frameset.Core.Dao.Utils
         public string UpdateSql
         {
             get; set;
-        }
+        } = null!;
         public IList<DbParameter> Parameters
         {
             get; set;
-        }
+        } = null!;
         public IList<object> ParameterObjects
         {
             get; set;
-        }
+        } = [];
         public bool UpdateRequired
         {
             get; set;
@@ -466,10 +470,10 @@ namespace Frameset.Core.Dao.Utils
         public string SelectSql
         {
             get; set;
-        }
+        } = null!;
         public IList<DbParameter> Parameters
         {
             get; set;
-        }
+        } = [];
     }
 }

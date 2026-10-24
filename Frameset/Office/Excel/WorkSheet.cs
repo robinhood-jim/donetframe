@@ -23,7 +23,7 @@ namespace Frameset.Office.Excel
         public string Id
         {
             get; internal set;
-        }
+        } = null!;
         public int Index
         {
             get; internal set;
@@ -32,11 +32,11 @@ namespace Frameset.Office.Excel
         public string Name
         {
             get; internal set;
-        }
+        } = null!;
         public string SheetId
         {
             get; internal set;
-        }
+        } = null!;
         public SheetVisibility Visibility
         {
             get; internal set;
@@ -78,7 +78,7 @@ namespace Frameset.Office.Excel
         public Cell[] CurrentCells
         {
             get; internal set;
-        }
+        } = null!;
         public int CurrentRowNum
         {
             get; internal set;
@@ -90,17 +90,17 @@ namespace Frameset.Office.Excel
         public ExcelSheetProp Prop
         {
             get; internal set;
-        }
+        } = null!;
         public bool IfHidden
         {
             get; internal set;
         } = false;
-        Font defaultFont;
-        Fill defaultFill;
-        Border defaultBorder;
-        Alignment defaultAlignment;
+        Font defaultFont = null!;
+        Fill defaultFill = null!;
+        Border defaultBorder = null!;
+        Alignment defaultAlignment = null!;
 
-        internal XmlBufferWriter w;
+        internal XmlBufferWriter w = null!;
         internal Dictionary<string, List<CellFormula>> formualMap = [];
         internal WorkSheet(WorkBook workBook, ExcelSheetProp prop, int index, string id, string sheetId, string name, SheetVisibility visibility) : this(workBook, index, id, sheetId, name, visibility)
         {
@@ -192,8 +192,7 @@ namespace Frameset.Office.Excel
                 for (int i = 0; i < Prop.CellProps.Count; i++)
                 {
                     ExcelCellProp columnProp = Prop.CellProps[i];
-                    object rValue = null;
-                    if (valueMap.TryGetValue(columnProp.ColumnCode, out rValue))
+                    if (valueMap.TryGetValue(columnProp.ColumnCode, out object? rValue))
                     {
                         Cell cell = GetCell(i, Prop);
                         SetValue(cell, columnProp, rValue);
@@ -206,7 +205,8 @@ namespace Frameset.Office.Excel
                         }
                         else
                         {
-                            Formula formula = (Formula)GetCell(i, Prop).GetValue();
+                            Formula? formula = GetCell(i, Prop).GetValue() as Formula;
+                            Trace.Assert(formula != null);
                             formula.setExpression(CellUtils.ReturnFormulaWithPos(formualMap, columnProp.Formula, CurrentRowNum));
 
                         }
@@ -263,13 +263,13 @@ namespace Frameset.Office.Excel
                 for (int i = 0; i < Prop.CellProps.Count; i++)
                 {
                     ExcelCellProp columnProp = Prop.CellProps[i];
-                    object rValue = null;
-                    FieldContent content = null;
-                    if (fieldMap.TryGetValue(columnProp.ColumnCode, out content))
+                    object? rValue = null;
+                    if (fieldMap.TryGetValue(columnProp.ColumnCode, out FieldContent? content))
                     {
                         rValue = content.GetMethod.Invoke(obj, null);
 
                         Cell cell = GetCell(i, Prop);
+                        Trace.Assert(rValue != null, "");
                         SetValue(cell, columnProp, rValue);
                     }
                 }
@@ -325,7 +325,8 @@ namespace Frameset.Office.Excel
                     }
                     break;
                 case Constants.MetaType.FORMULA:
-                    Formula formula = (Formula)cell.GetValue();
+                    Formula? formula = cell.GetValue() as Formula;
+                    Trace.Assert(formula != null);
                     formula.setExpression(CellUtils.ReturnFormulaWithPos(formualMap, prop.Formula, CurrentRowNum));
                     break;
                 case Constants.MetaType.STRING:
@@ -359,9 +360,9 @@ namespace Frameset.Office.Excel
             w.Dispose();
             Finished = true;
         }
-        internal void SetDefaultStyles(Action<WorkSheet> consumer)
+        internal void SetDefaultStyles(Action<WorkSheet>? consumer)
         {
-            Trace.Assert(Prop!=null, "");
+            Trace.Assert(Prop != null, "");
             Styles = new List<int>(Prop.CellProps.Count);
             if (consumer != null)
             {
@@ -420,8 +421,8 @@ namespace Frameset.Office.Excel
         }
         public static string GetFormatWithType(ExcelCellProp columnProp)
         {
-            Trace.Assert(columnProp!=null, "");
-            string numFmtStr = null;
+            Trace.Assert(columnProp != null, "");
+            string? numFmtStr = null;
             switch (columnProp.ColumnType)
             {
                 case Constants.MetaType.LONG:

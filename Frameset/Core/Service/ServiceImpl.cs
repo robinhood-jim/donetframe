@@ -49,9 +49,9 @@ namespace Frameset.Core.Service
         {
             return dbContext.RemoveEntity<V, P>(ids);
         }
-        public List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject)
+        public List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject, List<string>? inputParameters = null)
         {
-            return dbContext.QueryMapper(nameSpace, queryId, queryObject);
+            return dbContext.QueryMapper(nameSpace, queryId, queryObject, inputParameters);
         }
         public int ExecuteMapper(string nameSpace, string queryId, object queryObject)
         {
@@ -65,7 +65,7 @@ namespace Frameset.Core.Service
         {
             return dbContext.QueryModelsPage<V>(query);
         }
-        public List<V> QueryByCondition(FilterCondition condition, PageQuery query = null)
+        public List<V> QueryByCondition(FilterCondition condition, PageQuery? query = null)
         {
             return dbContext.QueryByCondition<V>(condition, query);
         }

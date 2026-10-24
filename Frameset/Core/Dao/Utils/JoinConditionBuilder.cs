@@ -40,8 +40,8 @@ namespace Frameset.Core.Dao.Utils
         }
         public JoinConditionBuilder AddEq(string column, object value)
         {
-            string columnName = null;
-            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
+            string? columnName = null;
+            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -51,19 +51,20 @@ namespace Frameset.Core.Dao.Utils
             {
                 columnName = column;
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(columnName) && tuple != null);
             filterConditions.Add(new FilterCondition()
             {
                 ColumnName = columnName,
-                TargetEntity = tuple?.Item2,
-                ColumnType = tuple?.Item3.ParamType,
+                TargetEntity = tuple.Item2,
+                ColumnType = tuple.Item3.ParamType,
                 Values = [value]
             });
             return this;
         }
         public JoinConditionBuilder AddFilter(string column, Constants.SqlOperator sqlOperator, object[] objects)
         {
-            string columnName = null;
-            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
+            string? columnName = null;
+            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -73,20 +74,21 @@ namespace Frameset.Core.Dao.Utils
             {
                 columnName = column;
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(columnName) && tuple != null);
             filterConditions.Add(new FilterCondition()
             {
                 ColumnName = columnName,
                 Operator = sqlOperator,
-                TargetEntity = tuple?.Item2,
-                ColumnType = tuple?.Item3.ParamType,
+                TargetEntity = tuple.Item2,
+                ColumnType = tuple.Item3.ParamType,
                 Values = objects.ToList()
             });
             return this;
         }
         public FilterCondition Eq(string column, object value)
         {
-            string columnName = null;
-            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
+            string? columnName = null;
+            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -96,18 +98,19 @@ namespace Frameset.Core.Dao.Utils
             {
                 columnName = column;
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(columnName) && tuple != null);
             return new FilterCondition()
             {
                 ColumnName = columnName,
-                TargetEntity = tuple?.Item2,
-                ColumnType = tuple?.Item3.ParamType,
+                TargetEntity = tuple.Item2,
+                ColumnType = tuple.Item3.ParamType,
                 Values = [value]
             };
         }
         public FilterCondition Filter(string column, Constants.SqlOperator sqlOperator, object[] values)
         {
-            string columnName = null;
-            Tuple<Type, EntityContent, FieldContent> tuple = ParseColumn(column);
+            string? columnName = null;
+            Tuple<Type, EntityContent, FieldContent>? tuple = ParseColumn(column);
             if (tuple != null)
             {
                 Trace.Assert(tuple.Item2 != null, "field " + column + " not found in entity");
@@ -117,12 +120,13 @@ namespace Frameset.Core.Dao.Utils
             {
                 columnName = column;
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(columnName) && tuple != null);
             return new FilterCondition()
             {
                 ColumnName = columnName,
                 Operator = sqlOperator,
-                TargetEntity = tuple?.Item2,
-                ColumnType = tuple?.Item3.ParamType,
+                TargetEntity = tuple.Item2,
+                ColumnType = tuple.Item3.ParamType,
                 Values = values.ToList()
             };
         }
@@ -162,14 +166,14 @@ namespace Frameset.Core.Dao.Utils
             }
         }
 
-        private Tuple<Type, EntityContent, FieldContent> ParseColumn(string column)
+        private Tuple<Type, EntityContent, FieldContent>? ParseColumn(string column)
         {
             if (column.Contains('.'))
             {
                 string[] selParts = column.Split('.');
-                if (entityNameMap.TryGetValue(selParts[0], out Type targetType) && fieldsMap.TryGetValue(targetType, out Dictionary<string, FieldContent> fieldMap))
+                if (entityNameMap.TryGetValue(selParts[0], out Type? targetType) && fieldsMap.TryGetValue(targetType, out Dictionary<string, FieldContent>? fieldMap))
                 {
-                    if (fieldMap.TryGetValue(selParts[1], out FieldContent content) && entityMap.TryGetValue(targetType, out EntityContent entityContent))
+                    if (fieldMap.TryGetValue(selParts[1], out FieldContent? content) && entityMap.TryGetValue(targetType, out EntityContent? entityContent))
                     {
                         return Tuple.Create(targetType, entityContent, content);
                     }

@@ -8,24 +8,24 @@ namespace Frameset.Core.Mapper.Segment
         public string ResultMap
         {
             get; internal set;
-        }
+        } = null!;
         public string CoType
         {
             get; internal set;
-        }
+        } = null!;
         public string Parametertype
         {
             get; internal set;
-        }
+        } = null!;
         public IList<AbstractSegment> Segments
         {
             get; internal set;
-        }
+        } = [];
         public CompositeSegment(string nameSpace, string id, string value) : base(nameSpace, id, value)
         {
 
         }
-        public CompositeSegment(string nameSpace, string id, string type, string resultMap, string parameterType, IList<AbstractSegment> segments) : base(nameSpace, id, null)
+        public CompositeSegment(string nameSpace, string id, string type, string resultMap, string parameterType, IList<AbstractSegment> segments) : base(nameSpace, id, string.Empty)
         {
             this.CoType = type;
             this.ResultMap = resultMap;

@@ -17,7 +17,7 @@ namespace Frameset.Office.Word.Element
         public string Content
         {
             get; set;
-        }
+        } = null!;
         public XRunElement(string id)
         {
             Id = id;
@@ -28,7 +28,7 @@ namespace Frameset.Office.Word.Element
             return WordEnumType.BodyType.RUN;
         }
 
-        public RelationShip GetRelation()
+        public RelationShip? GetRelation()
         {
             return null;
         }

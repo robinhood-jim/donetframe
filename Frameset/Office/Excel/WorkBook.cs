@@ -40,20 +40,20 @@ namespace Frameset.Office.Excel
         {
             get; internal set;
         } = new List<string>();
-        OpcPackage opcPackage;
-        internal IList<WorkSheet> sheets = new List<WorkSheet>();
+        OpcPackage opcPackage = null!;
+        internal List<WorkSheet> sheets = new List<WorkSheet>();
         internal Dictionary<string, WorkSheet> sheetMap = new Dictionary<string, WorkSheet>();
         public bool Date1904
         {
             get; internal set;
         } = false;
-        internal ShardingStrings shardingStrings;
+        internal ShardingStrings shardingStrings = null!;
 
         private Dictionary<int, XmlBufferWriter> sheetWriterMap = new Dictionary<int, XmlBufferWriter>();
-        internal XmlBufferWriter writer;
+        internal XmlBufferWriter writer = null!;
         static string sheetIdPrefix = "rId";
         internal int maxSheetSize = 0;
-        internal string localTmpPath = null;
+        internal string localTmpPath = null!;
         internal CustomProperty properties = new CustomProperty();
 
         internal StyleHolder Holder
@@ -61,10 +61,10 @@ namespace Frameset.Office.Excel
             get; set;
         } = new StyleHolder();
         internal Dictionary<string, ShardingString> shardingStringMap = new Dictionary<string, ShardingString>();
-        internal string workBookPath;
-        internal string shardingStringsPath;
-        internal string stylePath;
-        internal string appPath;
+        internal string workBookPath = null!;
+        internal string shardingStringsPath = null!;
+        internal string stylePath = null!;
+        internal string appPath = null!;
         public Dictionary<string, string> FormatMap
         {
             get; internal set;
@@ -78,13 +78,13 @@ namespace Frameset.Office.Excel
         public ExcelSheetProp SheetProp
         {
             get; internal set;
-        }
+        } = null!;
         internal int totalRow;
         public int MaxRows
         {
             get; set;
         } = WorkSheet.MAX_ROWS;
-        protected WorkSheet currentSheet;
+        protected WorkSheet? currentSheet;
         protected int thresholdSize = 8 * 1024;
         public static readonly int WRITEBUFFERSIZE = 1048576;
 
@@ -110,7 +110,7 @@ namespace Frameset.Office.Excel
             SheetProp = ExcelSheetProp.FromEntityDefine(entityType);
             doInit(stream, writeTag);
         }
-        public WorkBook(Stream stream, bool writeTag, IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string> nameMapping = null)
+        public WorkBook(Stream stream, bool writeTag, IDataReader reader, string timeFormat = "yyyy-MM-dd", Dictionary<string, string>? nameMapping = null)
         {
             SheetProp = ExcelSheetProp.FromDataReader(reader, timeFormat, nameMapping);
             doInit(stream, writeTag);
@@ -156,22 +156,30 @@ namespace Frameset.Office.Excel
             {
                 while (reader.GoTo(() => reader.IsStartElement("Override")))
                 {
-                    string contentType = reader.GetAttribute("ContentType");
+                    string? contentType = reader.GetAttribute("ContentType");
                     if (OpcPackage.WORKBOOK_MAIN_CONTENT_TYPE.Equals(contentType, StringComparison.OrdinalIgnoreCase) || OpcPackage.WORKBOOK_EXCEL_MACRO_ENABLED_MAIN_CONTENT_TYPE.Equals(contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        workBookPath = reader.GetAttribute("PartName");
+                        string? workBookPath1 = reader.GetAttribute("PartName");
+                        Trace.Assert(!string.IsNullOrWhiteSpace(workBookPath1));
+                        workBookPath = workBookPath1;
                     }
                     else if (OpcPackage.SHARED_STRINGS_CONTENT_TYPE.Equals(contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        shardingStringsPath = reader.GetAttribute("PartName");
+                        string? shardingStringsPath1 = reader.GetAttribute("PartName");
+                        Trace.Assert(!string.IsNullOrWhiteSpace(shardingStringsPath1));
+                        shardingStringsPath = shardingStringsPath1;
                     }
                     else if (OpcPackage.STYLE_CONTENT_TYPE.Equals(contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        stylePath = reader.GetAttribute("PartName");
+                        string? stylePath1 = reader.GetAttribute("PartName");
+                        Trace.Assert(!string.IsNullOrWhiteSpace(stylePath1));
+                        stylePath = stylePath1;
                     }
                     else if (OpcPackage.EXTEND_PROPERTY_CONTENTTYPE.Equals(contentType, StringComparison.OrdinalIgnoreCase))
                     {
-                        appPath = reader.GetAttribute("PartName");
+                        string? appPath1 = reader.GetAttribute("PartName");
+                        Trace.Assert(!string.IsNullOrWhiteSpace(appPath1));
+                        appPath = appPath1;
                     }
                 }
             }
@@ -194,15 +202,18 @@ namespace Frameset.Office.Excel
                     }
                     if ("numFmt".Equals(reader.GetLocalName()))
                     {
-                        string formatCode = reader.GetAttribute("formatCode");
-                        FormatMap.TryAdd(reader.GetAttribute("numFmtId"), formatCode);
+                        string? formatCode = reader.GetAttribute("formatCode");
+                        string? numFmtId = reader.GetAttribute("numFmtId");
+                        Trace.Assert(!string.IsNullOrWhiteSpace(formatCode) && !string.IsNullOrWhiteSpace(numFmtId));
+                        FormatMap.TryAdd(numFmtId, formatCode);
                     }
                     else if (insideCellXfs.Get() && reader.IsStartElement("xf"))
                     {
-                        string numFmtId = reader.GetAttribute("numFmtId");
+                        string? numFmtId = reader.GetAttribute("numFmtId");
+                        Trace.Assert(!string.IsNullOrWhiteSpace(numFmtId));
                         formatIdList.Add(numFmtId);
-                        string formatstr = null;
-                        if (OpcPackage.IMPLICIT_NUM_FMTS.TryGetValue(numFmtId, out formatstr))
+
+                        if (OpcPackage.IMPLICIT_NUM_FMTS.TryGetValue(numFmtId, out string? formatstr))
                         {
                             FormatMap.TryAdd(numFmtId, formatstr);
                         }
@@ -224,7 +235,7 @@ namespace Frameset.Office.Excel
                 {
                     if ("workbookView".Equals(reader.GetLocalName()))
                     {
-                        String activeTab = reader.GetAttribute("activeTab");
+                        string? activeTab = reader.GetAttribute("activeTab");
                         if (activeTab != null)
                         {
                             this.ActiveTab = Convert.ToInt16(activeTab);
@@ -236,7 +247,7 @@ namespace Frameset.Office.Excel
                     }
                     else if ("workbookPr".Equals(reader.GetLocalName()))
                     {
-                        String date1904Value = reader.GetAttribute("date1904");
+                        string? date1904Value = reader.GetAttribute("date1904");
                         Date1904 = Convert.ToBoolean(date1904Value);
                     }
                     else
@@ -431,9 +442,9 @@ namespace Frameset.Office.Excel
         }
         void parseSheet(XMLStreamReader r)
         {
-            string name = r.GetAttribute("name");
-            string id = r.GetAttribute("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
-            String sheetId = r.GetAttribute("sheetId");
+            string? name = r.GetAttribute("name");
+            string? id = r.GetAttribute("http://schemas.openxmlformats.org/officeDocument/2006/relationships", "id");
+            String? sheetId = r.GetAttribute("sheetId");
             SheetVisibility sheetVisibility;
             if ("veryHidden".Equals(r.GetAttribute("state")))
             {
@@ -448,6 +459,7 @@ namespace Frameset.Office.Excel
                 sheetVisibility = SheetVisibility.VISIBLE;
             }
             int index = sheets.Count;
+            Trace.Assert(!string.IsNullOrWhiteSpace(id) && !string.IsNullOrWhiteSpace(name) && !string.IsNullOrWhiteSpace(sheetId));
             WorkSheet sheet = new WorkSheet(this, index, id, sheetId, name, sheetVisibility);
             sheets.Add(sheet);
             sheetMap.TryAdd(name, sheet);
@@ -489,8 +501,7 @@ namespace Frameset.Office.Excel
         }
         internal Stream getSheetContent(WorkSheet sheet)
         {
-            RelationShip relationShip = null;
-            if (opcPackage.RelationShipMap.TryGetValue(sheet.Id, out relationShip))
+            if (opcPackage.RelationShipMap.TryGetValue(sheet.Id, out RelationShip? relationShip))
             {
                 return opcPackage.GetEntryContent(relationShip.Target);
             }
@@ -519,8 +530,7 @@ namespace Frameset.Office.Excel
         }
         internal ShardingString AddShardingString(String value)
         {
-            ShardingString s1 = null;
-            if (!shardingStringMap.TryGetValue(value, out s1))
+            if (!shardingStringMap.TryGetValue(value, out ShardingString? s1))
             {
                 s1 = new ShardingString(value, shardingStrings.Values.Count);
                 shardingStrings.Values.Add(s1);
@@ -552,7 +562,7 @@ namespace Frameset.Office.Excel
         {
             return CreateSheet(sheetName, prop, null);
         }
-        public WorkSheet CreateSheet(String sheetName, ExcelSheetProp prop, Action<WorkSheet> consumer)
+        public WorkSheet CreateSheet(String sheetName, ExcelSheetProp prop, Action<WorkSheet>? consumer)
         {
             int idx = sheets.Count;
             idx++;
@@ -565,10 +575,11 @@ namespace Frameset.Office.Excel
         }
         public WorkSheet GetSheet(String sheetName)
         {
-            WorkSheet sheet;
-            sheetMap.TryGetValue(sheetName, out sheet);
-
-            return sheet;
+            if (sheetMap.TryGetValue(sheetName, out WorkSheet? sheet))
+            {
+                return sheet;
+            }
+            throw new ConfigMissingException("sheet not found");
         }
         public WorkSheet GetSheet(int id)
         {

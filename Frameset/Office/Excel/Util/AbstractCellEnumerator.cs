@@ -10,6 +10,7 @@ using Serilog;
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 
 namespace Frameset.Office.Excel.Util
@@ -26,7 +27,7 @@ namespace Frameset.Office.Excel.Util
         public static ExcelSheetProp prop
         {
             get; internal set;
-        }
+        } = null!;
         internal bool multipleType = false;
         internal bool needIdentifyColumn = false;
         internal IList<Cell> cells = new List<Cell>();
@@ -36,7 +37,7 @@ namespace Frameset.Office.Excel.Util
         internal static bool isDate1904;
         internal XMLStreamReader r;
         internal bool reuseCurrent;
-        internal T current;
+        internal T current = default(T)!;
 
         public AbstractCellEnumerator(WorkBook workBook, Stream stream, ExcelSheetProp sheetProp, bool reuseCurrent)
         {
@@ -79,7 +80,9 @@ namespace Frameset.Office.Excel.Util
                 Cell cell = ParseCell(trackedColIndex++, false);
                 if (needIdentifyColumn && cell.GetValue() != null)
                 {
-                    prop.AddCellProp(new ExcelCellProp(cell.GetValue().ToString(), cell.GetValue().ToString(), Constants.MetaType.STRING));
+                    string? cellValue = cell.GetValue()?.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(cellValue));
+                    prop.AddCellProp(new ExcelCellProp(cellValue, cellValue, Constants.MetaType.STRING));
                 }
             }
             InitCells();
@@ -105,16 +108,15 @@ namespace Frameset.Office.Excel.Util
         }
         CellAddress GetCellAddressWithFallback(int trackedColIndex)
         {
-            string cellRefOrNull = r.GetAttribute("r");
-            CellAddress address = null;
-            if (!addressMap.TryGetValue(trackedColIndex, out address))
+            string? cellRefOrNull = r.GetAttribute("r");
+            if (!addressMap.TryGetValue(trackedColIndex, out CellAddress? address))
             {
                 address = cellRefOrNull != null ? new CellAddress(cellRefOrNull) : new CellAddress(trackedRowIndex, trackedColIndex);
                 addressMap.TryAdd(trackedColIndex, address);
             }
             else
             {
-                if (!cellRefOrNull.IsNullOrEmpty())
+                if (!string.IsNullOrWhiteSpace(cellRefOrNull))
                 {
                     address.SetAddress(cellRefOrNull);
                 }
@@ -173,8 +175,8 @@ namespace Frameset.Office.Excel.Util
         protected Cell ParseOther(CellAddress addr, CellProcessor processor, bool isMultiplex)
         {
             CellType definedType = ParseType(processor.GetCellTypeStr());
-            Func<string, CellAddress, object> parser = GetParserForType(definedType);
-
+            Func<string, CellAddress, object>? parser = GetParserForType(definedType);
+            Trace.Assert(parser != null);
 
             while (r.GoTo(() => r.IsStartElement("v") || r.IsEndElement("c") || r.IsStartElement("f")))
             {
@@ -284,7 +286,7 @@ namespace Frameset.Office.Excel.Util
             }
 
         }
-        Func<string, CellAddress, object> GetParserForType(CellType type)
+        Func<string, CellAddress, object>? GetParserForType(CellType type)
         {
             switch (type)
             {
@@ -304,11 +306,11 @@ namespace Frameset.Office.Excel.Util
 
             if (s.IsNullOrEmpty())
             {
-                return null;
+                return 0;
             }
             int column = address.GetColumn();
             string tmpVal = s;
-            object retObj = null;
+            object? retObj = null;
 
             if (!prop.CellProps.IsNullOrEmpty() && prop.CellProps[column] != null)
             {

@@ -10,6 +10,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Diagnostics;
 using System.Text;
 using System.Threading;
 
@@ -81,43 +82,44 @@ namespace Frameset.Core.Dao.Meta
         {
             return BatchInsert(dao, dbConnection, entitys, (adpater, filecontents) =>
             {
-                MySqlDataAdapter mySqlDataAdapter = adpater as MySqlDataAdapter;
+                MySqlDataAdapter? mySqlDataAdapter = adpater as MySqlDataAdapter;
+                Trace.Assert(mySqlDataAdapter != null);
                 foreach (FieldContent content in filecontents)
                 {
                     switch (content.DataType)
                     {
                         case Constants.MetaType.LONG:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Int64);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Int64);
                             break;
                         case Constants.MetaType.INTEGER:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Int32);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Int32);
                             break;
                         case Constants.MetaType.SHORT:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Int16);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Int16);
                             break;
                         case Constants.MetaType.FLOAT:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Float);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Float);
                             break;
                         case Constants.MetaType.DOUBLE:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Double);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Double);
                             break;
                         case Constants.MetaType.NUMERIC:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Decimal);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Decimal);
                             break;
                         case Constants.MetaType.DATE:
                         case Constants.MetaType.TIMESTAMP:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName,
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName,
                                 MySqlDbType.Timestamp);
                             break;
                         case Constants.MetaType.CLOB:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName,
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName,
                                 MySqlDbType.LongText);
                             break;
                         case Constants.MetaType.BLOB:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.Binary);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.Binary);
                             break;
                         default:
-                            mySqlDataAdapter.InsertCommand.Parameters.Add("@" + content.FieldName, MySqlDbType.VarChar);
+                            mySqlDataAdapter.InsertCommand?.Parameters.Add("@" + content.FieldName, MySqlDbType.VarChar);
                             break;
                     }
                 }
@@ -208,14 +210,14 @@ namespace Frameset.Core.Dao.Meta
             StringBuilder builder = new StringBuilder("SELECT auto_increment FROM information_schema.TABLES WHERE TABLE_SCHEMA ='").Append(schema).Append("' and TABLE_NAME='").Append(tableName).Append("'");
             using (MySqlCommand command = new MySqlCommand(builder.ToString(), (MySqlConnection)connection))
             {
-                return Convert.ToInt64(command.ExecuteScalar().ToString().Trim());
+                return Convert.ToInt64(command.ExecuteScalar());
             }
 
         }
 
         public override string GeneratePageSql(string baseSql, PageQuery query)
         {
-            if (query != null && query.PageSize != 0)
+            if (query.PageSize != 0)
             {
                 Tuple<long, long> startEnd = GetStartEndRecord(query);
                 StringBuilder builder = new StringBuilder(baseSql.Trim());
@@ -271,11 +273,13 @@ namespace Frameset.Core.Dao.Meta
                     dbType = MySqlDbType.Timestamp;
                     break;
                 default:
-                    if (value.ToString().Contains("%"))
+                    string? strVal = value.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(strVal));
+                    if (strVal.Contains("%"))
                     {
                         dbType = MySqlDbType.VarChar;
                     }
-                    else if (value.ToString().Length == 1)
+                    else if (strVal.Length == 1)
                     {
                         dbType = MySqlDbType.String;
                     }

@@ -24,7 +24,7 @@ namespace Frameset.Office.Word.Element
             return WordEnumType.BodyType.TABLECELL;
         }
 
-        public RelationShip GetRelation()
+        public RelationShip? GetRelation()
         {
             return null;
         }

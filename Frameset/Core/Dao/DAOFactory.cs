@@ -7,6 +7,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Text;
 using YamlDotNet.Serialization;
@@ -43,12 +44,16 @@ namespace Frameset.Core.Dao
                     Dictionary<object, object> keyDict = (Dictionary<object, object>)GetKeyValues()["dataSource"];
                     foreach (var entry in keyDict)
                     {
-                        string key = entry.Key.ToString();
-                        Dictionary<object, object> dict1 = entry.Value as Dictionary<object, object>;
+                        string? key = entry.Key.ToString();
+                        Trace.Assert(!string.IsNullOrWhiteSpace(key));
+                        Dictionary<object, object>? dict1 = entry.Value as Dictionary<object, object>;
                         Dictionary<string, object> tmpDict = [];
+                        Trace.Assert(dict1 != null);
                         foreach (KeyValuePair<object, object> pair in dict1)
                         {
-                            tmpDict.TryAdd(pair.Key.ToString(), pair.Value);
+                            string? pairKey = pair.Key.ToString();
+                            Trace.Assert(!string.IsNullOrWhiteSpace(pairKey));
+                            tmpDict.TryAdd(pairKey, pair.Value);
                         }
                         IAdoDao dao = ConstructWithDict(tmpDict);
                         containner.Add(key, dao);
@@ -82,10 +87,10 @@ namespace Frameset.Core.Dao
             return keyValues;
         }
 
-        internal static IAdoDao ConstructWithDict(Dictionary<string, object> dict, ISqlDialect sqlDialect = null)
+        internal static IAdoDao ConstructWithDict(Dictionary<string, object> dict, ISqlDialect? sqlDialect = null)
         {
-            var builder = GetConnectString(dict, out var dbType, out var schema, out var logicColumnStr, out var validValue, out var invalidValue);
-            IAdoDao dao = null;
+            var builder = GetConnectString(dict, out var dbType, out var schema, out var logicColumnStr, out object? validValue, out object? invalidValue);
+            IAdoDao? dao;
             if (sqlDialect == null)
             {
                 if (string.IsNullOrEmpty(logicColumnStr))
@@ -94,6 +99,7 @@ namespace Frameset.Core.Dao
                 }
                 else
                 {
+                    Trace.Assert(validValue != null && invalidValue != null);
                     dao = new AdoDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1),
                         logicColumnStr, validValue, invalidValue);
                 }
@@ -106,6 +112,7 @@ namespace Frameset.Core.Dao
                 }
                 else
                 {
+                    Trace.Assert(validValue != null && invalidValue != null);
                     dao = new AdoDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1),
                         logicColumnStr, validValue, invalidValue);
                 }
@@ -116,33 +123,51 @@ namespace Frameset.Core.Dao
         }
 
         public static StringBuilder GetConnectString(Dictionary<string, object> dict, out string dbType, out string schema,
-            out string logicColumnStr, out object validValue, out object invalidValue)
+            out string logicColumnStr, out object? validValue, out object? invalidValue)
         {
             StringBuilder builder = new StringBuilder();
-            dict.TryGetValue(Constants.DBTYPECOLUMN, out object dbTypeObj);
-            dbType = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
-            dict.TryGetValue("ConnectionString", out object connStr);
-            dict.TryGetValue("schema", out object schemaStr);
-            schema = IsNull(schemaStr) ? null : schemaStr.ToString();
+            dbType = string.Empty;
+            schema = string.Empty;
+            if (dict.TryGetValue(Constants.DBTYPECOLUMN, out object? dbTypeObj))
+            {
+                string? dbTypeStr = IsNull(dbTypeObj) ? "Mysql" : dbTypeObj.ToString();
+                if (!string.IsNullOrWhiteSpace(dbTypeStr))
+                {
+                    dbType = dbTypeStr;
+                }
+            }
+            else
+            {
+                dbType = "Mysql";
+            }
+            dict.TryGetValue("ConnectionString", out object? connStr);
+            if (dict.TryGetValue("schema", out object? schemaStr))
+            {
+                string? schemaStr1 = schemaStr.ToString();
+                if (!string.IsNullOrWhiteSpace(schemaStr1))
+                {
+                    schema = schemaStr1;
+                }
+            }
             logicColumnStr = string.Empty;
             validValue = null;
             invalidValue = null;
             Constants.DbType dbType1 = Constants.DbTypeOf(dbType);
             if (IsNull(connStr))
             {
-                dict.TryGetValue("userName", out object userName);
-                dict.TryGetValue("password", out object password);
-                dict.TryGetValue("host", out object hostObj);
-                dict.TryGetValue("port", out object portObj);
-                dict.TryGetValue("maxSize", out object maxSizeStr);
-                dict.TryGetValue("minSize", out object minSizeStr);
-                dict.TryGetValue("logicColumn", out object logicColumn);
+                dict.TryGetValue("userName", out object? userName);
+                dict.TryGetValue("password", out object? password);
+                dict.TryGetValue("host", out object? hostObj);
+                dict.TryGetValue("port", out object? portObj);
+                dict.TryGetValue("maxSize", out object? maxSizeStr);
+                dict.TryGetValue("minSize", out object? minSizeStr);
+                dict.TryGetValue("logicColumn", out object? logicColumn);
                 dict.TryGetValue("validValue", out validValue);
                 dict.TryGetValue("invalidValue", out invalidValue);
-                string host = IsNull(hostObj) ? "localhost" : dict["host"].ToString();
-                int port = IsNull(portObj) ? AbstractSqlDialect.GetDefaultPort(dbType) : Int32.Parse(portObj.ToString());
-                int maxSize = IsNull(maxSizeStr) ? 0 : Int32.Parse(dict["maxSize"].ToString());
-                int minSize = IsNull(minSizeStr) ? 0 : Int32.Parse(dict["minSize"].ToString());
+                string? host = IsNull(hostObj) ? "localhost" : dict["host"].ToString();
+                int port = IsNull(portObj) ? AbstractSqlDialect.GetDefaultPort(dbType) : Convert.ToInt32(portObj);
+                int maxSize = IsNull(maxSizeStr) ? 0 : Convert.ToInt32(dict["maxSize"]);
+                int minSize = IsNull(minSizeStr) ? 0 : Convert.ToInt32(dict["minSize"]);
 
                 switch (dbType1)
                 {
@@ -183,7 +208,9 @@ namespace Frameset.Core.Dao
                 }
                 if (logicColumn != null)
                 {
-                    logicColumnStr = logicColumn.ToString();
+                    string? logicStr = logicColumn.ToString();
+                    Trace.Assert(!string.IsNullOrWhiteSpace(logicStr));
+                    logicColumnStr = logicStr;
                 }
                 if (maxSize > 0 || minSize > 0)
                 {
@@ -225,14 +252,14 @@ namespace Frameset.Core.Dao
             return builder;
         }
 
-        private static bool IsNull(object input)
+        private static bool IsNull(object? input)
         {
             return input == null || string.IsNullOrWhiteSpace(input.ToString());
         }
         public static IAdoDao GetAdoDao(string key)
         {
-            containner.TryGetValue(key, out IAdoDao dao);
-
+            containner.TryGetValue(key, out IAdoDao? dao);
+            Trace.Assert(dao != null);
             return dao;
         }
         public static AdoDao Construct(string dbType, string schema, string connectionString)

@@ -11,7 +11,7 @@ namespace Frameset.Core.Mapper.Handler
         {
             if (node.InnerText != null)
             {
-                segments.Add(new SqlConstantSegment(namespaceStr, null, node.InnerText));
+                segments.Add(new SqlConstantSegment(namespaceStr, string.Empty, node.InnerText));
             }
             else
             {

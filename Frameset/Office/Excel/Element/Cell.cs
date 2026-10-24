@@ -13,14 +13,14 @@ namespace Frameset.Office.Excel.Element
         {
             get; internal set;
         }
-        private object value;
+        private object? value = null!;
         private CellAddress address;
-        private string formula;
-        private string rawValue;
-        private string dataFormatId;
-        private string dataFormatString;
+        private string? formula = null!;
+        private string rawValue = null!;
+        private string? dataFormatId;
+        private string? dataFormatString;
         private int style;
-        public Cell(WorkBook workbook, CellType type, object value, CellAddress address, string formula, string rawValue) : this(workbook, type, value, address, formula, rawValue, null, null)
+        public Cell(WorkBook workbook, CellType type, object? value, CellAddress address, string? formula, string rawValue) : this(workbook, type, value, address, formula, rawValue, null, null)
         {
 
         }
@@ -35,8 +35,8 @@ namespace Frameset.Office.Excel.Element
 
         }
 
-        public Cell(WorkBook workbook, CellType type, object value, CellAddress address, string formula, string rawValue,
-             string dataFormatId, string dataFormatString)
+        public Cell(WorkBook workbook, CellType type, object? value, CellAddress address, string? formula, string rawValue,
+             string? dataFormatId, string? dataFormatString)
         {
             this.workBook = workbook;
             this.CellType = type;
@@ -48,7 +48,7 @@ namespace Frameset.Office.Excel.Element
             this.dataFormatString = dataFormatString;
         }
 
-        public void SetValue(Object value)
+        public void SetValue(object? value)
         {
             this.value = value;
         }
@@ -72,43 +72,50 @@ namespace Frameset.Office.Excel.Element
                     w.Append(" t=\"").Append(getCellType(value)).Append("\"");
                 }
                 w.Append(">");
-                if (value.GetType().Equals(typeof(Formula)))
+                if (value != null)
                 {
-                    w.Append("<f>").Append(((Formula)value).GetExpression()).Append("</f>");
-                }
-                else if (value.GetType().Equals(typeof(string)))
-                {
-                    w.Append("<is><t>").AppendEscaped((string)value);
-                    w.Append("</t></is>");
-                }
-                else if (value != null)
-                {
-                    w.Append("<v>");
-                    if (value.GetType().Equals(typeof(ShardingString)))
+                    if (value.GetType().Equals(typeof(Formula)))
                     {
-                        w.Append(((ShardingString)value).Index);
+                        w.Append("<f>").Append(((Formula)value).GetExpression()).Append("</f>");
                     }
-                    else if (value.GetType().Equals(typeof(int)))
+                    else if (value.GetType().Equals(typeof(string)))
                     {
-                        w.Append((int)value);
-                    }
-                    else if (value.GetType().Equals(typeof(long)))
-                    {
-                        w.Append((long)value);
-                    }
-                    else if (value.GetType().Equals(typeof(double)))
-                    {
-                        w.Append((double)value);
-                    }
-                    else if (value.GetType().Equals(typeof(bool)))
-                    {
-                        w.Append((bool)value ? '1' : '0');
+                        w.Append("<is><t>").AppendEscaped((string)value);
+                        w.Append("</t></is>");
                     }
                     else
                     {
-                        w.Append(value.ToString());
+                        w.Append("<v>");
+                        if (value.GetType().Equals(typeof(ShardingString)))
+                        {
+                            w.Append(((ShardingString)value).Index);
+                        }
+                        else if (value.GetType().Equals(typeof(int)))
+                        {
+                            w.Append((int)value);
+                        }
+                        else if (value.GetType().Equals(typeof(long)))
+                        {
+                            w.Append((long)value);
+                        }
+                        else if (value.GetType().Equals(typeof(double)))
+                        {
+                            w.Append((double)value);
+                        }
+                        else if (value.GetType().Equals(typeof(bool)))
+                        {
+                            w.Append((bool)value ? '1' : '0');
+                        }
+                        else
+                        {
+                            string? str = Convert.ToString(value);
+                            if (!string.IsNullOrWhiteSpace(str))
+                            {
+                                w.Append(str);
+                            }
+                        }
+                        w.Append("</v>");
                     }
-                    w.Append("</v>");
                 }
                 w.Append("</c>");
             }
@@ -132,7 +139,7 @@ namespace Frameset.Office.Excel.Element
                 return "n";
             }
         }
-        public object GetValue()
+        public object? GetValue()
         {
             return value;
         }

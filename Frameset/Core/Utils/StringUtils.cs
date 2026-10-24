@@ -1,6 +1,7 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Reflection;
 using System.Text;
 
 
@@ -9,10 +10,10 @@ namespace Frameset.Core.Utils
     public class StringUtils
     {
         private static readonly string undlineStr = "_";
-        public static int ASCII_VISIBLE_START = 48;
-        public static int ASCII_VISIBLE_END = 122;
-        public static int ASCII_UPPER_START = 64;
-        public static int ASCII_LOWER_START = 96;
+        public static readonly int ASCII_VISIBLE_START = 48;
+        public static readonly int ASCII_VISIBLE_END = 122;
+        public static readonly int ASCII_UPPER_START = 64;
+        public static readonly int ASCII_LOWER_START = 96;
         public static string Capitalize(string value)
         {
             if (HasLegth(value))
@@ -31,9 +32,9 @@ namespace Frameset.Core.Utils
         public static bool IsDictNullWithReturn(Dictionary<string, object> dict, string key, out string value)
         {
             value = string.Empty;
-            if (dict != null && dict.TryGetValue(key, out object obj))
+            if (dict != null && dict.TryGetValue(key, out object? obj))
             {
-                string valueStr = obj.ToString();
+                string? valueStr = obj.ToString();
                 if (!string.IsNullOrEmpty(valueStr))
                 {
                     value = valueStr;
@@ -262,7 +263,7 @@ namespace Frameset.Core.Utils
                 Min(i1, i2, i3),
                 i4);
         }
-        public string FillHeader(string input, int length, char fillChar)
+        public static string FillHeader(string input, int length, char fillChar)
         {
             StringBuilder builder = new();
             for (int i = 0; i < length - input.Length; i++)
@@ -272,7 +273,7 @@ namespace Frameset.Core.Utils
             builder.Append(input);
             return builder.ToString();
         }
-        public string FillTail(string input, int length, char fillChar)
+        public static string FillTail(string input, int length, char fillChar)
         {
             StringBuilder builder = new(input);
             for (int i = 0; i < length - input.Length; i++)
@@ -290,6 +291,21 @@ namespace Frameset.Core.Utils
                 stringBuilder.AppendFormat("\\u{0:x2}{1:x2}", bytes[i + 1], bytes[i]);
             }
             return stringBuilder.ToString();
+        }
+        public static string GetEnumValue<T>(T enumObj) where T : Enum
+        {
+            int value = Convert.ToInt32(enumObj);
+            return value.ToString();
+        }
+        public static bool IsAssemblySystem(Assembly assembly)
+        {
+            string? assemblyName = assembly.GetName().Name;
+            return string.IsNullOrEmpty(assemblyName) ||
+                        assemblyName.StartsWith("System.") ||
+                        assemblyName.StartsWith("Microsoft.") ||
+                        assemblyName.StartsWith("netstandard") || assemblyName.Contains("Serilog") ||
+                        assemblyName.Contains("OpenTelemetry") || assemblyName.Contains("Google") ||
+                        assemblyName.Contains("Harmony");
         }
     }
 

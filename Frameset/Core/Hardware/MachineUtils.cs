@@ -2,6 +2,7 @@
 using Microsoft.Win32;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Net;
@@ -20,13 +21,14 @@ namespace Frameset.Core.Hardware
         private static readonly string NOTSPEICIFY = "Not Specified";
         public static string GetMachineId()
         {
-            string machineGuid = null;
+            string? machineGuid = null;
             if (IsRunningOnWindows())
             {
 #pragma warning disable CA1416
                 RegistryKey registry = Registry.LocalMachine;
-                RegistryKey software = registry.OpenSubKey("Software");
-                object machineGuidObj = software.OpenSubKey("Microsoft").OpenSubKey("Cryptography").GetValue("MachineGuid");
+                RegistryKey? software = registry.OpenSubKey("Software");
+                Trace.Assert(software != null);
+                object? machineGuidObj = software.OpenSubKey("Microsoft")?.OpenSubKey("Cryptography")?.GetValue("MachineGuid");
                 if (machineGuidObj != null)
                 {
                     machineGuid = machineGuidObj.ToString();
@@ -50,7 +52,7 @@ namespace Frameset.Core.Hardware
                 string output = CommandExecutor.ExcuteCommand(EXEC_DARWIN);
                 using (var reader = new StringReader(output))
                 {
-                    string lineStr;
+                    string? lineStr;
                     while ((lineStr = reader.ReadLine()) != null)
                     {
                         int pos = lineStr.IndexOf("IOPlatformUUID", StringComparison.Ordinal);
@@ -62,11 +64,12 @@ namespace Frameset.Core.Hardware
                     }
                 }
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(machineGuid));
             return machineGuid;
         }
         public static string GetCPUSerial()
         {
-            string serialNo = null;
+            string? serialNo = null;
             if (IsRunningOnWindows())
             {
                 serialNo = CommandExecutor.ExecuteCommandReturnAfterRow(["powershell.exe", "Get-WmiObject", "-Class", "Win32_Processor", "|", "Select-Object", "ProcessorId"], 2);
@@ -87,11 +90,12 @@ namespace Frameset.Core.Hardware
                     serialNo = string.Empty;
                 }
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(serialNo));
             return serialNo;
         }
         public static string GetSystemSerial()
         {
-            string serialNo = null;
+            string? serialNo = null;
             if (IsRunningOnWindows())
             {
                 serialNo = CommandExecutor.ExecuteCommandReturnAfterRow(["powershell.exe", "Get-WmiObject", "-class", "win32_bios", "|", "Select-Object", "SerialNumber"], 2);
@@ -112,16 +116,17 @@ namespace Frameset.Core.Hardware
             {
                 serialNo = string.Empty;
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(serialNo));
             return serialNo;
         }
         public static string GetStorageSerial()
         {
-            string serialNo;
+            string? serialNo;
             if (IsRunningOnWindows())
             {
                 serialNo = CommandExecutor.ExecuteCommandReturnAfterRow(["powershell.exe", "Get-WmiObject", "-Class", "Win32_DiskDrive", "|", "Select-Object", "SerialNumber,DeviceId"], 2);
                 using StringReader reader = new StringReader(serialNo);
-                string lineStr;
+                string? lineStr;
                 while ((lineStr = reader.ReadLine()) != null)
                 {
                     string[] arr = lineStr.Split(' ');

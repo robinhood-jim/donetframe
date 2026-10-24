@@ -96,7 +96,7 @@ namespace Frameset.Core.Dao.Meta
         {
             return "TIMESTAMP";
         }
-        public virtual long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000)
+        public virtual long BatchInsert<V>(IAdoDao dao, DbConnection connection, IEnumerable<V> models, CancellationToken token, int batchSize = 10000) where V : notnull
         {
             throw new NotSupportedException();
         }
@@ -229,9 +229,9 @@ namespace Frameset.Core.Dao.Meta
                 DataRow row = table.NewRow();
                 foreach (FieldContent content in fieldContents)
                 {
-                    if (methodParams.TryGetValue(content.PropertyName, out MethodParam param))
+                    if (methodParams.TryGetValue(content.PropertyName, out MethodParam? param))
                     {
-                        object value = param.GetMethod.Invoke(entity, []);
+                        object? value = param.GetMethod.Invoke(entity, []);
                         if (value != null)
                         {
                             row[content.FieldName] = value;
@@ -379,7 +379,7 @@ namespace Frameset.Core.Dao.Meta
             return defaultPort;
 
         }
-        public virtual void AppendAdditionalScript(StringBuilder buidler, Dictionary<string, object> paramMap)
+        public virtual void AppendAdditionalScript(StringBuilder buidler, Dictionary<string, object>? paramMap)
         {
 
         }

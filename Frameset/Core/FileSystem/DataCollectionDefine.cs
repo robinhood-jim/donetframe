@@ -51,7 +51,7 @@ namespace Frameset.Core.FileSystem
         public string ResType
         {
             get; internal set;
-        }
+        } = null!;
         public Constants.FileSystemType FsType
         {
             get; internal set;
@@ -68,16 +68,16 @@ namespace Frameset.Core.FileSystem
         {
             get; set;
         }
-        public FileMeta MetaData
+        public FileMeta? MetaData
         {
             get; set;
 
-        }
+        } = null!;
         internal DataCollectionDefine()
         {
 
         }
-        public void AddColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue)
+        public void AddColumnDefine(string columnName, Constants.MetaType columnType, object? defaultValue)
         {
             ColumnList.Add(new DataSetColumnMeta(columnName, columnType, defaultValue));
             ColumnNameMap.TryAdd(columnName, 1);
@@ -92,7 +92,7 @@ namespace Frameset.Core.FileSystem
             ColumnList.Add(new DataSetColumnMeta(columnName, columnType, defaultValue, required, dateFormat));
             ColumnNameMap.TryAdd(columnName, 1);
         }
-        public void AddColumnDefine(string columnName, string columnCode, Constants.MetaType columnType, object defaultValue = null, bool required = false, string dateFormat = "yyyy-MM-dd")
+        public void AddColumnDefine(string columnName, string columnCode, Constants.MetaType columnType, object? defaultValue = null, bool required = false, string dateFormat = "yyyy-MM-dd")
         {
             ColumnList.Add(new DataSetColumnMeta(columnName, columnCode, columnType, defaultValue, required, dateFormat));
             ColumnNameMap.TryAdd(columnName, 1);
@@ -154,7 +154,7 @@ namespace Frameset.Core.FileSystem
             define.Path = path;
             return this;
         }
-        public DataCollectionBuilder AddColumnDefine(string columnName, Constants.MetaType columnType, object defaultValue = null)
+        public DataCollectionBuilder AddColumnDefine(string columnName, Constants.MetaType columnType, object? defaultValue = null)
         {
             define.AddColumnDefine(columnName, columnType, defaultValue);
             return this;
@@ -203,7 +203,7 @@ namespace Frameset.Core.FileSystem
         {
             if (!config.IsNullOrEmpty())
             {
-                config.TryGetValue(Constants.FSTYPECOLUMN, out string fsTypeObj);
+                config.TryGetValue(Constants.FSTYPECOLUMN, out string? fsTypeObj);
                 if (!string.IsNullOrWhiteSpace(fsTypeObj))
                 {
                     define.FsType = Constants.FsTypeOf(fsTypeObj);
@@ -263,11 +263,11 @@ namespace Frameset.Core.FileSystem
         public object DefaultValue
         {
             get; set;
-        }
+        } = null!;
         public string DateFormat
         {
             get; set;
-        }
+        } = null!;
         public bool Required
         {
             get; set;
@@ -280,7 +280,7 @@ namespace Frameset.Core.FileSystem
         {
             get; set;
         }
-        public string AlgrithOper { get; set; }
+        public string AlgrithOper { get; set; } = null!;
         public int Preciseg { get; set; }
         public int Scale { get; set; }
         public bool Increment { get; set; }
@@ -288,7 +288,7 @@ namespace Frameset.Core.FileSystem
         public string SequenceName
         {
             get; set;
-        }
+        } = null!;
         public List<string> NominalValues
         {
             get; set;
@@ -297,7 +297,7 @@ namespace Frameset.Core.FileSystem
         {
             get; internal set;
         } = true;
-        public DataSetColumnMeta(string columnName, Constants.MetaType columnType, object defaultNullValue)
+        public DataSetColumnMeta(string columnName, Constants.MetaType columnType, object? defaultNullValue)
         {
             this.ColumnName = columnName;
             this.ColumnCode = columnName;
@@ -308,7 +308,7 @@ namespace Frameset.Core.FileSystem
             }
 
         }
-        public DataSetColumnMeta(string columnName, string columnCode, Constants.MetaType columnType, object defaultNullValue) : this(columnName, columnType, defaultNullValue)
+        public DataSetColumnMeta(string columnName, string columnCode, Constants.MetaType columnType, object? defaultNullValue) : this(columnName, columnType, defaultNullValue)
         {
             this.ColumnCode = columnCode;
         }
@@ -330,7 +330,7 @@ namespace Frameset.Core.FileSystem
             this.Required = required;
             this.DateFormat = dateFormat;
         }
-        public DataSetColumnMeta(string columnName, string columnCode, Constants.MetaType columnType, object defaultNullValue, bool required, string dateFormat) : this(columnName, columnType, defaultNullValue)
+        public DataSetColumnMeta(string columnName, string columnCode, Constants.MetaType columnType, object? defaultNullValue, bool required, string dateFormat) : this(columnName, columnType, defaultNullValue)
         {
             this.Required = required;
             this.DateFormat = dateFormat;

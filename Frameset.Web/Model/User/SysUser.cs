@@ -63,6 +63,10 @@ namespace Frameset.Web.Model.User
         {
             get; set;
         }
+        public int UserStatus
+        {
+            get; set;
+        }
 
     }
 }

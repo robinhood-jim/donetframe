@@ -11,19 +11,19 @@ namespace Frameset.Office.Meta
         int font;
         int fill;
         int border;
-        Alignment alignment;
-        public CellStyle(CellStyle original, int valueFormatting, int font, int fill, int border, Alignment alignment)
+        Alignment? alignment;
+        public CellStyle(CellStyle? original, int valueFormatting, int font, int fill, int border, Alignment? alignment)
         {
             this.valueFormatting = (valueFormatting == 0 && original != null) ? original.valueFormatting : valueFormatting;
             this.font = (font == 0 && original != null) ? original.font : font;
             this.fill = (fill == 0 && original != null) ? original.fill : fill;
             this.border = (border == 0 && original != null) ? original.border : border;
-            this.alignment = (alignment == null && original != null) ? original.alignment : alignment;
+            this.alignment = (original != null) ? original.alignment : alignment;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            return obj is CellStyle style &&
+            return obj != null && obj is CellStyle style &&
                    valueFormatting == style.valueFormatting &&
                    font == style.font &&
                    fill == style.fill &&

@@ -21,7 +21,7 @@ namespace Frameset.Core.Raft
             etcdClient = new EtcdClient(hostUrl, configureChannelOptions: options => options.Credentials = Grpc.Core.ChannelCredentials.Insecure);
 
         }
-        public async Task<bool> Campaign(string nodePath, string nodeValue)
+        public bool Campaign(string nodePath, string nodeValue)
         {
             var leaseResponse = etcdClient.LeaseGrant(new LeaseGrantRequest { TTL = 10 });
             etcdClient.LeaseKeepAlive(leaseResponse.ID, CancellationToken.None).RunSynchronously();
@@ -77,7 +77,7 @@ namespace Frameset.Core.Raft
         public void KeepAlive(string nodePath, byte[] content, CancellationToken cancellation)
         {
             var leaseResponse = etcdClient.LeaseGrant(new LeaseGrantRequest { TTL = 10 });
-            etcdClient.LeaseKeepAlive(leaseResponse.ID, cancellation).ConfigureAwait(false);
+            etcdClient.LeaseKeepAlive(leaseResponse.ID, cancellation).GetAwaiter().GetResult();
 
             var key = ByteString.CopyFromUtf8(nodePath);
             var proposal = ByteString.CopyFrom(content);

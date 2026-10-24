@@ -8,11 +8,11 @@ namespace Frameset.Office.Annotation
         public string ColumnName
         {
             get; set;
-        }
+        } = string.Empty;
         public string Format
         {
             get; set;
-        }
+        } = string.Empty;
         public int FormatId
         {
             get; set;
@@ -28,6 +28,6 @@ namespace Frameset.Office.Annotation
         public string Formula
         {
             get; set;
-        }
+        } = string.Empty;
     }
 }

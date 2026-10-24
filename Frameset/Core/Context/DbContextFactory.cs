@@ -15,7 +15,7 @@ namespace Frameset.Core.Context
         }
         public static IDbContext GetContext(string contextName = "core")
         {
-            if (contextMap.TryGetValue(contextName, out IDbContext context))
+            if (contextMap.TryGetValue(contextName, out IDbContext? context))
             {
                 return context;
             }

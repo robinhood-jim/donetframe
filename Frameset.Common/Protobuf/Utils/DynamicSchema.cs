@@ -1,5 +1,4 @@
 ﻿using Google.Protobuf.Reflection;
-using ProtoBuf;
 
 namespace Frameset.Common.Protobuf.Utils
 {
@@ -7,8 +6,8 @@ namespace Frameset.Common.Protobuf.Utils
     {
         private DescriptorProto fileDescriptor;
         private MessageDefinition messageDefinition;
-        private ProtoWriter protoWriter = null!;
-        private ProtoReader protoReader = null!;
+        //private ProtoWriter protoWriter = null!;
+        //private ProtoReader protoReader = null!;
         private DynamicSchema(MessageDefinition definition)
         {
             messageDefinition = definition;

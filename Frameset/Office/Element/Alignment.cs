@@ -19,9 +19,9 @@ namespace Frameset.Office.Element
             this.indent = indent;
         }
 
-        public override bool Equals(object obj)
+        public override bool Equals(object? obj)
         {
-            return obj is Alignment alignment &&
+            return obj != null && obj is Alignment alignment &&
                    horizontal == alignment.horizontal &&
                    vertical == alignment.vertical &&
                    wrapText == alignment.wrapText &&

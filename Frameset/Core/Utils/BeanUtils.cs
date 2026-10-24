@@ -12,7 +12,7 @@ namespace Frameset.Core.Utils
     public class BeanUtils
     {
         private static readonly WeakLruDictionary<Type, Dictionary<string, PropertyInfo>> typeProperties = new(200);
-        public static void CopyProperties(object source, object target, string[] ignoreColumns = null)
+        public static void CopyProperties(object source, object target, string[]? ignoreColumns = null)
         {
             Trace.Assert(source != null && target != null, "");
             bool issourceDict = source.GetType().IsAssignableFrom(typeof(Dictionary<string, object>));
@@ -27,10 +27,11 @@ namespace Frameset.Core.Utils
             }
             else
             {
-                List<string> ignoreColumnList = ignoreColumns.IsNullOrEmpty() ? [] : [.. ignoreColumns];
+                List<string> ignoreColumnList = ignoreColumns != null && !ignoreColumns.IsNullOrEmpty() ? new(ignoreColumns) : [];
                 if (issourceDict)
                 {
-                    Dictionary<string, object> sourceMap = source as Dictionary<string, object>;
+                    Dictionary<string, object>? sourceMap = source as Dictionary<string, object>;
+                    Trace.Assert(sourceMap != null);
                     if (!istargetDict)
                     {
                         foreach (KeyValuePair<string, object> pair in sourceMap)
@@ -47,7 +48,8 @@ namespace Frameset.Core.Utils
                     }
                     else
                     {
-                        Dictionary<string, object> targetDict = target as Dictionary<string, object>;
+                        Dictionary<string, object>? targetDict = target as Dictionary<string, object>;
+                        Trace.Assert(targetDict != null);
                         foreach (KeyValuePair<string, object> pair in sourceMap)
                         {
                             if (!ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
@@ -61,14 +63,15 @@ namespace Frameset.Core.Utils
                 else
                 {
                     Dictionary<string, PropertyInfo> propDict = GetPropertyInfos(source.GetType());
-                    Dictionary<string, object> targetDict = target as Dictionary<string, object>;
+                    Dictionary<string, object>? targetDict = target as Dictionary<string, object>;
+                    Trace.Assert(targetDict != null);
                     foreach (KeyValuePair<string, PropertyInfo> pair in propDict)
                     {
                         if (!ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
                         {
                             continue;
                         }
-                        object value = pair.Value.GetMethod.Invoke(source, []);
+                        object? value = pair.Value.GetMethod?.Invoke(source, []);
                         if (value != null)
                         {
                             targetDict[pair.Key] = value;
@@ -77,11 +80,11 @@ namespace Frameset.Core.Utils
                 }
             }
         }
-        public static void CopyPropertiesWithMap(object source, object target, Dictionary<string, string> mappingDict, string[] ignoreColumns = null)
+        public static void CopyPropertiesWithMap(object source, object target, Dictionary<string, string> mappingDict, string[]? ignoreColumns = null)
         {
             bool issourceDict = source.GetType().IsAssignableFrom(typeof(Dictionary<string, object>));
             bool istargetDict = target.GetType().IsAssignableFrom(typeof(Dictionary<string, object>));
-            List<string> ignoreColumnList = ignoreColumns.IsNullOrEmpty() ? [] : [.. ignoreColumns];
+            List<string> ignoreColumnList = ignoreColumns != null && !ignoreColumns.IsNullOrEmpty() ? new(ignoreColumns) : [];
             if (!issourceDict && !istargetDict)
             {
                 Dictionary<string, PropertyInfo> propDict = GetPropertyInfos(source.GetType());
@@ -93,8 +96,8 @@ namespace Frameset.Core.Utils
                         {
                             continue;
                         }
-                        object sourceVal = pair.Value.GetMethod.Invoke(source, []);
-                        if (sourceVal != null && mappingDict.TryGetValue(pair.Key, out string mappingColumn))
+                        object? sourceVal = pair.Value.GetMethod?.Invoke(source, []);
+                        if (sourceVal != null && mappingDict.TryGetValue(pair.Key, out string? mappingColumn))
                         {
                             SetProperty(sourceVal, mappingColumn, target);
                         }
@@ -105,7 +108,8 @@ namespace Frameset.Core.Utils
             {
                 if (issourceDict)
                 {
-                    Dictionary<string, object> sourceMap = source as Dictionary<string, object>;
+                    Dictionary<string, object>? sourceMap = source as Dictionary<string, object>;
+                    Trace.Assert(sourceMap != null);
                     if (!istargetDict)
                     {
                         foreach (KeyValuePair<string, object> pair in sourceMap)
@@ -114,7 +118,7 @@ namespace Frameset.Core.Utils
                             {
                                 continue;
                             }
-                            if (pair.Value != null && mappingDict.TryGetValue(pair.Key, out string mappingColumn))
+                            if (pair.Value != null && mappingDict.TryGetValue(pair.Key, out string? mappingColumn))
                             {
                                 SetProperty(pair.Value, mappingColumn, target);
                             }
@@ -122,14 +126,15 @@ namespace Frameset.Core.Utils
                     }
                     else
                     {
-                        Dictionary<string, object> targetDict = target as Dictionary<string, object>;
+                        Dictionary<string, object>? targetDict = target as Dictionary<string, object>;
+                        Trace.Assert(targetDict != null);
                         foreach (KeyValuePair<string, object> pair in sourceMap)
                         {
                             if (!ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
                             {
                                 continue;
                             }
-                            if (pair.Value != null && mappingDict.TryGetValue(pair.Key, out string mappingColumn))
+                            if (pair.Value != null && mappingDict.TryGetValue(pair.Key, out string? mappingColumn))
                             {
                                 targetDict[mappingColumn] = pair.Value;
                             }
@@ -140,15 +145,16 @@ namespace Frameset.Core.Utils
                 else
                 {
                     Dictionary<string, PropertyInfo> propDict = GetPropertyInfos(source.GetType());
-                    Dictionary<string, object> targetDict = target as Dictionary<string, object>;
+                    Dictionary<string, object>? targetDict = target as Dictionary<string, object>;
+                    Trace.Assert(targetDict != null);
                     foreach (KeyValuePair<string, PropertyInfo> pair in propDict)
                     {
                         if (!ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
                         {
                             continue;
                         }
-                        object value = pair.Value.GetMethod.Invoke(source, []);
-                        if (value != null && mappingDict.TryGetValue(pair.Key, out string mappingColumn))
+                        object? value = pair.Value.GetMethod?.Invoke(source, []);
+                        if (value != null && mappingDict.TryGetValue(pair.Key, out string? mappingColumn))
                         {
                             targetDict[mappingColumn] = value;
                         }
@@ -174,48 +180,50 @@ namespace Frameset.Core.Utils
             }
             return propDict;
         }
-        private static void CopySameType(object source, object target, string[] ignoreColumns)
+        private static void CopySameType(object source, object target, string[]? ignoreColumns)
         {
             Dictionary<string, PropertyInfo> properties = GetPropertyInfos(source.GetType());
-            List<string> ignoreColumnList = ignoreColumns.IsNullOrEmpty() ? [] : [.. ignoreColumns];
+            List<string> ignoreColumnList = ignoreColumns != null && !ignoreColumns.IsNullOrEmpty() ? new(ignoreColumns) : [];
             foreach (KeyValuePair<string, PropertyInfo> pair in properties)
             {
                 if (!ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
                 {
                     continue;
                 }
-                object sourceVal = pair.Value.GetMethod.Invoke(source, []);
+                object? sourceVal = pair.Value.GetMethod?.Invoke(source, []);
                 if (sourceVal != null)
                 {
-                    pair.Value.SetMethod.Invoke(target, [sourceVal]);
+                    pair.Value.SetMethod?.Invoke(target, [sourceVal]);
                 }
 
             }
         }
-        private static void SetProperties(object input, object target, string[] ignoreColumns)
+        private static void SetProperties(object input, object target, string[]? ignoreColumns)
         {
             Dictionary<string, PropertyInfo> propDict = GetPropertyInfos(input.GetType());
-            List<string> ignoreColumnList = ignoreColumns.IsNullOrEmpty() ? [] : [.. ignoreColumns];
+            List<string> ignoreColumnList = ignoreColumns != null && !ignoreColumns.IsNullOrEmpty() ? new(ignoreColumns) : [];
             if (!propDict.IsNullOrEmpty())
             {
                 foreach (KeyValuePair<string, PropertyInfo> pair in propDict)
                 {
-                    if (!ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
+                    if (ignoreColumns != null && !ignoreColumns.IsNullOrEmpty() && ignoreColumnList.Contains(pair.Key))
                     {
                         continue;
                     }
-                    SetProperty(pair.Value.GetMethod.Invoke(input, []), pair.Key, target);
+                    SetProperty(pair.Value.GetMethod?.Invoke(input, []), pair.Key, target);
                 }
             }
         }
-        private static void SetProperty(object input, string propertyName, object targetObj)
+        private static void SetProperty(object? input, string propertyName, object targetObj)
         {
             if (input != null && !string.IsNullOrWhiteSpace(input.ToString()))
             {
                 Dictionary<string, PropertyInfo> targetProperties = GetPropertyInfos(targetObj.GetType());
-                if (targetProperties.TryGetValue(propertyName, out PropertyInfo propertyInfo))
+                if (targetProperties.TryGetValue(propertyName, out PropertyInfo? propertyInfo))
                 {
-                    propertyInfo.SetMethod.Invoke(targetObj, [ConvertUtil.ParseByType(propertyInfo.GetMethod.ReturnType, input)]);
+                    Type? retType = propertyInfo.GetMethod?.ReturnType;
+                    Trace.Assert(retType != null);
+                    propertyInfo.SetMethod?.Invoke(targetObj, [ConvertUtil.ParseByType(retType, input)]);
                 }
             }
         }

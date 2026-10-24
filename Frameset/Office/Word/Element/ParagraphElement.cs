@@ -5,31 +5,31 @@ namespace Frameset.Office.Word.Element
 {
     public class ParagraphElement : IBodyElement
     {
-        public string Id
+        public string? Id
         {
             get; internal set;
         }
-        public string RsidR
+        public string? RsidR
         {
             get; internal set;
         }
-        public string RsidRDefault
+        public string? RsidRDefault
         {
             get; internal set;
         }
         public XRunElement Element
         {
             get; set;
-        }
+        } = null!;
         public List<XRunElement> Elements
         {
             get; internal set;
         } = [];
-        public string RunId
+        public string? RunId
         {
             get; set;
         }
-        public ParagraphElement(string id, string rsidR, string rsidRDefault, string runId, List<XRunElement> elements)
+        public ParagraphElement(string? id, string? rsidR, string? rsidRDefault, string? runId, List<XRunElement> elements)
         {
             this.Id = id;
             RsidR = rsidR;
@@ -44,7 +44,7 @@ namespace Frameset.Office.Word.Element
             return WordEnumType.BodyType.PARAGRAPH;
         }
 
-        public RelationShip GetRelation()
+        public RelationShip? GetRelation()
         {
             return null;
         }

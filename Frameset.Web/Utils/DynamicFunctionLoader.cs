@@ -79,7 +79,7 @@ namespace Frameset.Web.Utils
                     }
                     foreach (ServerlessParameter parameter in function.Parameters)
                     {
-                        if (parameter.TargetType.IsPrimitive)
+                        if (parameter.TargetType.IsFundmentalType())
                         {
                             if (queryMap.TryGetValue(parameter.ParameterName, out string? reqValue))
                             {

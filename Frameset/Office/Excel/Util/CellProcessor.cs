@@ -1,42 +1,42 @@
 ﻿using Frameset.Office.Core;
 using Frameset.Office.Element;
 using Frameset.Office.Meta;
-using Microsoft.IdentityModel.Tokens;
 using System;
+using System.Diagnostics;
 
 namespace Frameset.Office.Excel.Util
 {
     public class CellProcessor : IDisposable
     {
-        string type;
-        internal string StyleString
+        string type = null!;
+        internal string? StyleString
         {
             get; set;
-        }
+        } = null!;
         internal string FormatId
         {
             get; set;
-        } = null;
+        } = null!;
         internal string FormatString
         {
             get; set;
-        } = null;
+        } = null!;
         internal CellAddress Address
         {
             get; set;
-        }
-        internal object Value
+        } = null!;
+        internal object? Value
         {
             get; set;
-        } = null;
-        internal string Formula
+        } = null!;
+        internal string? Formula
         {
             get; set;
-        } = null;
+        } = null!;
         internal string RawValue
         {
             get; set;
-        } = null;
+        } = null!;
         internal CellType CellType
         {
             get; set;
@@ -44,11 +44,11 @@ namespace Frameset.Office.Excel.Util
         internal string DataFormatId
         {
             get; set;
-        }
+        } = null!;
         internal string DataFormatString
         {
             get; set;
-        }
+        } = null!;
 
 
         public CellProcessor()
@@ -60,11 +60,13 @@ namespace Frameset.Office.Excel.Util
 
         public void SetValue(XMLStreamReader r, WorkBook workBook, CellAddress address)
         {
-            type = r.GetAttribute("t");
-            if (type.IsNullOrEmpty())
+            string? seltype = r.GetAttribute("t");
+            if (string.IsNullOrWhiteSpace(seltype))
             {
-                type = r.GetAttribute("n");
+                seltype = r.GetAttribute("n");
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(seltype));
+            type = seltype;
             StyleString = r.GetAttribute("s");
             this.Address = address;
 
@@ -90,7 +92,7 @@ namespace Frameset.Office.Excel.Util
         {
             return CellType;
         }
-        public object GetValue()
+        public object? GetValue()
         {
             return Value;
         }
@@ -98,7 +100,7 @@ namespace Frameset.Office.Excel.Util
         {
             return RawValue;
         }
-        public string GetFormula()
+        public string? GetFormula()
         {
             return Formula;
         }

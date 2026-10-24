@@ -12,11 +12,11 @@ namespace Frameset.Core.Mapper.Segment
         public string KeyProperty
         {
             get; internal set;
-        }
+        } = null!;
         public string SequenceName
         {
             get; set;
-        }
+        } = null!;
         public SqlInsertSegment(string nameSpace, string id, string type, string resultMap, string parameterType, IList<AbstractSegment> segments) : base(nameSpace, id, type, resultMap, parameterType, segments)
         {
 

@@ -1,6 +1,6 @@
-﻿using Microsoft.IdentityModel.Tokens;
-using System;
+﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -14,15 +14,16 @@ namespace Frameset.Core.Utils
         private static IList<CompressType> compressTypes = new List<CompressType>();
         static FileUtil()
         {
-            Type type = MethodBase.GetCurrentMethod().DeclaringType;
+            Type? type = MethodBase.GetCurrentMethod()?.DeclaringType;
 
-            string _namespace = type.Namespace;
+            string? _namespace = type?.Namespace;
 
             Assembly _assembly = Assembly.GetExecutingAssembly();
             string resourceName = "Frameset.Resources.contenttype.properties";
 
-            Stream stream = _assembly.GetManifestResourceStream(resourceName);
-            string line = null;
+            Stream? stream = _assembly.GetManifestResourceStream(resourceName);
+            string? line = null;
+            Trace.Assert(stream != null);
             using (StreamReader reader = new StreamReader(stream))
             {
                 while ((line = reader.ReadLine()) != null)
@@ -39,7 +40,7 @@ namespace Frameset.Core.Utils
 
             }
         }
-        public static Stream ReadStreamInPackage(string resourceName)
+        public static Stream? ReadStreamInPackage(string resourceName)
         {
             Assembly _assembly = Assembly.GetExecutingAssembly();
             return _assembly.GetManifestResourceStream(resourceName);
@@ -85,9 +86,8 @@ namespace Frameset.Core.Utils
                             continue;
                         }
                     }
-                    string contentType;
-                    contentTypeMap.TryGetValue(namePart[i].ToLower(), out contentType);
-                    if (!contentType.IsNullOrEmpty())
+                    contentTypeMap.TryGetValue(namePart[i].ToLower(), out string? contentType);
+                    if (!string.IsNullOrWhiteSpace(contentType))
                     {
                         meta.FileFormat = namePart[i].ToLower();
                         meta.ContentType = contentType;
@@ -112,15 +112,15 @@ namespace Frameset.Core.Utils
         public string FullName
         {
             get; internal set;
-        }
+        } = null!;
         public string FileName
         {
             get; internal set;
-        }
+        } = null!;
         public string Path
         {
             get; internal set;
-        }
+        } = null!;
         public CompressType CompressCodec
         {
             get; internal set;
@@ -128,11 +128,11 @@ namespace Frameset.Core.Utils
         public string FileFormat
         {
             get; internal set;
-        }
+        } = null!;
         public string ContentType
         {
             get; internal set;
-        }
+        } = null!;
 
     }
     public enum CompressType

@@ -23,18 +23,18 @@ namespace Frameset.Core.Context
         /// <returns></returns>
         bool SaveEntity<V>(V entity) where V : BaseEntity;
 
-        bool UpdateEntity<V, P>(V entity) where V : BaseEntity;
+        bool UpdateEntity<V, P>(V entity) where V : BaseEntity where P : notnull;
 
-        int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity;
+        int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity where P : notnull;
 
-        int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status) where V : BaseEntity;
+        int RemoveLogic<V, P>(List<P> pks, string logicColumn, int status) where V : BaseEntity where P : notnull;
 
-        V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity;
+        V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity where P : notnull;
         List<Dictionary<string, object>> QueryBySql(string sql, object[] values);
 
-        List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string orderByStr = null) where V : BaseEntity;
+        List<V> QueryModelsByField<V>(string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null) where V : BaseEntity;
 
-        List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject);
+        List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject, List<string>? inputParameters = null);
         int ExecuteMapper(string nameSpace, string exeId, object input);
         int Execute(string sql, DbParameter[] parameters);
 
@@ -47,7 +47,7 @@ namespace Frameset.Core.Context
 
         void RestoreDs();
         string GetDsName();
-        List<V> QueryByCondition<V>(FilterCondition condition, PageQuery query = null) where V : BaseEntity;
+        List<V> QueryByCondition<V>(FilterCondition condition, PageQuery? query = null) where V : BaseEntity;
         List<O> QueryByCondition<V, O>(FilterCondition condition) where V : BaseEntity;
 
         List<O> QueryByFields<V, O>(QueryParameter queryParams) where V : BaseEntity;

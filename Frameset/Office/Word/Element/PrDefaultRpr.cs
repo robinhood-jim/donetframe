@@ -15,10 +15,10 @@ namespace Frameset.Office.Word.Element
         public string Sz
         {
             get; set;
-        }
+        } = null!;
         public string SzCs
         {
             get; set;
-        }
+        } = null!;
     }
 }

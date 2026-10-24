@@ -20,11 +20,11 @@ namespace Frameset.Core.Service
         List<Dictionary<string, object>> QueryBySql(string sql, object[] values);
         V GetById(P id, bool ignoreLogic = false);
         int RemoveEntity(List<P> ids);
-        List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject);
+        List<dynamic> QueryMapper(string nameSpace, string queryId, object queryObject, List<string>? inputParameters = null);
         int ExecuteMapper(string nameSpace, string queryId, object queryObject);
         PageDTO<O> QueryPage<O>(PageQuery query);
         PageDTO<V> QueryModelsPage(PageQuery query);
-        List<V> QueryByCondition(FilterCondition condition, PageQuery query);
+        List<V> QueryByCondition(FilterCondition condition, PageQuery? query = null);
         List<O> QueryByCondition<O>(FilterCondition condition);
         int RemoveByFields(string fieldName, Constants.SqlOperator sqlOperator, object[] values);
         long InsertBatch(IEnumerable<V> models, CancellationToken token);

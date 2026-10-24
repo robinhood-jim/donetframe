@@ -17,7 +17,7 @@ namespace Frameset.Core.Common
         /// <typeparam name="Entity">要绑定的类型</typeparam> 
         /// <param name="keyPath">配置文件路径</param> 
         /// <returns>绑定的类</returns> 
-        public static Entity GetSectionObject<Entity>(string keyPath = null) where Entity : new()
+        public static Entity GetSectionObject<Entity>(string? keyPath = null) where Entity : new()
         {
             var entity = new Entity();
             if (string.IsNullOrEmpty(keyPath))

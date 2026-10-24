@@ -134,7 +134,9 @@ namespace Frameset.Common.FileSystem.utils
             Dictionary<string, object>? valueMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await message.Content.ReadAsStreamAsync());
             if (valueMap != null && valueMap.TryGetValue("FileStatus", out object? filestatusObj))
             {
-                return filestatusObj as Dictionary<string, object>;
+                Dictionary<string, object>? retDict = filestatusObj as Dictionary<string, object>;
+                Trace.Assert(retDict != null, "");
+                return retDict;
             }
             return new();
         }
