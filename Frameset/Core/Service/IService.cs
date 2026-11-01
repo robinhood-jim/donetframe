@@ -8,6 +8,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Threading;
 
 namespace Frameset.Core.Service
@@ -36,5 +37,6 @@ namespace Frameset.Core.Service
         void ResetCommitStatus();
         int Execute(string sql, DbParameter[] parameters);
         IAdoDao GetDao();
+        IQueryable<V> Query();
     }
 }

@@ -54,7 +54,7 @@ namespace Frameset.Core.Dao.Meta
             catch (Exception ex)
             {
                 transaction.Rollback();
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
         }
         public override long BatchInsert(IAdoDao dao, DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
@@ -74,7 +74,7 @@ namespace Frameset.Core.Dao.Meta
             catch (Exception ex)
             {
                 transaction.Rollback();
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
         }
 

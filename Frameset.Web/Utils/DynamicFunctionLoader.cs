@@ -1,5 +1,6 @@
 ﻿using Frameset.Common.Annotation;
 using Frameset.Core.Common;
+using Frameset.Core.Utils;
 using Microsoft.AspNetCore.Http;
 using Microsoft.IdentityModel.Tokens;
 using System.Diagnostics;
@@ -79,7 +80,7 @@ namespace Frameset.Web.Utils
                     }
                     foreach (ServerlessParameter parameter in function.Parameters)
                     {
-                        if (parameter.TargetType.IsFundmentalType())
+                        if (parameter.TargetType.IsFundamentalType())
                         {
                             if (queryMap.TryGetValue(parameter.ParameterName, out string? reqValue))
                             {

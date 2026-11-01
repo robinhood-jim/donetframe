@@ -18,26 +18,28 @@ namespace Frameset.Common.Compress
         {
             Trace.Assert(rawstream != null);
             FileMeta meta = FileUtil.Parse(resourcePath, dirSep);
-            Stream inputStream = meta.CompressCodec switch
+            try
             {
-                CompressType.GZ => new GZipInputStream(rawstream),
-                CompressType.LZ4 => LZ4Stream.Decode(rawstream),
-                CompressType.ZIP => GetZipStream(rawstream),
-                CompressType.BZ2 => new BZip2InputStream(rawstream),
-                CompressType.ZSTD => new ZstdSharp.DecompressionStream(rawstream),
-                CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Decompress),
-                CompressType.LZMA => GetLzmaStream(rawstream, streamSize),
-                CompressType.XZ => new XZStream(rawstream),
-                CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Decompress),
-                _ => rawstream
-            };
-            if (inputStream != null)
-            {
+                Stream inputStream = meta.CompressCodec switch
+                {
+                    CompressType.GZ => new GZipInputStream(rawstream),
+                    CompressType.LZ4 => LZ4Stream.Decode(rawstream),
+                    CompressType.ZIP => GetZipStream(rawstream),
+                    CompressType.BZ2 => new BZip2InputStream(rawstream),
+                    CompressType.ZSTD => new ZstdSharp.DecompressionStream(rawstream),
+                    CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Decompress),
+                    CompressType.LZMA => GetLzmaStream(rawstream, streamSize),
+                    CompressType.XZ => new XZStream(rawstream),
+                    CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Decompress),
+                    _ => rawstream
+                };
+
                 return new BufferedStream(inputStream);
+
             }
-            else
+            catch (Exception ex)
             {
-                throw new OperationFailedException("failed to read from " + resourcePath);
+                throw new OperationFailedException(ex.Message, ex);
             }
         }
         private static Stream GetLzmaStream(Stream rawstream, long compressLength)

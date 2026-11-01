@@ -21,7 +21,7 @@ namespace Frameset.Core.Dao.Meta
 {
     public abstract class AbstractSqlDialect : ISqlDialect
     {
-        internal static string ORDERSTR = "order by";
+        public static readonly string ORDERSTR = "order by";
 
         public virtual string GetDecimalScript(int scale, int precise)
         {
@@ -132,9 +132,6 @@ namespace Frameset.Core.Dao.Meta
         {
             return "DATE";
         }
-
-
-
         public virtual string GetBlobFormat(FieldContent content)
         {
             return "BLOB";
@@ -143,8 +140,6 @@ namespace Frameset.Core.Dao.Meta
         {
             return "NUMERIC(" + content.Scale + "," + content.Precise + ")";
         }
-
-
         public virtual string GetClobFormat(FieldContent content)
         {
             return "TEXT";
@@ -269,7 +264,6 @@ namespace Frameset.Core.Dao.Meta
         {
             throw new NotImplementedException();
         }
-
         public virtual string GetTruncateTableStatement(string tableName)
         {
             return "TRUNCATE TABLE" + tableName;
@@ -282,8 +276,6 @@ namespace Frameset.Core.Dao.Meta
         {
             return false;
         }
-
-
         public virtual long QueryIdentityByTable(IAdoDao dao, DbConnection connection, string schema, string tableName)
         {
             throw new NotSupportedException();
@@ -294,11 +286,10 @@ namespace Frameset.Core.Dao.Meta
         }
         internal string GetNoPageSql(string sql, PageQuery pageQuery)
         {
-
             StringBuilder builder = new StringBuilder(sql);
-            if (!pageQuery.Order.IsNullOrEmpty() || (!pageQuery.OrderField.IsNullOrEmpty()))
+            if (!string.IsNullOrWhiteSpace(pageQuery.Order) || !string.IsNullOrWhiteSpace(pageQuery.OrderField))
             {
-                if (!pageQuery.Order.IsNullOrEmpty())
+                if (!string.IsNullOrWhiteSpace(pageQuery.Order))
                 {
                     builder.Append(" order by ").Append(pageQuery.Order);
                 }
@@ -307,7 +298,6 @@ namespace Frameset.Core.Dao.Meta
                     builder.Append(" order by ").Append(pageQuery.OrderField).Append(pageQuery.OrderAsc ? " ASC" : " DESC");
                 }
             }
-
             return builder.ToString();
         }
         internal Tuple<long, long> GetStartEndRecord(PageQuery pageQuery)
@@ -324,11 +314,11 @@ namespace Frameset.Core.Dao.Meta
         {
             StringBuilder pagingSelect = new StringBuilder();
             pagingSelect.Append("select * from ( select r.*,row_number() over(");
-            if (!pageQuery.Order.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(pageQuery.Order))
             {
                 pagingSelect.Append(ORDERSTR).Append(pageQuery.Order).Append(") as rownum");
             }
-            else if (!pageQuery.OrderField.IsNullOrEmpty())
+            else if (!string.IsNullOrWhiteSpace(pageQuery.OrderField))
             {
                 pagingSelect.Append(ORDERSTR).Append(pageQuery.OrderField).Append(" ").Append(pageQuery.OrderAsc ? " ASC" : " DESC").Append(") as rownum");
             }

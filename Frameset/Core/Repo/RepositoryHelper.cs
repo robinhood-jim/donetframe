@@ -72,16 +72,16 @@ namespace Frameset.Core.Repo
             {
                 builder.Remove(builder.Length - 5, 5);
             }
-            if (!query.Order.IsNullOrEmpty())
+            if (!string.IsNullOrWhiteSpace(query.Order))
             {
                 builder.Append(" ORDER BY ").Append(query.Order);
             }
-            else if (!query.OrderField.IsNullOrEmpty())
+            else if (!string.IsNullOrWhiteSpace(query.OrderField))
             {
                 fieldMap.TryGetValue(query.OrderField, out FieldContent? fieldContent);
                 if (fieldContent == null)
                 {
-                    throw new OperationFailedException("orderField " + query.OrderField + " not in table!");
+                    throw new OperationFailedException($"orderField {query.OrderField} not in table!");
                 }
                 builder.Append(" ORDER BY ").Append(fieldContent.FieldName).Append(query.OrderAsc ? " ASC" : " DESC");
             }
@@ -156,7 +156,7 @@ namespace Frameset.Core.Repo
             catch (Exception ex)
             {
                 transaction.Rollback();
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
             finally
             {
@@ -180,7 +180,7 @@ namespace Frameset.Core.Repo
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    throw new BaseSqlException(ex.Message);
+                    throw new BaseSqlException(ex.Message,ex);
                 }
                 finally
                 {
@@ -209,20 +209,16 @@ namespace Frameset.Core.Repo
             StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
 
             List<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
-            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
             //add logicColumn in query
-            if (!propertyName.Equals(logicColumn.FieldName))
+            if (logicColumn!=null &&  !propertyName.Equals(logicColumn.FieldName))
             {
-                if (logicColumn != null)
-                {
-                    builder.Append(" and ").Append(logicColumn.FieldName).Append("=@").Append(parameters.Count);
-                    parameters.Add(dao.GetDialect().WrapParameter(parameters.Count, logicColumn.ValidValue));
-                }
-
-                if (!orderByStr.IsNullOrEmpty())
-                {
-                    builder.Append(" order by ").Append(orderByStr);
-                }
+                builder.Append(" and ").Append(logicColumn.FieldName).Append("=@").Append(parameters.Count);
+                parameters.Add(dao.GetDialect().WrapParameter(parameters.Count, logicColumn.ValidValue));
+            }
+            if (!string.IsNullOrWhiteSpace(orderByStr))
+            {
+                builder.Append(" order by ").Append(orderByStr);
             }
             return Tuple.Create(builder, parameters);
         }
@@ -243,7 +239,7 @@ namespace Frameset.Core.Repo
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    throw new BaseSqlException(ex.Message);
+                    throw new BaseSqlException(ex.Message,ex);
                 }
                 finally
                 {
@@ -266,7 +262,7 @@ namespace Frameset.Core.Repo
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    throw new BaseSqlException(ex.Message);
+                    throw new BaseSqlException(ex.Message,ex);
                 }
                 finally
                 {

@@ -20,7 +20,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
         {
             CompleteMultipartUploadRequest request = new CompleteMultipartUploadRequest(bucketName, key, UploadId);
             ObjectMetadata metadata = new ObjectMetadata();
-            metadata.ContentType = define.MetaData.ContentType;
+            metadata.ContentType = define.MetaData?.ContentType;
             metadata.ContentLength = TotalSize;
             request.Metadata = metadata;
             CompleteMultipartUploadResult result = ossClient.CompleteMultipartUpload(request);

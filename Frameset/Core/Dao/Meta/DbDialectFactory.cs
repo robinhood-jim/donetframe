@@ -8,7 +8,7 @@ namespace Frameset.Core.Dao.Meta
 {
     public class DbDialectFactory
     {
-        static readonly Dictionary<Constants.DbType, AbstractSqlDialect> metaMap =[];
+        static readonly Dictionary<Constants.DbType, AbstractSqlDialect> metaMap = [];
         static DbDialectFactory()
         {
             metaMap.Add(Constants.DbType.Mysql, new MySqlDialect());

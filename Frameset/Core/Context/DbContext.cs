@@ -26,12 +26,12 @@ namespace Frameset.Core.Context
 {
     public class DbContext : AbstractDbContext
     {
-        private readonly Timer timer;
-        private readonly AtomicBoolean refreshTag;
+        private readonly Timer _timer;
+        private readonly AtomicBoolean _refreshTag;
 
         public DbContext(string defaultDs = "core", bool autoScan = true)
         {
-            this.dsName = defaultDs;
+            this._dsName = defaultDs;
             this.ContextName = defaultDs;
             if (autoScan)
             {
@@ -39,9 +39,9 @@ namespace Frameset.Core.Context
                 RegisterExists(types.ToArray());
             }
             dao = DAOFactory.GetAdoDao(defaultDs);
-            timer = new Timer(new TimerCallback(OnTimerEvent));
-            timer.Change(60000 * 2, 60000 * 5);
-            refreshTag = new AtomicBoolean(false);
+            _timer = new Timer(new TimerCallback(OnTimerEvent));
+            _timer.Change(60000 * 2, 60000 * 5);
+            _refreshTag = new AtomicBoolean(false);
         }
         public void RegisterModels(Type[] models)
         {
@@ -50,7 +50,7 @@ namespace Frameset.Core.Context
 
         public override bool SaveEntity<V>(V entity)
         {
-            IMetaObjectHandler handler = GetObjectHandler();
+            IMetaObjectHandler? handler = GetObjectHandler();
             if (handler != null)
             {
                 Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(typeof(V));
@@ -72,7 +72,7 @@ namespace Frameset.Core.Context
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            if (!entityPkMap.TryGetValue(typeof(V), out FieldContent? pkColumn))
+            if (!_entityPkMap.TryGetValue(typeof(V), out FieldContent? pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + typeof(V).Name);
             }
@@ -82,7 +82,7 @@ namespace Frameset.Core.Context
 
             V origin = GetById<V, P>(pk);
             Trace.Assert(origin != null, "id not found in entity");
-            IMetaObjectHandler handler = GetObjectHandler();
+            IMetaObjectHandler? handler = GetObjectHandler();
             if (handler != null)
             {
                 Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(entityType);
@@ -144,8 +144,8 @@ namespace Frameset.Core.Context
         {
             Type entityType = typeof(V);
             CheckTypeExists(entityType);
-            entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
-            if (!entityPkMap.TryGetValue(typeof(V), out FieldContent? pkColumn))
+            _entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
+            if (!_entityPkMap.TryGetValue(typeof(V), out FieldContent? pkColumn))
             {
                 throw new BaseSqlException("pk column not found in Model " + typeof(V).Name);
             }
@@ -184,7 +184,7 @@ namespace Frameset.Core.Context
         {
             Type entityType = typeof(V);
             V entity = GetByIdSimple<V, P>(pk, ignoreLogic);
-            if (entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
+            if (_entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
             {
                 CrudUtils.WrapSubEntity<V>(this, typeof(V), [entity], tuple.Item2);
                 return entity;
@@ -206,7 +206,7 @@ namespace Frameset.Core.Context
                 }
                 catch (Exception ex)
                 {
-                    throw new BaseSqlException(ex.Message);
+                    throw new BaseSqlException(ex.Message,ex);
                 }
             }
         }
@@ -221,7 +221,7 @@ namespace Frameset.Core.Context
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
         }
         public override List<V> QueryByCondition<V>(FilterCondition condition, PageQuery? query = null)
@@ -236,7 +236,7 @@ namespace Frameset.Core.Context
                     List<V> retList = GetDao().QueryByCondition<V>(command, condition, query);
                     if (!retList.IsNullOrEmpty())
                     {
-                        if (entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
+                        if (_entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
                         {
                             CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
                         }
@@ -293,7 +293,7 @@ namespace Frameset.Core.Context
             List<V> retList = QueryModelsByFieldSimple<V>(propertyName, oper, values, orderByStr);
             if (!retList.IsNullOrEmpty())
             {
-                entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
+                _entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
                 Trace.Assert(tuple != null, "");
                 CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
             }
@@ -326,7 +326,7 @@ namespace Frameset.Core.Context
                         long totalCount = GetDao().QueryByLong(command, dbParameters);
                         command.CommandText = querySql;
                         List<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
-                        if (!list.IsNullOrEmpty() && entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
+                        if (!list.IsNullOrEmpty() && _entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
                         {
                             CrudUtils.WrapSubEntity(this, typeof(V), list, tuple.Item2);
                         }
@@ -356,7 +356,7 @@ namespace Frameset.Core.Context
         public override void ManyToOne(Type subType, string fieldName, Type parentType)
         {
             RegisterExists([subType, parentType]);
-            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>>? tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent>? dict))
+            if (_entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>>? tuple) && _fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent>? dict))
             {
                 tuple.Item1.ParentEntitys.Add(parentType);
                 if (dict.TryGetValue(fieldName, out FieldContent? fieldContent))
@@ -373,7 +373,7 @@ namespace Frameset.Core.Context
         public override void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH)
         {
             RegisterExists([subType, parentType]);
-            if (entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>>? tuple) && fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent>? dict))
+            if (_entityMap.TryGetValue(subType, out Tuple<EntityContent, List<FieldContent>>? tuple) && _fieldContentMap.TryGetValue(subType, out Dictionary<string, FieldContent>? dict))
             {
                 tuple.Item1.ParentEntitys.Add(parentType);
                 if (dict.TryGetValue(fieldName, out FieldContent? fieldContent))
@@ -436,11 +436,11 @@ namespace Frameset.Core.Context
             catch (Exception ex)
             {
                 unitofWork.Rollback();
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
             finally
             {
-                requestChanges.TryRemove(Thread.CurrentThread, out _);
+                _requestChanges.TryRemove(Thread.CurrentThread, out _);
                 unitofWork.Dispose();
                 unitOfWorkDict.TryRemove(Thread.CurrentThread, out _);
             }
@@ -449,20 +449,20 @@ namespace Frameset.Core.Context
         private UpdateEntry GetCurrrentUpdateEntry()
         {
             WaitForRefreshTimer().GetAwaiter().GetResult();
-            if (requestChanges.TryGetValue(Thread.CurrentThread, out UpdateEntry? entry))
+            if (_requestChanges.TryGetValue(Thread.CurrentThread, out UpdateEntry? entry))
             {
                 return entry;
             }
             else
             {
                 entry = new UpdateEntry();
-                requestChanges.TryAdd(Thread.CurrentThread, entry);
+                _requestChanges.TryAdd(Thread.CurrentThread, entry);
             }
             return entry;
         }
         private async Task WaitForRefreshTimer()
         {
-            while (refreshTag.Get())
+            while (_refreshTag.Get())
             {
                 Log.Information("refesh thread running,Waiting");
                 await Task.Delay(100);
@@ -620,13 +620,13 @@ namespace Frameset.Core.Context
         private void OnTimerEvent(object? source)
         {
             Trace.Assert(source != null);
-            if (!refreshTag.Get())
+            if (!_refreshTag.Get())
             {
-                refreshTag.Set(true);
+                _refreshTag.Set(true);
                 try
                 {
                     List<Thread> deleteList = [];
-                    foreach (var entry in requestChanges.Select(x => x.Key))
+                    foreach (var entry in _requestChanges.Select(x => x.Key))
                     {
                         if (!entry.IsAlive)
                         {
@@ -637,7 +637,7 @@ namespace Frameset.Core.Context
                     {
                         deleteList.ForEach(x =>
                         {
-                            while (!requestChanges.TryRemove(x, out _) && unitOfWorkDict.TryRemove(x, out _))
+                            while (!_requestChanges.TryRemove(x, out _) && unitOfWorkDict.TryRemove(x, out _))
                             {
                                 Thread.Sleep(2);
                             }
@@ -646,7 +646,7 @@ namespace Frameset.Core.Context
                 }
                 finally
                 {
-                    refreshTag.Set(false);
+                    _refreshTag.Set(false);
                 }
             }
         }
@@ -654,13 +654,13 @@ namespace Frameset.Core.Context
         {
             if (isDipsose)
             {
-                entityMap.Clear();
-                entityPkMap.Clear();
-                requestChanges.Clear();
-                timer?.Dispose();
-                fieldContentMap.Clear();
-                temporaryDsName?.Dispose();
-                autoCommitStatus?.Dispose();
+                _entityMap.Clear();
+                _entityPkMap.Clear();
+                _requestChanges.Clear();
+                _timer?.Dispose();
+                _fieldContentMap.Clear();
+                _temporaryDsName?.Dispose();
+                _autoCommitStatus?.Dispose();
             }
         }
     }

@@ -18,29 +18,29 @@ namespace Frameset.Common.Compress
             Trace.Assert(rawstream != null);
             FileMeta meta = FileUtil.Parse(resourcePath, Path.DirectorySeparatorChar);
             Trace.Assert(meta != null);
-            Stream outStream = meta.CompressCodec switch
+            try
             {
-                CompressType.GZ => new GZipOutputStream(rawstream),
-                CompressType.LZ4 => LZ4Stream.Encode(rawstream),
-                CompressType.ZIP => GetZipOutput(rawstream, meta),
-                CompressType.BZ2 => new BZip2OutputStream(rawstream),
-                CompressType.ZSTD => new ZstdSharp.CompressionStream(rawstream),
-                CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Compress),
-                CompressType.LZMA => LzmaStream.Create(LzmaEncoderProperties.Default, false, rawstream),
-                CompressType.XZ => new XZStream(rawstream),
-                CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Compress),
-                _ => rawstream
-            };
-
-            if (outStream != null)
-            {
+                Stream outStream = meta.CompressCodec switch
+                {
+                    CompressType.GZ => new GZipOutputStream(rawstream),
+                    CompressType.LZ4 => LZ4Stream.Encode(rawstream),
+                    CompressType.ZIP => GetZipOutput(rawstream, meta),
+                    CompressType.BZ2 => new BZip2OutputStream(rawstream),
+                    CompressType.ZSTD => new ZstdSharp.CompressionStream(rawstream),
+                    CompressType.BROTLI => new BrotliStream(rawstream, CompressionMode.Compress),
+                    CompressType.LZMA => LzmaStream.Create(LzmaEncoderProperties.Default, false, rawstream),
+                    CompressType.XZ => new XZStream(rawstream),
+                    CompressType.SNAPPY => new Snappier.SnappyStream(rawstream, CompressionMode.Compress),
+                    _ => rawstream
+                };
                 return new BufferedStream(outStream);
             }
-            else
+            catch (Exception ex)
             {
-                throw new OperationFailedException("failed to get outputStream from " + resourcePath);
+                throw new OperationFailedException(ex.Message, ex);
             }
         }
+    
         private static Stream GetZipOutput(Stream rawstream, FileMeta meta)
         {
             Stream outStream = new ZipOutputStream(rawstream);

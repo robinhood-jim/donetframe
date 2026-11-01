@@ -61,7 +61,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
                 BucketName = bucketName,
                 Key = key,
             };
-            request.ContentType = define.MetaData.ContentType;
+            request.ContentType = define.MetaData?.ContentType;
             request.Metadata.Add("content-length", Position.ToString());
             request.Metadata.Add("content-type", define.MetaData.ContentType);
             request.InputStream = partMemMap[0];

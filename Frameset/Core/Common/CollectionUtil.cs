@@ -6,15 +6,7 @@ namespace Frameset.Core.Common
 {
     public static class CollectionUtil
     {
-        public static bool IsFundmentalType(this Type classType)
-        {
-            Type cmpType = classType;
-            if (classType.IsGenericType && classType.GetGenericTypeDefinition() == typeof(Nullable<>))
-            {
-                cmpType = classType.GetGenericArguments()[0];
-            }
-            return cmpType.IsPrimitive || cmpType.IsEnum || cmpType.Equals(typeof(string)) || cmpType.Equals(typeof(decimal)) || cmpType.Equals(typeof(DateTime)) || cmpType.Equals(typeof(DateTimeOffset));
-        }
+
 
     }
     public static class DictionaryUtils
@@ -42,15 +34,7 @@ namespace Frameset.Core.Common
             }
             return false;
         }
-        public static bool IsTypeList(this Type classType)
-        {
-            if (classType.IsGenericType)
-            {
-                Type genericType = classType.GetGenericTypeDefinition();
-                return genericType == typeof(IList<>) || genericType == typeof(IEnumerable<>);
-            }
-            return false;
-        }
+        
 
     }
 }

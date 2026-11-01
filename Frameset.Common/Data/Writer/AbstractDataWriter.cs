@@ -27,10 +27,7 @@ namespace Frameset.Common.Data.Writer
         {
             get; internal set;
         }
-        internal Dictionary<string, object> cachedValue
-        {
-            get; set;
-        } = [];
+        
         internal Stream outputStream = null!;
         internal StreamWriter writer = null!;
         internal bool useWriter = false;
@@ -200,30 +197,13 @@ namespace Frameset.Common.Data.Writer
                             {
                                 return ConvertUtil.DatetimeToString(value, dateFormatter);
                             }
-                            else
-                            {
-                                return ConvertUtil.DatetimeToString(value, timestampFormatter);
-                            }
-                        }
-                        else
-                        {
-                            return valueStr;
+                            return ConvertUtil.DatetimeToString(value, timestampFormatter);
                         }
                     }
-                    else
-                    {
-                        return valueStr;
-                    }
-                }
-                else
-                {
-                    return "";
+                    return valueStr;
                 }
             }
-            else
-            {
-                return "";
-            }
+            return string.Empty;
         }
         internal CompressType GetCompressType()
         {
@@ -232,10 +212,7 @@ namespace Frameset.Common.Data.Writer
             {
                 return meta.CompressCodec;
             }
-            else
-            {
-                return CompressType.NONE;
-            }
+            return CompressType.NONE;
         }
         public abstract void FinishWrite();
         public abstract void WriteRecord(T value);
@@ -249,7 +226,7 @@ namespace Frameset.Common.Data.Writer
             useDictOutput = typeof(T).Equals(typeof(Dictionary<string, object>));
             return useDictOutput;
         }
-        internal object? GetOutput(DataSetColumnMeta column, object input)
+        internal object? GetOutput(DataSetColumnMeta column, object? input)
         {
             if (input != null)
             {
@@ -261,7 +238,7 @@ namespace Frameset.Common.Data.Writer
                     }
                     return input;
                 }
-                else if (column.ColumnType == Constants.MetaType.TIMESTAMP)
+                if (column.ColumnType == Constants.MetaType.TIMESTAMP)
                 {
                     if (input is DateTime || input is DateTimeOffset)
                     {
@@ -269,11 +246,9 @@ namespace Frameset.Common.Data.Writer
                     }
                     return input;
                 }
+                return Convert.ToString(input);
             }
-            else
-            {
-                return null;
-            }
+
             return null;
         }
     }

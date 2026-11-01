@@ -111,7 +111,7 @@ namespace Frameset.Office.Word.Util
                 }
                 else if (reader.IsStartElement("tbl"))
                 {
-                    TableElement tableElement = ParseTable();
+                    TableElement? tableElement = ParseTable();
                     if (tableElement != null)
                     {
                         bodyElement = tableElement;

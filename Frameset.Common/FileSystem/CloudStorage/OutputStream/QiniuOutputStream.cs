@@ -4,6 +4,7 @@ using Newtonsoft.Json;
 using Qiniu.Http;
 using Qiniu.Storage;
 using Qiniu.Util;
+using System.Diagnostics;
 using System.Reflection;
 
 namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
@@ -40,6 +41,7 @@ namespace Frameset.Common.FileSystem.CloudStorage.OutputStream
             string text = config.UpHost(accessKeyFromUpToken, bucketFromUpToken);
             string upToken = $"UpToken {token}";
             Dictionary<string, object> reqBody = new Dictionary<string, object>();
+            Trace.Assert(define.MetaData != null);
             reqBody.Add("fname", define.MetaData.FullName);
             reqBody.Add("mimeType", define.MetaData.ContentType);
             reqBody.Add("parts", etags.ToArray());

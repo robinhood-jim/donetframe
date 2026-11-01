@@ -42,7 +42,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
                 HeadObjectResult result = server.HeadObject(new HeadObjectRequest(GetBucketName(), resourcePath));
                 return result.size;
             }
-            throw new OperationFailedException("key " + resourcePath + " not found in bucket");
+            throw new OperationFailedException($"key {resourcePath} not found in bucket");
         }
 
         public override bool Delete(string resourcePath)
@@ -70,7 +70,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             {
                 return new FileStream(tmpFile, FileMode.Open);
             }
-            throw new OperationFailedException("key " + objectName + " not found in bucket");
+            throw new OperationFailedException($"key {objectName} not found in bucket");
         }
 
         internal override UploadPartSupportStream PutObject(string resourcePath)

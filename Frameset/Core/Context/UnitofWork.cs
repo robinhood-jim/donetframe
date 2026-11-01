@@ -27,10 +27,11 @@ namespace Frameset.Core.Context
                 {
                     transaction.Commit();
                 }
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 LogUtils.Error($"encounter error {ex.Message}");
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
             finally
             {
@@ -53,7 +54,7 @@ namespace Frameset.Core.Context
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
         }
         public DbConnection GetConnection()
@@ -72,16 +73,17 @@ namespace Frameset.Core.Context
                 {
                     transaction.Rollback();
                 }
-            }catch(Exception ex)
+            }
+            catch (Exception ex)
             {
                 LogUtils.Error($"encounter error {ex.Message}");
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
             finally
             {
                 DoClear();
             }
-            
+
         }
         internal void DoClear()
         {

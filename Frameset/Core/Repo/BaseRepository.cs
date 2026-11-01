@@ -13,8 +13,10 @@ using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
+using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
+using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
@@ -136,7 +138,7 @@ namespace Frameset.Core.Repo
                     return deleteFunc.Invoke(pks);
                 }
                 EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
-                TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
+                TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
                 if (logicColumn == null)
                 {
                     StringBuilder idsBuilder = new();
@@ -193,7 +195,7 @@ namespace Frameset.Core.Repo
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
             Dictionary<string, FieldContent> fieldContents = EntityReflectUtils.GetFieldsMap(entityType);
-            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
             try
             {
                 if (!fieldContents.TryGetValue(fieldName, out FieldContent? content))
@@ -265,40 +267,20 @@ namespace Frameset.Core.Repo
         {
             Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk);
             LogUtils.Debug($"getById query {selectSqlTuple.Item1}");
-            List<Dictionary<string, object>> list = QueryBySql(selectSqlTuple.Item1, [.. selectSqlTuple.Item2]);
-            V entity = Activator.CreateInstance<V>();
+            IAdoDao queryDao = GetDao();
+            using DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString());
+            connection.Open();
+            using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, selectSqlTuple.Item1);
+            DbParameter[] parameters = DaoUtils.ParseParameter(queryDao.GetDialect(), selectSqlTuple.Item2.ToArray());
 
-            if (!list.IsNullOrEmpty())
+            List<V> list = dao.QueryModelsBySql<V>(command, new(parameters));
+            
+            if (list.Count > 1)
             {
-                if (list.Count > 1)
-                {
-                    throw new BaseSqlException("id not unique");
-                }
-
-                Dictionary<string, object> map = list[0];
-                foreach (FieldContent fieldContent in fieldContents)
-                {
-                    if (fieldContent.IsOneToMany || !fieldContent.IsManyToOne || fieldContent.IsOneToMany)
-                    {
-                        continue;
-                    }
-                    object value = map[fieldContent.PropertyName];
-                    if (Convert.IsDBNull(value) && map.ContainsKey(fieldContent.PropertyName.ToLower()))
-                    {
-                        value = map[fieldContent.PropertyName.ToLower()];
-                    }
-                    if (Convert.IsDBNull(value) && map.ContainsKey(fieldContent.PropertyName.ToUpper()))
-                    {
-                        value = map[fieldContent.PropertyName.ToUpper()];
-                    }
-                    if (!Convert.IsDBNull(value))
-                    {
-                        fieldContent.SetMethod.Invoke(entity, [ConvertUtil.ParseByType(fieldContent.ParamType, value)]);
-                    }
-                }
-
+                throw new BaseSqlException("id not unique");
             }
-            return entity;
+            
+            return list[0];
 
         }
         public List<Dictionary<string, object>> QueryBySql(string sql, object[] values)
@@ -531,7 +513,7 @@ namespace Frameset.Core.Repo
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message);
+                throw new BaseSqlException(ex.Message,ex);
             }
         }
         public List<O> QueryByCondition<O>(FilterCondition condition, PageQuery? query = null)

@@ -165,7 +165,7 @@ namespace Frameset.Common.FileSystem
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
-            throw new OperationFailedException("failed to getInputStream " + resourcePath);
+            throw new OperationFailedException($"failed to getInputStream {resourcePath}");
         }
 
         public override Stream GetRawOutputStream(string resourcePath)
@@ -199,7 +199,7 @@ namespace Frameset.Common.FileSystem
             }
             else
             {
-                throw new OperationFailedException("failed " + resourcePath);
+                throw new OperationFailedException($"failed {resourcePath}");
             }
         }
 
@@ -391,7 +391,6 @@ namespace Frameset.Common.FileSystem
                 FinishOperator();
                 throw new OperationFailedException(ex.Message, ex);
             }
-            return false;
         }
     }
 }

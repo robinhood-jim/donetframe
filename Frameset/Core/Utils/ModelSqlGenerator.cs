@@ -6,6 +6,7 @@ using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using System;
 using System.Collections.Generic;
+using System.Diagnostics;
 using System.IO;
 using System.Linq;
 using System.Reflection;
@@ -37,12 +38,24 @@ namespace Frameset.Core.Utils
         public static List<Type> ScanModelTypes()
         {
             List<Type> retList = [];
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
+            Assembly? entryAssembly = Assembly.GetEntryAssembly();
+            Trace.Assert(entryAssembly!=null);
+            AssemblyName[] assemblies = entryAssembly.GetReferencedAssemblies();
+            List<AssemblyName> assemblyNames =
+            [
+                ..assemblies,
+                entryAssembly.GetName()
+            ];
 
-            foreach (Assembly assembly in assemblies)
+            foreach (AssemblyName assemblyName in assemblyNames)
             {
                 try
                 {
+                    Assembly assembly = Assembly.Load(assemblyName);
+                    if (StringUtils.IsAssemblySystem(assembly))
+                    {
+                        continue;
+                    }
                     retList.AddRange(assembly.GetTypes()
                                 .Where(t => t.IsClass && !t.IsAbstract && (t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 || t.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute), false).Length > 0))
                                 .ToList());

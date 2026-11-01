@@ -38,7 +38,7 @@ namespace Frameset.Common.Data.Reader
         {
             base.Initalize(filePath);
             MetaDefine.ResourceConfig.TryGetValue("orc.dynamicClassName", out string? className);
-            if (className.IsNullOrEmpty())
+            if (string.IsNullOrWhiteSpace(className))
             {
                 className = "DynamicObject" + DateTime.Now.Second;
             }

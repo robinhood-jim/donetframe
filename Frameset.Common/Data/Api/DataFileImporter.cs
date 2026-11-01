@@ -26,7 +26,7 @@ namespace Frameset.Common.Data.Api
             Trace.Assert(meta != null);
             collectionDefine.Path = processFile;
             IFileSystem fileSystem = FileSystemFactory.GetFileSystem(collectionDefine);
-            return GetEnumerator<T>(collectionDefine, fileFormat, fileSystem, initFunc);
+            return GetEnumerator(collectionDefine, fileFormat, fileSystem, initFunc);
         }
         public static AbstractDataIterator<T> GetReaderByType<T>(this IFileSystem fileSystem, string processPath, char? pathSepearatorStr = null, Action<AbstractDataIterator<T>>? initFunc = null)
         {

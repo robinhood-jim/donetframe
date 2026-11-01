@@ -2,6 +2,7 @@
 using Frameset.Core.Exceptions;
 using Frameset.Core.Model;
 using Frameset.Core.Repo;
+using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -32,7 +33,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append(entityContent.TableName);
             InsertSegment segment = new InsertSegment();
             FieldContent? appdendField = null;
-            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, vo.GetType());
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, vo.GetType());
             foreach (FieldContent content in fields)
             {
                 object? realVal = content.GetMethod.Invoke(vo, null);
@@ -100,7 +101,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append(entityContent.GetTableName());
             foreach (FieldContent content in fields)
             {
-                if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsFundmentalType())
+                if (!content.IfIncrement && !content.IfSequence && content.ParamType.IsFundamentalType())
                 {
                     columnsBuilder.Append(content.FieldName).Append(",");
                     valuesBuilder.Append("@" + content.FieldName).Append(",");
@@ -154,7 +155,7 @@ namespace Frameset.Core.Dao.Utils
                     }
                 }
             }
-            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, update.GetType());
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, update.GetType());
             if (logicColumn != null)
             {
                 whereSegment.Append(" and ").Append(logicColumn.FieldName).Append("=@valid");
@@ -198,7 +199,7 @@ namespace Frameset.Core.Dao.Utils
         public static Tuple<string, List<DbParameter>> GetRemoveCondition(IAdoDao dao, Type modelType, string fieldName, Constants.SqlOperator oper, object[] values)
         {
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
-            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
             Dictionary<string, FieldContent> fieldMaps = EntityReflectUtils.GetFieldsMap(modelType);
             if (!fieldMaps.TryGetValue(fieldName, out FieldContent? fieldContent))
             {
@@ -246,9 +247,21 @@ namespace Frameset.Core.Dao.Utils
                 }
             }
             return new StringBuilder("select ").Append(fieldsBuilder.ToString().Substring(0, fieldsBuilder.Length - 1)).Append(" from ").Append(tabBuilder).Append(' ').ToString();
-
         }
-
+        public static void GetSelectFields(Type modelType, out string selectFields)
+        {
+            StringBuilder builder = new StringBuilder();
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(modelType);
+            foreach (FieldContent content in fields)
+            {
+                if (!content.IsManyToOne && !content.IsOneToMany)
+                {
+                    builder.Append(content.FieldName).Append(" as ").Append(content.PropertyName).Append(",");
+                }
+            }
+            builder.Remove(builder.Length - 1, 1);
+            selectFields = builder.ToString();
+        }
 
         public static Tuple<string, List<object>> GetSelectByIdSql(IAdoDao dao, Type modelType, FieldContent content, object pk, bool ignoreLogic = false)
         {
@@ -256,7 +269,7 @@ namespace Frameset.Core.Dao.Utils
             StringBuilder selectBuilder = new StringBuilder(GetSelectSql(modelType));
             selectBuilder.Append(" where ").Append(content.FieldName).Append("=@0");
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(modelType);
-            TableLogicColumn logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, modelType);
             if (logicColumn != null && !ignoreLogic)
             {
                 selectBuilder.Append(" and ").Append(logicColumn.FieldName).Append("=@1");

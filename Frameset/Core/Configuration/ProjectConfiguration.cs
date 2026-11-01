@@ -47,7 +47,7 @@ namespace Frameset.Core.Configuration
         private CancellationTokenSource cancellation = null!;
         private string yamlPath = null!;
         //proxy Function to support Tracing 
-        private Func<string, AbstractSqlDialect> proxyFunc = null!;
+        private Func<string, AbstractSqlDialect>? proxyFunc ;
         public ProjectConfiguration(string yamlConfigFile)
         {
             this.yamlPath = yamlConfigFile;
@@ -123,10 +123,10 @@ namespace Frameset.Core.Configuration
                         tmpDict.TryAdd(keyStr, pair.Value);
                     }
                     tmpDict.TryGetValue(DBTYPE, out object? dbTypeObj);
-                    Trace.Assert(dbTypeObj != null && proxyFunc != null && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()), "missing config dbType");
+                    Trace.Assert(dbTypeObj != null  && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()), "missing config dbType");
                     string? dbTypeStr = dbTypeObj.ToString();
                     Trace.Assert(!string.IsNullOrWhiteSpace(dbTypeStr));
-                    DAOFactory.RegisterJdbcDao(key, tmpDict, proxyFunc.Invoke(dbTypeStr));
+                    DAOFactory.RegisterJdbcDao(key, tmpDict, proxyFunc?.Invoke(dbTypeStr));
                 }
             }
             //fileSystem 配置

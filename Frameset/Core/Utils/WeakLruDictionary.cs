@@ -16,8 +16,8 @@ namespace Frameset.Core.Utils;
 /// <typeparam name="TValue"></typeparam>
 public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDisposable where TValue : class where TKey : notnull
 {
-    private readonly ConcurrentDictionary<TKey, WeakReference<TValue>> lruDict = [];
-    private readonly ConcurrentDictionary<TKey, LinkedListNode<TKey>> nodeDict = [];
+    private readonly ConcurrentDictionary<TKey, WeakReference<TValue>> _lruDict = [];
+    private readonly ConcurrentDictionary<TKey, LinkedListNode<TKey>> _nodeDict = [];
     private readonly LinkedList<TKey> _lruList = new();
     private SpinLock _lruSpinLock = new SpinLock(false);
 
@@ -61,25 +61,25 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         }
     }
 
-    public ICollection<TKey> Keys => this.nodeDict.Keys;
+    public ICollection<TKey> Keys => this._nodeDict.Keys;
 
-    public ICollection<TValue> Values => lruDict.Select(kvp => kvp.Value.TryGetTarget(out var n) ? n : null).Where(v => v != null).ToList()!;
+    public ICollection<TValue> Values => _lruDict.Select(kvp => kvp.Value.TryGetTarget(out var n) ? n : null).Where(v => v != null).ToList()!;
 
-    public int Count => this.nodeDict.Count;
+    public int Count => this._nodeDict.Count;
 
     public bool IsReadOnly => false;
 
     public void Add(TKey key, TValue value)
     {
         CheckDisposed();
-        if (nodeDict.TryGetValue(key, out LinkedListNode<TKey>? listNode) && this.lruDict.TryGetValue(key, out WeakReference<TValue>? refrence))
+        if (_nodeDict.TryGetValue(key, out LinkedListNode<TKey>? listNode) && this._lruDict.TryGetValue(key, out WeakReference<TValue>? refrence))
         {
             if (refrence.TryGetTarget(out TValue? node))
             {
                 node = null!;
-                lruDict.TryRemove(key, out _);
+                _lruDict.TryRemove(key, out _);
                 WeakReference<TValue> weakReference = new WeakReference<TValue>(value);
-                lruDict[key] = weakReference;
+                _lruDict[key] = weakReference;
 
                 bool lockTaken = false;
                 try
@@ -97,13 +97,13 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         else
         {
             bool lockTaken = false;
-            lruDict[key] = new WeakReference<TValue>(value);
+            _lruDict[key] = new WeakReference<TValue>(value);
             try
             {
                 _lruSpinLock.Enter(ref lockTaken);
                 EvictIfOverCapacity();
                 LinkedListNode<TKey> linkedListNode = new LinkedListNode<TKey>(key);
-                nodeDict[key] = linkedListNode;
+                _nodeDict[key] = linkedListNode;
                 _lruList.AddLast(linkedListNode);
             }
             finally
@@ -118,7 +118,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
     public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
     public bool TryAdd(TKey key, TValue value)
     {
-        if (!this.lruDict.TryGetValue(key, out _))
+        if (!this._lruDict.TryGetValue(key, out _))
         {
             Add(key, value);
             return true;
@@ -134,7 +134,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         {
             _lruSpinLock.Enter(ref lockTaken);
             _lruList.Clear();
-            nodeDict.Clear();
+            _nodeDict.Clear();
         }
         finally
         {
@@ -147,7 +147,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         return TryGetValue(item.Key, out var value) && EqualityComparer<TValue>.Default.Equals(value, item.Value);
     }
 
-    public bool ContainsKey(TKey key) => nodeDict.ContainsKey(key);
+    public bool ContainsKey(TKey key) => _nodeDict.ContainsKey(key);
 
     public void CopyTo(KeyValuePair<TKey, TValue>[] array, int arrayIndex)
     {
@@ -161,7 +161,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         try
         {
             _lruSpinLock.Enter(ref lockTaken);
-            if (nodeDict.TryRemove(key, out var linknode))
+            if (_nodeDict.TryRemove(key, out var linknode))
             {
                 _lruList.Remove(linknode);
             }
@@ -171,7 +171,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         {
             if (lockTaken) _lruSpinLock.Exit();
         }
-        if (lruDict.TryRemove(key, out WeakReference<TValue>? reference) && reference.TryGetTarget(out TValue? node))
+        if (_lruDict.TryRemove(key, out WeakReference<TValue>? reference) && reference.TryGetTarget(out TValue? node))
         {
             node = null!;
             return true;
@@ -187,14 +187,14 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
 
     public bool TryGetValue(TKey key, out TValue value)
     {
-        if (lruDict.TryGetValue(key, out var valueReference) && valueReference.TryGetTarget(out TValue? value1))
+        if (_lruDict.TryGetValue(key, out var valueReference) && valueReference.TryGetTarget(out TValue? value1))
         {
             bool lockTaken = false;
             value = value1;
             try
             {
                 _lruSpinLock.Enter(ref lockTaken);
-                if (nodeDict.TryGetValue(key, out LinkedListNode<TKey>? linkNode))
+                if (_nodeDict.TryGetValue(key, out LinkedListNode<TKey>? linkNode))
                 {
                     _lruList.Remove(linkNode);
                     _lruList.AddLast(linkNode);
@@ -213,7 +213,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
         return false;
     }
 
-    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => nodeDict.Select(kvp => lruDict[kvp.Key].TryGetTarget(out var n) ? new KeyValuePair<TKey, TValue>(kvp.Key, n) : default).Where(p => p.Key != null).GetEnumerator();
+    public IEnumerator<KeyValuePair<TKey, TValue>> GetEnumerator() => _nodeDict.Select(kvp => _lruDict[kvp.Key].TryGetTarget(out var n) ? new KeyValuePair<TKey, TValue>(kvp.Key, n) : default).Where(p => p.Key != null).GetEnumerator();
 
 
     IEnumerator IEnumerable.GetEnumerator() => GetEnumerator();
@@ -228,13 +228,13 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
             {
                 _lruSpinLock.Enter(ref lockTaken);
                 _lruList.Clear();
-                nodeDict.Clear();
+                _nodeDict.Clear();
             }
             finally
             {
                 if (lockTaken) _lruSpinLock.Exit();
             }
-            lruDict.Clear();
+            _lruDict.Clear();
             _isDisposed = true;
         }
     }
@@ -246,7 +246,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
     {
         CheckDisposed();
         // 遍历并发字典获取快照，避免多线程迭代冲突
-        foreach (var kvp in lruDict)
+        foreach (var kvp in _lruDict)
         {
             // 如果弱引用指向的包装器节点已经彻底死掉（说明外界和内部均无强引用持有它）
             if (!kvp.Value.TryGetTarget(out _))
@@ -270,11 +270,11 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
                 // 1. 从强引用链表和字典中移除
                 _lruList.RemoveFirst();
 
-                if (lruDict.TryRemove(evictedKey, out WeakReference<TValue>? reference) && reference.TryGetTarget(out TValue? removeNode))
+                if (_lruDict.TryRemove(evictedKey, out WeakReference<TValue>? reference) && reference.TryGetTarget(out TValue? removeNode))
                 {
                     removeNode = null!;
                 }
-                nodeDict.TryRemove(evictedKey, out _);
+                _nodeDict.TryRemove(evictedKey, out _);
             }
         }
     }

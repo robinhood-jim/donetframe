@@ -4,7 +4,7 @@ using System.Collections.Generic;
 
 namespace Frameset.Core.Model
 {
-    public class BaseEntity
+    public abstract class BaseEntity
     {
         private List<string> dirtyProperties = [];
         private List<BaseEntity> _subEntitys = [];

@@ -62,9 +62,11 @@ namespace Frameset.Common.Data.Reader
                 for (int i = 0; i < MetaDefine.ColumnList.Count; i++)
                 {
                     DataSetColumnMeta meta = MetaDefine.ColumnList[i];
-                    object? value = null;
-                    map?.TryGetValue(meta.ColumnCode, out value);
-                    CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormatter));
+                    Trace.Assert(map != null);
+                    if (map.TryGetValue(meta.ColumnCode, out object? value))
+                    {
+                        CachedValue.TryAdd(meta.ColumnCode, ConvertUtil.ConvertStringToTargetObject(value, meta, dateFormatter));
+                    }
 
                 }
                 ConstructReturn();

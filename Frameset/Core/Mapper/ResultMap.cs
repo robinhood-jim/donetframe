@@ -14,7 +14,7 @@ namespace Frameset.Core.Mapper
             }
             else
             {
-                Type? type = ClassUtils.GetUserType(modelType);
+                Type? type = modelType.GetUserType();
                 if (type != null)
                 {
                     ModelType = type;

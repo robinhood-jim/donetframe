@@ -37,7 +37,7 @@ namespace Frameset.Core.Dao
                     string processPath = yamlPath;
                     if (yamlPath.StartsWith("res:"))
                     {
-                        processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath.Substring(4, yamlPath.Length - 4);
+                        processPath = baseDirectory + Path.DirectorySeparatorChar + yamlPath[4..];
                     }
                     using StreamReader reader = File.OpenText(processPath);
                     keyValues = deserializer.Deserialize<Dictionary<string, object>>(reader);
@@ -71,7 +71,7 @@ namespace Frameset.Core.Dao
             }
         }
 
-        internal static IAdoDao RegisterJdbcDao(string key, Dictionary<string, object> dict, ISqlDialect sqlDialect, bool autoConstructDbContext = true)
+        internal static IAdoDao RegisterJdbcDao(string key, Dictionary<string, object> dict, ISqlDialect? sqlDialect, bool autoConstructDbContext = true)
         {
             IAdoDao dao = ConstructWithDict(dict, sqlDialect);
             containner.Add(key, dao);
@@ -100,7 +100,7 @@ namespace Frameset.Core.Dao
                 else
                 {
                     Trace.Assert(validValue != null && invalidValue != null);
-                    dao = new AdoDao(dbType, schema, builder.ToString().Substring(0, builder.Length - 1),
+                    dao = new AdoDao(dbType, schema, builder.ToString()[..(builder.Length - 1)],
                         logicColumnStr, validValue, invalidValue);
                 }
             }
@@ -108,12 +108,12 @@ namespace Frameset.Core.Dao
             {
                 if (string.IsNullOrEmpty(logicColumnStr))
                 {
-                    dao = new AdoDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1));
+                    dao = new AdoDao(sqlDialect, schema, builder.ToString()[..(builder.Length - 1)]);
                 }
                 else
                 {
                     Trace.Assert(validValue != null && invalidValue != null);
-                    dao = new AdoDao(sqlDialect, schema, builder.ToString().Substring(0, builder.Length - 1),
+                    dao = new AdoDao(sqlDialect, schema, builder.ToString()[..(builder.Length - 1)],
                         logicColumnStr, validValue, invalidValue);
                 }
             }
@@ -125,7 +125,7 @@ namespace Frameset.Core.Dao
         public static StringBuilder GetConnectString(Dictionary<string, object> dict, out string dbType, out string schema,
             out string logicColumnStr, out object? validValue, out object? invalidValue)
         {
-            StringBuilder builder = new StringBuilder();
+            StringBuilder builder = new();
             dbType = string.Empty;
             schema = string.Empty;
             if (dict.TryGetValue(Constants.DBTYPECOLUMN, out object? dbTypeObj))
@@ -264,7 +264,7 @@ namespace Frameset.Core.Dao
         }
         public static AdoDao Construct(string dbType, string schema, string connectionString)
         {
-            AdoDao dao = new AdoDao(dbType, schema, connectionString);
+            AdoDao dao = new(dbType, schema, connectionString);
             return dao;
         }
 

@@ -20,8 +20,8 @@ namespace Frameset.Common.Data.Reader
         internal T current;
         public T Current => current;
         internal bool readAsDict = true;
-        internal string? dateFormatter = null;
-        internal string? timestampFormatter = null;
+        internal string dateFormatter = null!;
+        internal string timestampFormatter = null!;
         protected Action<AbstractDataIterator<T>>? initFunction;
         protected bool cancelTag = false;
         //Projection Columns,Ignore unused Columns
@@ -150,6 +150,7 @@ namespace Frameset.Common.Data.Reader
             {
                 timestampFormatStr = ResourceConstants.DEFAULTTIMESTAMPFORMAT;
             }
+            Trace.Assert(!string.IsNullOrWhiteSpace(dateFormatStr) && !string.IsNullOrWhiteSpace(timestampFormatStr));
             dateFormatter = dateFormatStr;
             timestampFormatter = timestampFormatStr;
             if (useReader)
@@ -216,17 +217,16 @@ namespace Frameset.Common.Data.Reader
             if (readAsDict)
             {
                 dynamic tmp = Convert.ChangeType(CachedValue, typeof(Dictionary<string, object>));
-                current = tmp;
+                current = tmp; 
             }
             else
             {
                 current = Activator.CreateInstance<T>();
                 foreach (var item in CachedValue)
                 {
-                    MethodParam? param = null;
-                    if (MethodMap.TryGetValue(item.Key, out param))
+                    if (MethodMap.TryGetValue(item.Key, out MethodParam? param))
                     {
-                        param?.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param?.ParamType, item.Value)]);
+                        param.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param.ParamType, item.Value)]);
                     }
                     else
                     {

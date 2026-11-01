@@ -302,7 +302,9 @@ namespace Frameset.Core.Utils
             string? assemblyName = assembly.GetName().Name;
             return string.IsNullOrEmpty(assemblyName) ||
                         assemblyName.StartsWith("System.") ||
-                        assemblyName.StartsWith("Microsoft.") ||
+                        assemblyName.StartsWith("Microsoft.") || 
+                        assemblyName.Contains("Frameset.Core") || assemblyName.Contains("Frameset.Common") ||
+                        assemblyName.Contains("Frameset.Web") || assemblyName.Contains("Frameset.Tracing") ||
                         assemblyName.StartsWith("netstandard") || assemblyName.Contains("Serilog") ||
                         assemblyName.Contains("OpenTelemetry") || assemblyName.Contains("Google") ||
                         assemblyName.Contains("Harmony");

@@ -1,5 +1,6 @@
 ﻿using Frameset.Core.Common;
 using Frameset.Core.Reflect;
+using Frameset.Core.Utils;
 using Microsoft.ClearScript;
 using Microsoft.ClearScript.V8;
 using Microsoft.IdentityModel.Tokens;
@@ -47,7 +48,7 @@ namespace Frameset.Core.Scripts
                         object value = item.Value;
                         if (value != null)
                         {
-                            if (value.GetType().IsFundmentalType())
+                            if (value.GetType().IsFundamentalType())
                             {
                                 engine.Script[item.Key] = value;
                             }

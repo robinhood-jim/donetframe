@@ -25,7 +25,7 @@ namespace Frameset.Core.Mapper.Segment
         public override string ReturnSqlPart(Dictionary<string, object> map)
         {
             string? retStr = ClearScriptUtils.Eval(script, map).ToString();
-            Trace.Assert(!string.IsNullOrWhiteSpace(retStr), "");
+            Trace.Assert(retStr!=null, "");
             return retStr;
         }
     }

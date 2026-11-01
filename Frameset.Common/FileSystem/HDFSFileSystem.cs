@@ -11,7 +11,7 @@ namespace Frameset.Common.FileSystem
     {
         private HdfsClient? client = null!;
         private bool useLibhdfs = true;
-        private string libhdfsHost;
+        private string libhdfsHost=null!;
         private int libhdfsPort;
         private IntPtr fileSystem;
         private IntPtr hFile;
@@ -30,7 +30,10 @@ namespace Frameset.Common.FileSystem
             }
             else
             {
-                define.ResourceConfig.TryGetValue(ResourceConstants.HDFSLIBHDFSHOST, out libhdfsHost);
+                if (define.ResourceConfig.TryGetValue(ResourceConstants.HDFSLIBHDFSHOST, out string? libHdfsUrl))
+                {
+                    libhdfsHost = libHdfsUrl;
+                }
                 if (define.ResourceConfig.TryGetValue(ResourceConstants.HDFSLIBHDFSPORT, out string? portStr))
                 {
                     libhdfsPort = Convert.ToInt32(portStr);
@@ -127,10 +130,10 @@ namespace Frameset.Common.FileSystem
         public override long GetStreamSize(string resourcePath)
         {
             Trace.Assert(client != null, "");
-            Dictionary<string, object> contentMap = client.ContentSummary(resourcePath).Result;
-            if (!contentMap.IsNullOrEmpty())
+            Dictionary<string, object>? contentMap = client.ContentSummary(resourcePath).Result;
+            if (contentMap != null && !contentMap.IsNullOrEmpty())
             {
-                return long.Parse(contentMap["length"].ToString());
+                return Convert.ToInt64(contentMap["length"]);
             }
             throw new OperationFailedException("");
         }

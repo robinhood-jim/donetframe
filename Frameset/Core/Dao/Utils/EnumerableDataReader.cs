@@ -31,7 +31,7 @@ namespace Frameset.Core.Dao.Utils
         protected IAdoDao dao;
         protected EntityContent entityContent = null!;
         protected string[] memberNames = [];
-        private string? schema = null!;
+        private string schema = null!;
         private string tableName = null!;
         private Dictionary<string, string> mappingField = [];
 
@@ -56,7 +56,7 @@ namespace Frameset.Core.Dao.Utils
                 meta.Primary = x.IfPrimary;
                 return meta;
             }));
-            schema = entityContent.Schema != null && !string.IsNullOrWhiteSpace(entityContent.Schema) ? dao.GetCurrentSchema() : entityContent.Schema;
+            schema = string.IsNullOrWhiteSpace(entityContent.Schema) ? dao.GetCurrentSchema() : entityContent.Schema;
             memberNames = columnMetas.Select(x => x.ColumnCode).ToArray();
             mappingField = fields.ToDictionary(x => x.FieldName, x => x.PropertyName);
             tableName = entityContent.TableName;

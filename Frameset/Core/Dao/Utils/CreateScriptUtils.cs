@@ -3,9 +3,11 @@ using Serilog;
 using System;
 using System.Collections.Generic;
 using System.ComponentModel.DataAnnotations.Schema;
+using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
 using System.Text;
+using Frameset.Core.Utils;
 
 namespace Frameset.Core.Dao.Utils
 {
@@ -41,12 +43,20 @@ namespace Frameset.Core.Dao.Utils
         protected static List<Type> ScanModelTypes()
         {
             List<Type> retList = [];
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            foreach (Assembly assembly in assemblies)
+            Assembly? entryAssembly = Assembly.GetEntryAssembly();
+            Trace.Assert(entryAssembly!=null);
+            AssemblyName[] assemblies = entryAssembly.GetReferencedAssemblies();
+            List<AssemblyName> assemblyNames = new List<AssemblyName>(assemblies);
+            assemblyNames.Add(entryAssembly.GetName());
+            foreach (AssemblyName assemblyName in assemblyNames)
             {
                 try
                 {
+                    Assembly assembly = Assembly.Load(assemblyName);
+                    if (StringUtils.IsAssemblySystem(assembly))
+                    {
+                        continue;
+                    }
                     retList.AddRange(assembly.GetTypes()
                                 .Where(t => t.IsClass && !t.IsAbstract && (t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 || t.GetCustomAttributes(typeof(TableAttribute), false).Length > 0))
                                 .ToList());

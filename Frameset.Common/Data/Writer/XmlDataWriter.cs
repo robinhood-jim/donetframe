@@ -71,8 +71,8 @@ namespace Frameset.Common.Data.Writer
                 object? retVal = GetValue(value, column);
                 if (retVal != null)
                 {
-                    object? getValue = GetOutput(column, retVal);
-                    if (getValue != null)
+                    string? getValue = GetOutputString(column, retVal);
+                    if (!string.IsNullOrWhiteSpace(getValue))
                     {
                         xmlwriter.WriteStartElement(column.ColumnCode);
                         xmlwriter.WriteValue(getValue);

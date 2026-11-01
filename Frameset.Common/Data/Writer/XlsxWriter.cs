@@ -57,7 +57,10 @@ namespace Frameset.Common.Data.Writer
             if (useDictOutput)
             {
                 Dictionary<string, object>? tmp = value as Dictionary<string, object>;
-                workSheet.WriteRow(tmp);
+                if (tmp != null && !tmp.IsNullOrEmpty())
+                {
+                    workSheet.WriteRow(tmp);
+                }
             }
             else
             {

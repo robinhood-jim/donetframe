@@ -45,12 +45,13 @@ namespace Frameset.Common.Data.Writer
                 object? retVal = GetValue(value, column);
                 if (retVal != null)
                 {
-                    jsonWriter.WritePropertyName(column.ColumnCode);
-                    object? getValue = GetOutput(column, retVal);
-                    if (getValue != null)
+                    string? getValue = GetOutputString(column, retVal);
+                    if (!string.IsNullOrWhiteSpace(getValue))
                     {
+                        jsonWriter.WritePropertyName(column.ColumnCode);
                         jsonWriter.WriteValue(getValue);
                     }
+                    
                 }
             }
             jsonWriter.WriteEndObject();

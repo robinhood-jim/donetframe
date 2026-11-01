@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Threading;
 
 namespace Frameset.Core.Context
@@ -62,5 +63,6 @@ namespace Frameset.Core.Context
         void ManyToOne(Type subType, string fieldName, Type parentType);
         void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
         IAdoDao GetDao();
+        IQueryable<T> Query<T>() where T : BaseEntity;
     }
 }

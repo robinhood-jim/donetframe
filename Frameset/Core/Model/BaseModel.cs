@@ -4,7 +4,7 @@ using System;
 
 namespace Frameset.Core.Model
 {
-    public class BaseModel : BaseEntity
+    public abstract class BaseModel : BaseEntity
     {
         [MappingField(field: "create_time", IfRequired = true)]
         public DateTime CreateTime { get; set; }

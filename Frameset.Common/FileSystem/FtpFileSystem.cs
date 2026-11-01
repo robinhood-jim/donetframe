@@ -157,7 +157,7 @@ namespace Frameset.Common.FileSystem
             }
             else
             {
-                throw new OperationFailedException("getreader " + resourcePath + " failed!");
+                throw new OperationFailedException($"getReader {resourcePath} failed!");
             }
         }
 

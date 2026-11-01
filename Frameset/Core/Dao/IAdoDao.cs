@@ -9,6 +9,7 @@ using System;
 using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
+using System.Linq;
 using System.Text;
 using System.Threading;
 
@@ -50,6 +51,20 @@ namespace Frameset.Core.Dao
         long QueryByLong(DbCommand command, List<DbParameter>? parameters = null);
         List<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects);
         /// <summary>
+        /// Query native and return with list targetType
+        /// </summary>
+        /// <param name="targetType"></param>
+        /// <param name="querySql"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
+        object QueryBySql(Type targetType, string querySql, List<DbParameter> parameters);
+        /// <summary>
+        /// LINQ Queryable query
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <returns></returns>
+        IQueryable<T> Query<T>() where T : BaseEntity;
+        /// <summary>
         /// Execute pageQuery
         /// </summary>
         /// <typeparam name="V"></typeparam>
@@ -57,6 +72,13 @@ namespace Frameset.Core.Dao
         /// <param name="query"></param>
         /// <returns></returns>
         PageDTO<V> QueryPage<V>(DbCommand command, PageQuery query);
+        /// <summary>
+        /// ORM Query return list modelType
+        /// </summary>
+        /// <typeparam name="V"></typeparam>
+        /// <param name="command"></param>
+        /// <param name="parameters"></param>
+        /// <returns></returns>
         List<V> QueryModelsBySql<V>(DbCommand command, List<DbParameter> parameters);
         List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, List<DbParameter> parameters);
         /// <summary>
@@ -78,6 +100,14 @@ namespace Frameset.Core.Dao
         /// <param name="action"></param>
         void DoWithQuery(string sql, object[] obj, Action<IDataReader> action);
         void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action);
+        /// <summary>
+        /// Query using FilterCondition
+        /// </summary>
+        /// <typeparam name="V"></typeparam>
+        /// <param name="command"></param>
+        /// <param name="condition"></param>
+        /// <param name="query"></param>
+        /// <returns></returns>
         List<V> QueryByCondition<V>(DbCommand command, FilterCondition condition, PageQuery? query = null);
         /// <summary>
         /// Query single Table with Complex Condition( AND/OR),support new Column and GroupBy Having
@@ -100,8 +130,27 @@ namespace Frameset.Core.Dao
         int GetValidValue();
         void SetInvalidValue(int value);
         int GetInvalidValue();
+        /// <summary>
+        /// Insert Batch with BulkCopy
+        /// </summary>
+        /// <param name="connection"></param>
+        /// <param name="schema"></param>
+        /// <param name="tableName"></param>
+        /// <param name="metas"></param>
+        /// <param name="models"></param>
+        /// <param name="token"></param>
+        /// <param name="batchSize"></param>
+        /// <returns></returns>
         long InsertBatch(DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000);
+        /// <summary>
+        /// Batch Insert using IDataAdpater
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="connection"></param>
+        /// <param name="list"></param>
+        /// <param name="batchSize"></param>
+        /// <returns></returns>
         int BatchInsert<T>(DbConnection connection, List<T> list, int batchSize = 1000);
-        List<BaseEntity> QueryModelsBySql(Type modelType, DbCommand command, IList<DbParameter> parameters);
+
     }
 }

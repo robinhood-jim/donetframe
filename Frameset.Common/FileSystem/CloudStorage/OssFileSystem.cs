@@ -54,7 +54,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
             {
                 return obj.ResponseStream;
             }
-            throw new OperationFailedException("key " + objectName + " not found in bucket");
+            throw new OperationFailedException($"key {objectName} not found in bucket");
         }
 
         internal override UploadPartSupportStream PutObject(string resourcePath)

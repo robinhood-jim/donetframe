@@ -176,6 +176,26 @@ namespace Frameset.Core.Common
             return metaType;
         }
 
+        public static Type MetaTypeToType(MetaType metaType)
+        {
+            return metaType switch
+            {
+                MetaType.LONG => typeof(long),
+                MetaType.SHORT => typeof(short),
+                MetaType.STRING => typeof(string),
+                MetaType.FLOAT => typeof(float),
+                MetaType.INTEGER => typeof(int),
+                MetaType.TIMESTAMP => typeof(DateTime),
+                MetaType.DATE => typeof(DateTime),
+                MetaType.CHAR => typeof(string),
+                MetaType.BLOB => typeof(byte[]),
+                MetaType.CLOB => typeof(string),
+                MetaType.DOUBLE => typeof(double),
+                MetaType.BOOLEAN => typeof(bool),
+                _ => typeof(string)
+            };
+        }
+
         public static DbType DbTypeOf(string dbType)
         {
             DbType retType = DbType.Unknow;

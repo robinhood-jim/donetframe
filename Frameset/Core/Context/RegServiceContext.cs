@@ -9,6 +9,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
+using Frameset.Core.Utils;
 
 namespace Frameset.Core.Context
 {
@@ -27,11 +28,11 @@ namespace Frameset.Core.Context
         private static readonly Dictionary<Type, Type> interfaceTargetMap = [];
         //Auto Wired Type Exists
         private static readonly Dictionary<Type, int> wiredTypeMap = [];
-        private static IServiceProvider provider = null!;
+        private static IServiceProvider _provider = null!;
 
-        public static void SetContext(IServiceProvider _provider)
+        public static void SetContext(IServiceProvider provider)
         {
-            provider = _provider;
+            _provider = provider;
         }
         /// <summary>
         /// Register Transient Type
@@ -105,9 +106,9 @@ namespace Frameset.Core.Context
             }
             if (retObj == null)
             {
-                if (provider != null)
+                if (_provider != null)
                 {
-                    retObj = provider.GetRequiredService(interfaceType);
+                    retObj = _provider.GetRequiredService(interfaceType);
                 }
                 if (retObj == null)
                 {
@@ -141,7 +142,7 @@ namespace Frameset.Core.Context
         public static void ScanServices(Type type, Action<Type, Type>? action = null)
         {
             Trace.Assert(type.IsSubclassOf(typeof(Attribute)), "");
-            List<Type> types = ScanType(type);
+            List<Type> types = type.ScanTypesWithAttribute();
             //Add interface and implement by assembly
             types.ForEach(impl =>
             {
@@ -208,7 +209,7 @@ namespace Frameset.Core.Context
             {
                 throw new OperationFailedException("dependency cycle exists");
             }
-            if (registerMap.TryGetValue(baseType, out object? retObj) && retObj != null)
+            if (registerMap.TryGetValue(baseType, out object? retObj))
             {
                 return retObj;
             }
@@ -233,7 +234,7 @@ namespace Frameset.Core.Context
             Trace.Assert(retObj != null);
             return retObj;
         }
-        private static object ConstructInject(Type implementType, ServiceLifetime lifeTime, Dictionary<Type, int> scannnedTypes)
+        private static object? ConstructInject(Type implementType, ServiceLifetime lifeTime, Dictionary<Type, int> scannnedTypes)
         {
             ConstructorInfo[] constructorInfos = implementType.GetConstructors();
             object? retObj = null;
@@ -262,7 +263,6 @@ namespace Frameset.Core.Context
                     break;
                 }
             }
-            Trace.Assert(retObj != null);
             return retObj;
         }
         private static void AutoWireInject(object originObj, Type wiredType, ServiceLifetime lifeTime, Dictionary<Type, int> scannedTypes)
@@ -272,6 +272,7 @@ namespace Frameset.Core.Context
                 return;
             }
             var fields = wiredType.GetTypeInfo().DeclaredFields.Where(field => Attribute.IsDefined(field, typeof(ResourceAttribute))).GetEnumerator();
+            using var unknown = fields as IDisposable;
             while (fields.MoveNext())
             {
                 FieldInfo info = fields.Current;
@@ -343,26 +344,6 @@ namespace Frameset.Core.Context
             }
             return isNoParam;
         }
-        private static List<Type> ScanType(Type type)
-        {
-            List<Type> retList = [];
-            Assembly[] assemblies = AppDomain.CurrentDomain.GetAssemblies();
-
-            foreach (Assembly assembly in assemblies)
-            {
-                try
-                {
-                    retList.AddRange(assembly.GetTypes()
-                                .Where(t => t.IsClass && !t.IsAbstract && t.GetCustomAttributes(type, false).Length > 0)
-                                .ToList());
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("{Message}", ex.Message);
-                }
-            }
-            return retList;
-
-        }
+        
     }
 }

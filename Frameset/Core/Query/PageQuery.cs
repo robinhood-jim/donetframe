@@ -9,7 +9,7 @@ namespace Frameset.Core.Query
         public string QueryId { get; set; } = string.Empty;
         public string NameSpace { get; set; } = string.Empty;
         public long PageCount { get; set; } = 0;
-        public string OrderField { get; set; } = null!;
+        public string OrderField { get; set; } = string.Empty;
         public bool OrderAsc { get; set; } = false;
         public string Order { get; set; } = string.Empty;
         public long Total { get; set; }

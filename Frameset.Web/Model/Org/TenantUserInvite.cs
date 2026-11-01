@@ -36,10 +36,7 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         }
-        public string Status
-        {
-            get; set;
-        } = Constants.INVALID;
+       
         public DateTime? AcceptTime
         {
             get; set;

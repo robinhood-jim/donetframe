@@ -56,7 +56,7 @@ namespace Frameset.Common.FileSystem.CloudStorage
                 GetObjectMetadataResponse response = client.GetObjectMetadataAsync(GetBucketName(), resourcePath).Result;
                 return response.HttpStatusCode == HttpStatusCode.OK ? response.ContentLength : -1;
             }
-            throw new OperationFailedException("key " + resourcePath + " not found in bucket");
+            throw new OperationFailedException($"key {resourcePath} not found in bucket");
         }
 
         public override bool Delete(string resourcePath)

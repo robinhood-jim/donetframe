@@ -2,6 +2,7 @@
 using Frameset.Core.Context;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
+using Frameset.Core.Linq;
 using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
@@ -10,6 +11,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
+using System.Linq;
 using System.Threading;
 
 namespace Frameset.Core.Service
@@ -112,6 +114,10 @@ namespace Frameset.Core.Service
         public IAdoDao GetDao()
         {
             return dbContext.GetDao();
+        }
+        public IQueryable<V> Query()
+        {
+            return new QueryTable<V>(dbContext.GetDao());
         }
     }
 }

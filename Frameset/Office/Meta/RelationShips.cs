@@ -27,7 +27,7 @@ namespace Frameset.Office.Meta
         {
             get; internal set;
         }
-        public string Target
+        public string? Target
         {
             get; internal set;
         }
@@ -39,13 +39,13 @@ namespace Frameset.Office.Meta
         {
             get; internal set;
         } = null!;
-        public RelationShip(string id, string target, string type)
+        public RelationShip(string id, string? target, string type)
         {
             this.Id = id;
             this.Target = target;
             this.RType = type;
         }
-        public RelationShip(string id, string type, string target, string targetMode)
+        public RelationShip(string id, string type, string? target, string targetMode)
         {
             this.Id = id;
             this.RType = type;

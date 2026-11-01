@@ -38,16 +38,13 @@ namespace Frameset.Core.Sql
         {
             get; protected set;
         } = null!;
-
         private SqlBuilder()
         {
-
         }
         public static SqlBuilder NewBuilder()
         {
             return new SqlBuilder();
         }
-
         public SqlBuilder AliasEntity(Type entityType, string aliasName)
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)), "class must be subClass of BaseEntity");
@@ -66,7 +63,6 @@ namespace Frameset.Core.Sql
                 {
                     throw new BaseSqlException("get Fields by entity " + entityType.Name + " failed!");
                 }
-
             }
             return this;
         }
@@ -109,18 +105,16 @@ namespace Frameset.Core.Sql
                 }
                 else
                 {
-                    if (columns[0].Contains('.'))
+                    if (!columns[0].Contains('.')) return this;
+                    string[] selParts = columns[0].Split('.');
+                    Tuple<Type, FieldContent> tuple = AliasColumn(selParts, AppendField);
+                    if (columnAliasMap.TryGetValue(tuple.Item1, out Dictionary<string, string>? aliasDict))
                     {
-                        string[] selParts = columns[0].Split('.');
-                        Tuple<Type, FieldContent> tuple = AliasColumn(selParts, AppendField);
-                        if (columnAliasMap.TryGetValue(tuple.Item1, out Dictionary<string, string>? aliasDict))
-                        {
-                            aliasDict.TryAdd(tuple.Item2.PropertyName, aliasName);
-                        }
-                        else
-                        {
-                            columnAliasMap.TryAdd(tuple.Item1, new() { { tuple.Item2.PropertyName, aliasName } });
-                        }
+                        aliasDict.TryAdd(tuple.Item2.PropertyName, aliasName);
+                    }
+                    else
+                    {
+                        columnAliasMap.TryAdd(tuple.Item1, new() { { tuple.Item2.PropertyName, aliasName } });
                     }
                 }
             }
@@ -182,8 +176,6 @@ namespace Frameset.Core.Sql
             this.filterCondition = condition;
             return this;
         }
-
-
         public SqlBuilder SelectCase(string newColumnName, string[] caseColumns, Dictionary<string, object> caseDict)
         {
             StringBuilder builder = new StringBuilder();
@@ -279,7 +271,6 @@ namespace Frameset.Core.Sql
                     orderByBuilder.Remove(orderByBuilder.Length - 1, 1);
                 }
             }
-
             return this;
         }
         public string Build()
@@ -329,7 +320,6 @@ namespace Frameset.Core.Sql
                     sqlBuilder.Append(tuple.Item1.GetTableName()).Append(' ').Append(tabAlias);
                 }
             }
-
             //join
             if (!joins.IsNullOrEmpty())
             {
@@ -429,7 +419,6 @@ namespace Frameset.Core.Sql
                 {
                     throw new BaseSqlException("Field " + selParts[1] + " not defined in entity " + selParts[0] + "!");
                 }
-
             }
             else
             {

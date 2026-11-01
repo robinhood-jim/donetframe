@@ -92,18 +92,24 @@ namespace Frameset.Common.Streaming.Consumer
             GenericRecord genericRecord = dreader.Read(record, decoder);
             if (genericRecord != null)
             {
-                dynamic? retObj = System.Activator.CreateInstance<T>();
-                int pos = 0;
-                foreach (var entry in methodMap)
+                dynamic? retObj = Activator.CreateInstance<T>();
+                if (retObj != null)
                 {
-                    object obj = record.GetValue(pos++);
 
-                    if (obj != null)
+
+                    int pos = 0;
+                    foreach (var entry in methodMap)
                     {
-                        entry.Value.SetMethod.Invoke(retObj, new object[] { obj });
+                        object obj = record.GetValue(pos++);
+
+                        if (obj != null)
+                        {
+                            entry.Value.SetMethod.Invoke(retObj, new object[] { obj });
+                        }
                     }
+                    return retObj;
                 }
-                return retObj;
+                throw new OperationFailedException("CreateInstance failed!");
             }
             else
             {

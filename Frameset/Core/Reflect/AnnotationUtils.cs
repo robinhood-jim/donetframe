@@ -12,7 +12,7 @@ namespace Frameset.Core.Reflect
         public static Dictionary<string, MethodParam> ReflectObject(Type targetObj)
         {
             PropertyInfo[] propertyInfos = targetObj.GetProperties();
-            if (!reflectMap.TryGetValue(targetObj.GetType(), out Dictionary<string, MethodParam>? dict))
+            if (!reflectMap.TryGetValue(targetObj, out Dictionary<string, MethodParam>? dict))
             {
                 dict = new();
                 foreach (PropertyInfo prop in propertyInfos)
