@@ -1,67 +1,230 @@
-# Generic DotNet framework
+# Robin.Frameset
+
+![.NET](https://img.shields.io/badge/.NET-8.0-512BD4?logo=dotnet)
+![License](https://img.shields.io/badge/License-Apache%202.0-blue.svg)
+![Platform](https://img.shields.io/badge/Platform-AnyCPU%20%7C%20x64-lightgrey)
 [![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
 
 =========
-#### Introduction
-Based on Net Frame 8.Slight developer solution to Handle Asp.net or Winform project.It will help C# develop to easily construct a Enterprise Framework.
+## Introduction
+A comprehensive enterprise-grade **.NET 8** framework solution providing ORM, unified file system, multi-format data processing, microservice gateway, serverless computing, distributed tracing, and AI integration capabilities.
 
-## Features:
-- I.ORM (including EF Core and Data Annotation Support).This may be most simplify code to intergrate ORM ability，Support Logic Delete Attribute and dao datasource Aspect defined
-- II.DAO->DbContext->Service three Data Access Layer to afford flexiable MVC develop;
-- III.Stream Reader/Writer for Excel and word. Customer Ioc Support to support AutoWire Service and support recursive AutoWired.
-- IV.United FileSystem and Data File Reader and Write,Support CSV/XML/JSON/AVRO/PARQUET/ORC File Format
-- V.Add Serverless Function for dynamic load and unload DLL at runtime
-- VI.Customer MVC Frame to easy develop WebApi
-- VII.Bigdate Support for Nosql ElasticSearch/Cassandra/MongoDb/Hbase
-- VIII.Customer NioGateway support Hot update configuration;
-- IX.Based on ETCD License distribute tools；
-- X. Tracing tools to enable uninvaded Probe tracing;
-- XI.VUE + Asp.net back service MVC demo based on mutliple tenant support.
+## 📋 Table of Contents
 
-## Core SubModule:
-
-<b>Specification</b>
-- Customer Annotation MappingEntity MappingField
-- Global DAOFactory Manager Datasource;
-- Single AdoDao per DataSource;
-- DAO->DbContext->Service three Data Access Layer,<b>No Logic code No Service class needed to be extended!!!</b>;
-- Mybatis xml query ability,with js script enabled(ClearScriptV8);
-- Intergarte with propluar Database system(SqlServer/MySql/Oracle/Postgresql/ClickHouse/DB2);
-- Support EF core Annotation
-- Support Logic Delete column
-- Support OneToMany and ManytoOne on Querys
-- <b>Customer DbContext Thread safe!!!</b>
-- Streaming reading and Writing to Excel and Word
-
-## Common SubModule:
-
-- Read/Write File format(CSV/XML/JSON/AVRO/PARQUET) using FileSystem(Local/FTP/SFTP/WebHDFS/AmazonS3)
-- <b>Protobuf multiple Records Support with Dynamic Shema</b>
-- Hdfs access with libhdfs support (under developing)
+- [Overview](#overview)
+- [Quick Start](#quick-start)
+- [Core Features](#core-features)
+- [Module Architecture](#module-architecture)
+  - [Core Modules](#core-modules)
+  - [Common Modules](#common-modules)
+  - [Infrastructure Modules](#infrastructure-modules)
+- [Usage Examples](#usage-examples)
+  - [ORM & Data Access](#orm--data-access)
+  - [Unified File System](#unified-file-system)
+  - [Serverless Functions](#serverless-functions)
+- [Dependencies Matrix](#dependencies-matrix)
+- [Project Structure](#project-structure)
 
 
-## Common SubModule:
+---
 
-- Read/Write File format(CSV/XML/JSON/AVRO/PARQUET) using FileSystem(Local/FTP/SFTP/WebHDFS/AmazonS3)
-- <b>Protobuf multiple Records Support with Dynamic Shema</b>
-- Hdfs access with libhdfs support (under developing)
+## Overview
 
-## Tracing SubModule:
+**Robin.Frameset** is a modular .NET framework designed for enterprise application development. It provides a complete suite of tools and libraries covering:
 
-- Using ProxySqlDialect to add sql and parameters to Tracing;
-- Using HarmonyLib to intercept DbCommand operations;
+| Capability | Description |
+|------------|-------------|
+| **Data Access** | Full-featured ORM with annotation-based mapping, supporting MySQL, SQL Server, Oracle, PostgreSQL, DB2, and SQLite |
+| **File System** | Unified abstraction for LOCAL, FTP, SFTP, WebHDFS, Amazon S3, MinIO, and Alibaba Cloud OSS |
+| **Data Processing** | Stream readers/writers for CSV, JSON, XML, Avro, Parquet, ORC, and Excel formats |
+| **Web Framework** | ASP.NET Core based MVC with built-in authentication, authorization, and CRUD scaffolding |
+| **Microservices** | API Gateway with Consul service discovery, distributed tracing via OpenTelemetry |
+| **Serverless** | Function-as-a-Service runtime with annotation-based endpoint definition |
+| **AI Integration** | Extensible AI module for intelligent application development |
+| **Message Queue** | Multi-broker support for Kafka, RabbitMQ, and RocketMQ |
 
-## Gateway SubModule:
+---
 
-- Using Kerstel to handle HTTP request and act as Gateway ;
-- Using Service discovery with Consul and Nacos,support Hot configuration update with routers;
+## Quick Start
 
-## Web SubModule:
+### Prerequisites
 
-- Serverless Function Supported ;
-- Controller based and DB Model define;
+- [.NET 8 SDK](https://dotnet.microsoft.com/download/dotnet/8.0) or later
+- Visual Studio 2022 / JetBrains Rider / VS Code
 
-## Examples
+
+```bash
+# Clone the repository
+git clone https://gitee.com/robinhoodjim/donetframe.git
+cd donetframe
+
+# Restore dependencies
+dotnet restore
+
+# Build the solution
+dotnet build --configuration Release
+
+# Run tests
+dotnet test Frametest/Frametest.csproj
+NuGet Packages
+```
+
+The framework is published as NuGet packages. Reference them in your project:
+
+```xml 
+<ItemGroup>
+  <PackageReference Include="Frameset.Core" Version="1.2.2" />
+  <PackageReference Include="Frameset.Common" Version="1.2.2" />
+</ItemGroup>
+```
+## Core Features
+
+  - 🗄️ Multi-Database ORM - Annotation-driven entity mapping with support for complex relationships (ManyToOne, OneToMany, ManyToMany)
+  -  📁 Unified File Abstraction - Single API for local and cloud storage providers
+  -  📊 Big Data Formats - Native support for Apache Arrow, Avro, Parquet, ORC, and Protocol Buffers
+  -  🔐 Security & Auth - JWT Bearer authentication, role-based access control, SSH/SFTP support
+  -  🌐 Microservice Ready - Consul-based service registry, API Gateway with dynamic routing
+  -  📡 Distributed Tracing - OpenTelemetry integration with Zipkin and OTLP exporters
+  -  ⚡ Serverless Runtime - Lightweight function hosting with parameter injection
+  -  🤖 AI Extension - Pluggable AI capabilities for intelligent workflows
+  -  📦 Message Integration - Kafka, RabbitMQ, and RocketMQ client abstractions
+  -  📝 Document Processing - Streaming Excel (xlsx) and Word file I/O
+
+## Module Architecture
+### Core Modules
+
+🎯 Frameset (v1.2.2)
+
+Assembly: Frameset.Core
+
+The foundational ORM and data access layer.
+
+Key Features:
+
+   - Annotation-based entity mapping ([MappingEntity], [MappingField])
+   - Relationship mapping ([ManyToOne], [OneToMany], [ManyToMany])
+   - SQL query builder and execution engine
+   - Formula columns ([ColumnFormula])
+   - Logic columns ([LogicColumn])
+   - Dependency injection ([Inject])
+   - Repository pattern ([Repository])
+   - Pre-authorization ([PreAuthorization])
+   - Streaming Excel and Word file processing
+   - Code analysis and scripting (Roslyn integration)
+
+Supported Databases: MySQL, SQL Server, Oracle, PostgreSQL, IBM DB2, SQLite
+
+🌐 Frameset.Web
+
+ASP.NET Core web framework extension.
+
+Key Features:
+
+  -  AbstractController<R, V, P> - Generic controller with service injection
+  -  AbstractCrudController<V, P> - Ready-to-use CRUD endpoints
+  -  JWT Bearer authentication
+  -  Role-based authorization
+  -  Built-in system models (User, Role, Resource)
+  -  Custom middleware stack
+
+📄 Frameset.WebMvc
+
+MVC pattern implementation for web applications.
+☁️ Frameset.Serverless
+
+Serverless function runtime.
+
+Key Features:
+
+   - [ServerlessFunc] attribute for endpoint definition
+   - [ServerlessParameter] for parameter binding
+   - Lightweight execution model
+   - Stateless function hosting
+
+### Common Modules
+
+🛠️ Frameset.Common (v1.2.1)
+
+Assembly: Frameset.Common
+
+Unified utilities and integrations.
+
+Key Features:
+
+Unified File System:
+
+   - Local file system
+   - FTP / SFTP (FluentFTP, SSH.NET)
+   - WebHDFS
+   - Amazon S3 (AWSSDK.S3)
+   - MinIO (Minio SDK)
+   - Alibaba Cloud OSS (Aliyun.OSS.SDK)
+   - Tencent Cloud COS (Tencent.QCloud.Cos.Sdk)
+
+Data Format Readers/Writers:
+
+   - CSV (with configurable delimiters)
+   - JSON / JSON Lines
+   - XML
+   - Apache Avro (with BZip2, Snappy, XZ, Zstandard compression)
+   - Apache Parquet
+   - Apache ORC
+   - Apache Arrow (streaming)
+   - Protocol Buffers (Google.Protobuf)
+
+Message Queue:
+
+   - Apache Kafka (Confluent.Kafka)
+   - RabbitMQ (RabbitMQ.Client)
+   - RocketMQ (RocketMQ.Client)
+
+Compression & Encoding:
+
+   - LZ4 (K4os.Compression.LZ4)
+   - LZMA (LZMA-SDK)
+   - SharpCompress
+   - SharpZipLib
+   - iText 8 (PDF generation with Asian fonts)
+
+📊 Frameset.Bigdata
+
+Big data processing utilities and connectors.
+⛏️ Frameset.Dataming
+
+Data mining and analytics tools.
+Infrastructure Modules
+
+🚪 Frameset.Gateway
+
+API Gateway with service mesh capabilities.
+
+Key Features:
+
+  -  Consul service discovery and registration
+  -  Dynamic routing configuration
+  -  Request forwarding and load balancing
+  -  Gateway middleware pipeline
+  -  Service health monitoring
+
+🔍 Frameset.Tracing
+
+Distributed tracing and observability.
+
+Key Features:
+
+   - OpenTelemetry SDK integration
+   - Exporters: Console, Zipkin, OTLP, OpenTelemetryProtocol
+   - Lib.Harmony for AOP instrumentation
+   - HTTP correlation tracking
+   - Identity token propagation
+
+🌉 Frameset.NioGateway
+
+High-performance NIO (Non-blocking I/O) gateway implementation.
+
+
+
+## Usage Examples
 - DataSource Configration
 ```yaml
 dataSource:
@@ -74,7 +237,7 @@ dataSource:
   maxSize: 10
 ```
 
-
+## ORM & Data Access
 - DAO/Repository initialize
 Each Dao present as ADO Provider for one datasource
 ```cs
@@ -171,12 +334,10 @@ repository.ExecuteMapper("Frameset.Test", "insert1", vo);
     
 </mapper>
 ```
-- Common SubModule
-
-
+## Unified File System
 
 Read From FileSystem
-```java
+```cs
  DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
  //using FileSystem Local
  builder.Path("e:/1.parquet").FsType(Constants.FileSystemType.LOCAL);
@@ -214,6 +375,7 @@ using (AbstractDataWriter<Dictionary<string, object>> writer = DataFileExporter.
     }
 }
 ```
+## Serverless Functions
 - Serverless Dynamic Dll support
 
 1.With webapi project add in appsetting.json,serverlessPrefix Parameter
@@ -241,3 +403,42 @@ Add Class with Method with Attribute ServerlessFunc,and pack to DLL
 then use DynamicFunctionLoader RegisterFunction to register at runtime
 you can call through /serverless/{functionName} to call DLL function dynamic
 
+## Dependencies Matrix
+
+|Module|Key Dependencies|
+|------------|-------------|
+|Frameset |AutoFac, ClickHouse, Dapper, Serilog, SqlParserCS, Net.IBM.Data.Db2, Oracle.ManagedDataAccess, MySqlConnector, Npgsql, Obfuscar, YamlDotNet, dotnet-etcd, Google.Protobuf, Microsoft.IdentityModel.Tokens|
+|Frameset.Common |	Aliyun.OSS.SDK, Apache Arrow, Avro, AWSSDK.S3, Confluent.Kafka, FluentFTP, Google.Protobuf, iText 8, LZ4, LZMA-SDK, MessagePack, Minio, Mono.Cecil, Parquet.Net, RabbitMQ.Client, RocketMQ.Client, SharpCompress, SharpZipLib, Snapper, SqlParserCS, SSH.NET, Tencent.QCloud.Cos.Sdk, ZstdSharp, OpenTelemetry, Serilog|
+|Frameset.Web |	BCrypt.Net-Next, Microsoft.AspNetCore.Authentication.JwtBearer, Newtonsoft.Json, Google.Protobuf, Microsoft.IdentityModel.Tokens, System.IdentityModel.Tokens.Jwt|
+|Frameset.Tracing |	Lib.Harmony, Mono.Cecil, OpenTelemetry (Console, Zipkin, OTLP exporters)
+
+## Project Structure
+```
+donetframe/
+├── Frameset/                    # Core ORM and data access layer (v1.2.0)
+├── Frameset.Common/             # Unified utilities and integrations (v1.2.1)
+├── Frameset.Web/                # ASP.NET Core web framework
+├── Frameset.WebMvc/             # MVC pattern implementation
+├── Frameset.Serverless/         # Serverless function runtime
+├── Frameset.Gateway/            # API Gateway with Consul
+├── Frameset.NioGateway/         # NIO-based gateway
+├── Frameset.Tracing/            # OpenTelemetry distributed tracing
+├── Frameset.Bigdata/            # Big data processing utilities
+├── Frameset.Dataming/           # Data mining tools
+├── Frameset.AI/                 # AI integration module
+├── Frameset.License/            # License management
+├── Frameset.Vue/                # Vue.js frontend project
+├── Frametest/                   # Unit and integration tests
+├── ConsoleTest/                 # Console application for testing
+├── dotnetframe.sln              # Visual Studio solution file
+├── README.md                    # Chinese documentation
+├── README.en.md                 # English documentation
+├── LICENSE                      # Apache License 2.0
+└── .
+```
+
+## Contact
+
+   - Author: robinhoodjim
+   - Repository: https://github.com/robinhood-jim/donetframe
+   - Mirror: https://gitee.com/robinhoodjim/donetframe
