@@ -1,12 +1,10 @@
-﻿using System.Diagnostics;
-using Frameset.Core.Annotation;
+﻿using Frameset.Core.Annotation;
 using Frameset.Core.Configuration;
 using Frameset.Core.Context;
 using Frameset.Core.Dao.Meta;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System.Reflection;
-using Frameset.Core.Utils;
 
 namespace Frameset.Web.Utils
 {
@@ -16,7 +14,8 @@ namespace Frameset.Web.Utils
         public static void AddBussiness(this IServiceCollection services)
         {
             //AppDomain.CurrentDomain.GetAssemblies().SelectMany(x => x.GetTypes())
-            List<Type> types =typeof(ServiceAttribute).ScanTypesWithAttribute();
+            List<Type> types = RegServiceContext.ScanAndReloadService(typeof(ServiceAttribute));
+            RegServiceContext.SetCollections(services);
             types.ForEach(impl =>
             {
                 //获取该类所继承的所有接口
@@ -31,8 +30,12 @@ namespace Frameset.Web.Utils
                         switch (lifetime)
                         {
                             case ServiceLifetime.Singleton:
-                                object targetObject = RegServiceContext.GetBean(i);
-                                services.AddSingleton(i, targetObject);
+                                object? targetObject = RegServiceContext.GetBean(i);
+
+                                if (targetObject != null)
+                                {
+                                    services.AddSingleton(i, targetObject);
+                                }
                                 break;
                             case ServiceLifetime.Scoped:
                                 services.AddScoped(i, impl);
@@ -45,7 +48,9 @@ namespace Frameset.Web.Utils
                     });
                 }
             });
+            Log.Information("successful load IOC Frame with {Num} Beans", RegServiceContext.GetTragetType().Count);
         }
+
         /// <summary>
         /// Using yaml as System Configuration file  auto scan dataSource FileSystem
         /// </summary>

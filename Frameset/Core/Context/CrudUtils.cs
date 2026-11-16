@@ -26,14 +26,14 @@ namespace Frameset.Core.Context
                     foreach (FieldContent content in contentList)
                     {
                         Type parentType = content.ParentEntity;
-                        string realtionColumn = content.RealtionColumn;
+                        string realtionColumn = content.RelationColumn;
 
                         if (fieldMap.TryGetValue(realtionColumn, out FieldContent? relationContent))
                         {
-                            object? relationId = relationContent.GetMethod.Invoke(entity, null);
+                            object? relationId = relationContent.Getter(entity);
                             Trace.Assert(relationId != null);
                             object parentVo = dbContext.GetByIdSimple(parentType, relationId);
-                            content.SetMethod.Invoke(entity, [parentVo]);
+                            content.Setter(entity,parentVo);
                         }
                         else
                         {
@@ -52,7 +52,7 @@ namespace Frameset.Core.Context
                     foreach (FieldContent content in contentList)
                     {
                         Type subType = content.SubType;
-                        object? id = pkColumn.GetMethod.Invoke(entity, null);
+                        object? id = pkColumn.Getter(entity);
                         Trace.Assert(id != null);
                         if (EntityReflectUtils.GetRelationMap().TryGetValue(entityType, out Dictionary<Type, string>? subEntityMaps) && subEntityMaps.TryGetValue(subType, out string? relationColumn))
                         {
@@ -61,7 +61,7 @@ namespace Frameset.Core.Context
                             {
                                 List<BaseEntity> entities = dbContext.QueryModelsByFieldSimple(subType, relationColumn, Constants.SqlOperator.EQ, new object[] { id }, null);
                                 object? obj = ConvertUtil.GetListsByType<BaseEntity>(typeof(List<>), subType, entities);
-                                content.SetMethod.Invoke(entity, [obj]);
+                                content.Setter(entity, obj);
                             }
                             else
                             {

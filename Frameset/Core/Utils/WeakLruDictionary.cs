@@ -72,9 +72,9 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
     public void Add(TKey key, TValue value)
     {
         CheckDisposed();
-        if (_nodeDict.TryGetValue(key, out LinkedListNode<TKey>? listNode) && this._lruDict.TryGetValue(key, out WeakReference<TValue>? refrence))
+        if (_nodeDict.TryGetValue(key, out LinkedListNode<TKey>? listNode) && this._lruDict.TryGetValue(key, out WeakReference<TValue>? reference))
         {
-            if (refrence.TryGetTarget(out TValue? node))
+            if (reference.TryGetTarget(out TValue? node))
             {
                 node = null!;
                 _lruDict.TryRemove(key, out _);
@@ -118,7 +118,7 @@ public class WeakLruDictionary<TKey, TValue> : IDictionary<TKey, TValue>, IDispo
     public void Add(KeyValuePair<TKey, TValue> item) => Add(item.Key, item.Value);
     public bool TryAdd(TKey key, TValue value)
     {
-        if (!this._lruDict.TryGetValue(key, out _))
+        if (!_lruDict.TryGetValue(key, out _))
         {
             Add(key, value);
             return true;

@@ -1,11 +1,9 @@
 ﻿using Frameset.Core.Annotation;
-using Frameset.Core.Common;
-using Frameset.Core.Model;
 
 namespace Frameset.Web.Model.User
 {
     [MappingEntity("t_sys_role_info")]
-    public class SysRole : BaseEntity
+    public class SysRole : AbstractModel
     {
         [MappingField(IfPrimary = true, IfIncrement = true)]
         public long Id
@@ -24,10 +22,6 @@ namespace Frameset.Web.Model.User
         {
             get; set;
         } = string.Empty;
-        [LogicColumn]
-        public string Status
-        {
-            get; set;
-        } = Constants.VALID;
+
     }
 }

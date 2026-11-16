@@ -77,9 +77,10 @@ namespace Frameset.Common.Streaming.Producer
         }
         protected byte[] SerializeAvro(T message)
         {
+            Trace.Assert(message != null);
             foreach (var entry in methodMap)
             {
-                object? obj = entry.Value.GetMethod.Invoke(message, []);
+                object? obj = entry.Value.Getter(message);
                 if (obj != null)
                 {
                     record.Add(entry.Key, obj);

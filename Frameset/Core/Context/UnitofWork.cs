@@ -31,7 +31,7 @@ namespace Frameset.Core.Context
             catch (Exception ex)
             {
                 LogUtils.Error($"encounter error {ex.Message}");
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
             finally
             {
@@ -49,12 +49,13 @@ namespace Frameset.Core.Context
             try
             {
                 connection = dao.GetDialect().GetDbConnection(dao.GetConnectString());
+                connection.Open();
                 transaction = connection.BeginTransaction();
                 return transaction;
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
         }
         public DbConnection GetConnection()
@@ -77,7 +78,7 @@ namespace Frameset.Core.Context
             catch (Exception ex)
             {
                 LogUtils.Error($"encounter error {ex.Message}");
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
             finally
             {

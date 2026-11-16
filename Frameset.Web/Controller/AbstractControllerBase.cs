@@ -1,4 +1,5 @@
 ﻿using Microsoft.AspNetCore.Mvc;
+using System.Text.Json;
 
 namespace Frameset.Web.Controller
 {
@@ -19,6 +20,14 @@ namespace Frameset.Web.Controller
             outputDict.TryAdd("success", true);
             outputDict.TryAdd("data", message);
             return new JsonResult(outputDict);
+        }
+        public static JsonResult OutputMsg(object message, JsonSerializerOptions _options)
+        {
+            Dictionary<string, object> outputDict = [];
+            outputDict.TryAdd("code", 200);
+            outputDict.TryAdd("success", true);
+            outputDict.TryAdd("data", message);
+            return new JsonResult(outputDict, _options);
         }
     }
 }

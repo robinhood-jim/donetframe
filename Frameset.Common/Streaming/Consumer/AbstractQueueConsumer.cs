@@ -104,7 +104,7 @@ namespace Frameset.Common.Streaming.Consumer
 
                         if (obj != null)
                         {
-                            entry.Value.SetMethod.Invoke(retObj, new object[] { obj });
+                            entry.Value.Setter(retObj, obj);
                         }
                     }
                     return retObj;

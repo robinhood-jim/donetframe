@@ -266,7 +266,7 @@ namespace Frameset.Office.Excel
                     object? rValue = null;
                     if (fieldMap.TryGetValue(columnProp.ColumnCode, out FieldContent? content))
                     {
-                        rValue = content.GetMethod.Invoke(obj, null);
+                        rValue = content.Getter(obj);
 
                         Cell cell = GetCell(i, Prop);
                         Trace.Assert(rValue != null, "");

@@ -14,7 +14,7 @@ namespace Frameset.Web.Model.User
         {
             get; set;
         } = string.Empty;
-        public DateTime? BirthDay
+        public DateTime? BrithDay
         {
             get; set;
         }

@@ -14,28 +14,32 @@ using Serilog;
 using Serilog.Events;
 using System;
 using System.Collections.Generic;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
+using System.Reflection;
 using System.Text;
 using System.Threading;
 using System.Threading.Tasks;
 
-
 namespace Frameset.Core.Context
 {
-    public class DbContext : AbstractDbContext
+    public partial class DbContext : AbstractDbContext
     {
         private readonly Timer _timer;
         private readonly AtomicBoolean _refreshTag;
 
         public DbContext(string defaultDs = "core", bool autoScan = true)
         {
-            this._dsName = defaultDs;
-            this.ContextName = defaultDs;
+            _dsName = defaultDs;
+            ContextName = defaultDs;
             if (autoScan)
             {
-                List<Type> types = ScanPackage();
+                List<Type> types = ClassUtils.ScanTypesWithAttribute(typeof(MappingEntityAttribute), (t) =>
+                {
+                    return (t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 && (t.GetCustomAttribute(typeof(MappingEntityAttribute)) as MappingEntityAttribute).DsName.Equals(ContextName)) || t.GetCustomAttributes(typeof(TableAttribute), false).Length > 0;
+                });
                 RegisterExists(types.ToArray());
             }
             dao = DAOFactory.GetAdoDao(defaultDs);
@@ -56,16 +60,50 @@ namespace Frameset.Core.Context
                 Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(typeof(V));
                 handler.InsertFill(new MetaObject(entity, fieldDict));
             }
-            if (IsAutoCommit())
+            if (!IsSubmitOnce())
             {
+                IUnitofWork unitofWork = GetUnitofWork();
+                CheckUnitWorkState(unitofWork);
                 InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entity);
-                return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.InsertSql, entity, (command, v) => DoInsert(command, segment, v) > 0);
+                return RepositoryHelper.ExecuteInUnitOfWork(unitofWork, GetDao(), IsAutoCommit(), segment.InsertSql, entity, (command, v) => DoInsert(command, segment, v)) > 0;
             }
             else
             {
-                GetCurrrentUpdateEntry().Insert(entity);
+                GetCurrentUpdateEntry().Insert(entity);
                 return true;
             }
+        }
+        public override int SaveEntities<V>(List<V> entities)
+        {
+            if (!entities.IsNullOrEmpty())
+            {
+                Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(typeof(V));
+                IMetaObjectHandler? handler = GetObjectHandler();
+
+                if (!IsSubmitOnce())
+                {
+                    IUnitofWork unitofWork = GetUnitofWork();
+                    CheckUnitWorkState(unitofWork);
+
+                    return RepositoryHelper.ExecuteInUnitOfWork(unitofWork, GetDao(), IsAutoCommit(), entities, (command, v) =>
+                    {
+                        if (handler != null)
+                        {
+                            handler.InsertFill(new MetaObject(v, fieldDict));
+                        }
+                        InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), v);
+                        command.CommandText = segment.InsertSql;
+                        command.Parameters.Clear();
+                        return DoInsert(command, segment, v);
+                    });
+                }
+                else
+                {
+                    entities.ForEach(e => GetCurrentUpdateEntry().Insert(e));
+                    return entities.Count;
+                }
+            }
+            return -1;
         }
 
         public override bool UpdateEntity<V, P>(V entity)
@@ -89,18 +127,20 @@ namespace Frameset.Core.Context
                 handler.InsertFill(new MetaObject(entity, fieldDict));
             }
 
-            if (IsAutoCommit())
+            if (!IsSubmitOnce())
             {
+                IUnitofWork unitofWork = GetUnitofWork();
+                CheckUnitWorkState(unitofWork);
                 UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), origin, entity);
                 if (segment.UpdateRequired)
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, bool>(GetDao(), segment.UpdateSql, entity, (command, v) => DoUpdate(command, segment, entity) > 0);
+                    return RepositoryHelper.ExecuteInUnitOfWork(unitofWork, GetDao(), IsAutoCommit(), segment.UpdateSql, entity, (command, v) => DoUpdate(command, segment, entity) > 0);
                 }
                 return false;
             }
             else
             {
-                GetCurrrentUpdateEntry().Update(origin, entity);
+                GetCurrentUpdateEntry().Update(origin, entity);
                 return true;
             }
         }
@@ -110,11 +150,13 @@ namespace Frameset.Core.Context
             CheckTypeExists(entityType);
             if (!pks.IsNullOrEmpty())
             {
-                if (IsAutoCommit())
+                if (!IsSubmitOnce())
                 {
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), "", Activator.CreateInstance<V>(), (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
+                    IUnitofWork unitofWork = GetUnitofWork();
+                    CheckUnitWorkState(unitofWork);
+                    return RepositoryHelper.ExecuteInUnitOfWork(unitofWork, GetDao(), IsAutoCommit(), "", Activator.CreateInstance<V>(), (command, v) => DoDelete(command, entityType, pks.Cast<object>().ToList()));
                 }
-                GetCurrrentUpdateEntry().Delete<V, P>(pks);
+                GetCurrentUpdateEntry().Delete<V, P>(pks);
                 return pks.Count;
             }
             return -1;
@@ -128,13 +170,19 @@ namespace Frameset.Core.Context
                 Tuple<string, List<DbParameter>> tuple =
                         SqlUtils.GetRemoveCondition(GetDao(), entityType, fieldName, sqlOperator, values);
                 V obj = Activator.CreateInstance<V>();
-                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), tuple.Item1, obj,
+                return RepositoryHelper.ExecuteInTransaction(GetDao(), tuple.Item1, obj,
                         (command, v) => GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray()));
             }
             List<V> list = QueryModelsByField<V>(fieldName, sqlOperator, values);
             FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(entityType);
-            List<object?>? pkList = list.Select(x => pkColumn.GetMethod.Invoke(x, null)).ToList();
-            GetCurrrentUpdateEntry().Delete<V, P>([.. pkList.Cast<P>()]);
+            List<object?> pkList = list.Select(x => pkColumn.Getter(x)).ToList();
+            if (!IsSubmitOnce())
+            {
+                IUnitofWork unitofWork = GetUnitofWork();
+                CheckUnitWorkState(unitofWork);
+                return RepositoryHelper.ExecuteInUnitOfWork(unitofWork, GetDao(), IsAutoCommit(), "", Activator.CreateInstance<V>(), (command, _) => DoDelete(command, entityType, pkList.Cast<object>().ToList()));
+            }
+            GetCurrentUpdateEntry().Delete<V, P>([.. pkList.Cast<P>()]);
             return pkList.Count;
         }
 
@@ -166,16 +214,10 @@ namespace Frameset.Core.Context
                 if (IsAutoCommit())
                 {
                     V obj = Activator.CreateInstance<V>();
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, obj, (command, v) =>
-                    {
-                        return GetDao().Execute(command, removeSql, parameters);
-                    });
+                    return RepositoryHelper.ExecuteInTransaction(GetDao(), removeSql, obj, (command, _) => GetDao().Execute(command, removeSql, parameters));
                 }
-                else
-                {
-                    GetCurrrentUpdateEntry().DeleteLogic<V, P>(pks, logicColumn, status);
-                    return pks.Count;
-                }
+                GetCurrentUpdateEntry().DeleteLogic<V, P>(pks, logicColumn, status);
+                return pks.Count;
             }
             return -1;
         }
@@ -202,11 +244,11 @@ namespace Frameset.Core.Context
                 connection.Open();
                 try
                 {
-                    return GetDao().GetDialect().BatchInsert<V>(GetDao(), connection, models, token);
+                    return GetDao().GetDialect().BatchInsert(GetDao(), connection, models, token);
                 }
                 catch (Exception ex)
                 {
-                    throw new BaseSqlException(ex.Message,ex);
+                    throw new BaseSqlException(ex.Message, ex);
                 }
             }
         }
@@ -217,11 +259,11 @@ namespace Frameset.Core.Context
             using DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString());
             try
             {
-                return GetDao().GetDialect().BatchInsert<T>(GetDao(), connection, list, batchSize);
+                return GetDao().GetDialect().BatchInsert(GetDao(), connection, list, batchSize);
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
         }
         public override List<V> QueryByCondition<V>(FilterCondition condition, PageQuery? query = null)
@@ -238,7 +280,7 @@ namespace Frameset.Core.Context
                     {
                         if (_entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
                         {
-                            CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
+                            CrudUtils.WrapSubEntity(this, typeof(V), retList, tuple.Item2);
                         }
                     }
                     return retList;
@@ -295,7 +337,7 @@ namespace Frameset.Core.Context
             {
                 _entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple);
                 Trace.Assert(tuple != null, "");
-                CrudUtils.WrapSubEntity<V>(this, typeof(V), retList, tuple.Item2);
+                CrudUtils.WrapSubEntity(this, typeof(V), retList, tuple.Item2);
             }
             return retList;
         }
@@ -307,36 +349,32 @@ namespace Frameset.Core.Context
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             List<DbParameter> dbParameters = [];
             StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType));
-            if (query != null)
+            if (!query.Parameters.IsNullOrEmpty())
             {
-                if (!query.Parameters.IsNullOrEmpty())
-                {
-                    builder.Append(" WHERE ");
-                }
-                RepositoryHelper.GetQueryParam(GetDao(), query, fieldMap, dbParameters, builder);
-                string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
-                string countSql = GetDao().GetDialect().GenerateCountSql(builder.ToString());
+                builder.Append(" WHERE ");
+            }
+            RepositoryHelper.GetQueryParam(GetDao(), query, fieldMap, dbParameters, builder);
+            string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
+            string countSql = GetDao().GetDialect().GenerateCountSql(builder.ToString());
 
-                using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, countSql))
                 {
-                    connection.Open();
-                    using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, countSql))
+
+                    long totalCount = GetDao().QueryByLong(command, dbParameters);
+                    command.CommandText = querySql;
+                    List<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
+                    if (!list.IsNullOrEmpty() &&
+                        _entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
                     {
-
-                        long totalCount = GetDao().QueryByLong(command, dbParameters);
-                        command.CommandText = querySql;
-                        List<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
-                        if (!list.IsNullOrEmpty() && _entityMap.TryGetValue(entityType, out Tuple<EntityContent, List<FieldContent>>? tuple))
-                        {
-                            CrudUtils.WrapSubEntity(this, typeof(V), list, tuple.Item2);
-                        }
-                        PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize, list);
-
-                        return ret;
+                        CrudUtils.WrapSubEntity(this, typeof(V), list, tuple.Item2);
                     }
+                    PageDTO<V> ret = new PageDTO<V>(totalCount, query.PageSize, list);
+                    return ret;
                 }
             }
-            return new PageDTO<V>(0, 0);
         }
 
         public override PageDTO<O> QueryPage<V, O>(PageQuery query)
@@ -399,16 +437,25 @@ namespace Frameset.Core.Context
 
         public override void SaveChanges()
         {
-            if (IsAutoCommit())
+            IUnitofWork? unitofWork;
+            if (!IsSubmitOnce())
             {
+                if (!IsAutoCommit())
+                {
+                    if (unitOfWorkDict.TryGetValue(Thread.CurrentThread, out unitofWork))
+                    {
+                        unitofWork.Commit();
+                        return;
+                    }
+                }
                 throw new NotSupportedException("SaveChanges must call with not AutoCommit");
             }
-            CheckThreadTransaction(out IUnitofWork? unitofWork);
-            Trace.Assert(unitofWork != null);
+            unitofWork = GetUnitofWork();
+            CheckUnitWorkState(unitofWork);
             try
             {
-                UpdateEntry entry = GetCurrrentUpdateEntry();
-                if (entry != null && !entry.EffectEntrys.IsNullOrEmpty())
+                UpdateEntry entry = GetCurrentUpdateEntry();
+                if (!entry.EffectEntrys.IsNullOrEmpty())
                 {
                     DbConnection connection = unitofWork.GetConnection();
                     CheckOpen(connection);
@@ -436,7 +483,7 @@ namespace Frameset.Core.Context
             catch (Exception ex)
             {
                 unitofWork.Rollback();
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
             finally
             {
@@ -446,18 +493,15 @@ namespace Frameset.Core.Context
             }
         }
 
-        private UpdateEntry GetCurrrentUpdateEntry()
+        private UpdateEntry GetCurrentUpdateEntry()
         {
             WaitForRefreshTimer().GetAwaiter().GetResult();
             if (_requestChanges.TryGetValue(Thread.CurrentThread, out UpdateEntry? entry))
             {
                 return entry;
             }
-            else
-            {
-                entry = new UpdateEntry();
-                _requestChanges.TryAdd(Thread.CurrentThread, entry);
-            }
+            entry = new UpdateEntry();
+            _requestChanges.TryAdd(Thread.CurrentThread, entry);
             return entry;
         }
         private async Task WaitForRefreshTimer()
@@ -471,11 +515,10 @@ namespace Frameset.Core.Context
         private int TakeAction(DbCommand command, EffectEntry entry)
         {
             int effectRow = 0;
-            IAdoDao dao = GetDao();
             switch (entry.EffectType)
             {
                 case EFFECTTYPE.Insert:
-                    InsertSegment segment = SqlUtils.GetInsertSegment(dao, entry.Entity);
+                    InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entry.Entity);
                     effectRow = DoInsert(command, segment, entry.Entity);
                     break;
                 case EFFECTTYPE.Update:
@@ -519,31 +562,32 @@ namespace Frameset.Core.Context
             Type entityType = superEntity.GetType();
             List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             IEnumerable<FieldContent> oneToManys = fields.Where(x => x.IsOneToMany && (x.Cascade == CascadeType.PERSIST || x.Cascade == CascadeType.MERGE || x.Cascade == CascadeType.ALL));
-            if (!oneToManys.IsNullOrEmpty())
+            var fieldContents = oneToManys.ToList();
+            if (!fieldContents.IsNullOrEmpty())
             {
                 FieldContent pkColumn = EntityReflectUtils.GetPrimaryKey(superEntity.GetType());
-                object? id = pkColumn.GetMethod.Invoke(superEntity, null);
+                object? id = pkColumn.Getter(superEntity);
                 Trace.Assert(id != null);
-                foreach (FieldContent content in oneToManys.ToList())
+                foreach (FieldContent content in fieldContents.ToList())
                 {
-                    List<dynamic>? list = content.GetMethod.Invoke(superEntity, null) as List<dynamic>;
-                    string subColumn = content.RealtionColumn;
+                    List<dynamic>? list = content.Getter(superEntity) as List<dynamic>;
+                    string subColumn = content.RelationColumn;
                     if (list != null && !list.IsNullOrEmpty())
                     {
                         Type subType = list.GetType().GetGenericArguments()[0];
                         //remove origin
-                        Tuple<string, List<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao, subType, content.RealtionColumn, Constants.SqlOperator.EQ, [id]);
+                        Tuple<string, List<DbParameter>> tuple = SqlUtils.GetRemoveCondition(dao, subType, content.RelationColumn, Constants.SqlOperator.EQ, [id]);
                         GetDao().Execute(command, tuple.Item1, tuple.Item2.ToArray());
 
                         Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
                         if (!subFieldMap.TryGetValue(subColumn, out FieldContent? realtionContent))
                         {
-                            throw new BaseSqlException("refrence column " + subColumn + " not defined in entity " + subType.Name);
+                            throw new BaseSqlException("reference column " + subColumn + " not defined in entity " + subType.Name);
                         }
                         FieldContent subPkColumn = EntityReflectUtils.GetPrimaryKey(subType);
                         foreach (object voObj in list)
                         {
-                            var sid = subPkColumn.GetMethod.Invoke(voObj, null);
+                            var sid = subPkColumn.Getter(voObj);
                             BaseEntity? subEntity = voObj as BaseEntity;
                             Trace.Assert(subEntity != null);
                             //数据存在
@@ -553,21 +597,19 @@ namespace Frameset.Core.Context
                                 {
                                     throw new BaseSqlException("id " + id + " already in subType " + subType.Name + ",PRESIST OR ALL INSERT FAILED!");
                                 }
-                                else
+                                realtionContent.Setter(subEntity, id);
+                                BaseEntity origin = GetByIdSimple(subType, sid);
+                                UpdateSegment updateSegment1 = SqlUtils.GetUpdateSegment(GetDao(), origin, subEntity);
+                                if (updateSegment1.UpdateRequired)
                                 {
-                                    realtionContent.SetMethod.Invoke(subEntity, [id]);
-                                    BaseEntity origin = GetByIdSimple(subType, sid);
-                                    UpdateSegment updateSegment1 = SqlUtils.GetUpdateSegment(GetDao(), origin, subEntity);
-                                    if (updateSegment1.UpdateRequired)
-                                    {
-                                        effectRow = IncrementExecute(effectRow, GetDao().UpdateEntity(command, updateSegment1));
-                                    }
+                                    effectRow = IncrementExecute(effectRow,
+                                        GetDao().UpdateEntity(command, updateSegment1));
                                 }
                             }
                             else
                             {
                                 //找到子表关联字段
-                                realtionContent.SetMethod.Invoke(subEntity, [id]);
+                                realtionContent.Setter(subEntity, id);
                                 InsertSegment segment1 = SqlUtils.GetInsertSegment(GetDao(), subEntity);
                                 effectRow = IncrementExecute(effectRow, GetDao().SaveEntity(command, subEntity, segment1));
                             }
@@ -599,11 +641,12 @@ namespace Frameset.Core.Context
 
             List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(superEntityType);
             IEnumerable<FieldContent> oneToManys = fields.Where(x => x.IsOneToMany && (x.Cascade == CascadeType.REMOVE || x.Cascade == CascadeType.ALL));
-            if (!oneToManys.IsNullOrEmpty())
+            var fieldContents = oneToManys.ToList();
+            if (!fieldContents.IsNullOrEmpty())
             {
-                foreach (FieldContent content in oneToManys.ToList())
+                foreach (FieldContent content in fieldContents)
                 {
-                    string subColumn = content.RealtionColumn;
+                    string subColumn = content.RelationColumn;
                     Type subType = content.ParamType.GetGenericArguments()[0];
                     Dictionary<string, FieldContent> subFieldMap = EntityReflectUtils.GetFieldsMap(subType);
                     if (!subFieldMap.TryGetValue(subColumn, out FieldContent? relationContent))
@@ -650,10 +693,11 @@ namespace Frameset.Core.Context
                 }
             }
         }
-        protected override void Dispose(bool isDipsose)
+        protected override void Dispose(bool isDisposed)
         {
-            if (isDipsose)
+            if (isDisposed)
             {
+                base.Dispose(isDisposed);
                 _entityMap.Clear();
                 _entityPkMap.Clear();
                 _requestChanges.Clear();
@@ -661,6 +705,7 @@ namespace Frameset.Core.Context
                 _fieldContentMap.Clear();
                 _temporaryDsName?.Dispose();
                 _autoCommitStatus?.Dispose();
+                _submitOnceStatus?.Dispose();
             }
         }
     }

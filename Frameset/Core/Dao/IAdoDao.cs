@@ -15,7 +15,7 @@ using System.Threading;
 
 namespace Frameset.Core.Dao
 {
-    public interface IAdoDao
+    public interface IAdoDao : IDisposable
     {
         string GetConnectString();
         string GetDbTypeStr();
@@ -28,6 +28,7 @@ namespace Frameset.Core.Dao
         /// <param name="segment"></param>
         /// <returns></returns>
         bool SaveEntity(DbCommand command, BaseEntity model, InsertSegment segment);
+        int SaveEntities<V>(DbCommand command, List<V> models) where V : BaseEntity;
         /// <summary>
         /// Single Table Update
         /// </summary>
@@ -53,11 +54,12 @@ namespace Frameset.Core.Dao
         /// <summary>
         /// Query native and return with list targetType
         /// </summary>
+        /// <param name="dbCommand"></param>
         /// <param name="targetType"></param>
         /// <param name="querySql"></param>
-        /// <param name="parameters"></param>
         /// <returns></returns>
-        object QueryBySql(Type targetType, string querySql, List<DbParameter> parameters);
+        /// <param name="parameters"></param>
+        object QueryBySql(DbCommand dbCommand, Type targetType, string querySql, List<DbParameter>? parameters);
         /// <summary>
         /// LINQ Queryable query
         /// </summary>

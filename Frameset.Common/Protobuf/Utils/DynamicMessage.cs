@@ -162,24 +162,26 @@ namespace Frameset.Common.Protobuf.Utils
         public T ConvertToModel<T>()
         {
             T retObj = Activator.CreateInstance<T>();
+            Trace.Assert(retObj != null);
             Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
             foreach (var entry in methodMap)
             {
                 if (DataContent.TryGetValue(entry.Key, out object? value) && value != null)
                 {
-                    entry.Value.SetMethod.Invoke(retObj, [ConvertUtil.ParseByType(entry.Value.ParamType, value)]);
+                    entry.Value.Setter(retObj, ConvertUtil.ParseByType(entry.Value.ParamType, value));
                 }
             }
             return retObj;
         }
         public void ParseFrom<T>(T model)
         {
+            Trace.Assert(model != null);
             DataContent.Clear();
             Dictionary<string, MethodParam> methodMap = AnnotationUtils.ReflectObject(typeof(T));
             TimeZoneInfo timeZoneInfo = TimeZoneInfo.Local;
             foreach (var entry in methodMap)
             {
-                object? value = entry.Value.GetMethod.Invoke(model, []);
+                object? value = entry.Value.Getter(model);
                 if (value != null)
                 {
                     if (entry.Value.ParamType != typeof(DateTime) && entry.Value.ParamType != typeof(DateTimeOffset))

@@ -217,7 +217,7 @@ namespace Frameset.Common.Data.Reader
             if (readAsDict)
             {
                 dynamic tmp = Convert.ChangeType(CachedValue, typeof(Dictionary<string, object>));
-                current = tmp; 
+                current = tmp;
             }
             else
             {
@@ -226,7 +226,7 @@ namespace Frameset.Common.Data.Reader
                 {
                     if (MethodMap.TryGetValue(item.Key, out MethodParam? param))
                     {
-                        param.SetMethod.Invoke(current, [ConvertUtil.ParseByType(param.ParamType, item.Value)]);
+                        param.Setter(current, ConvertUtil.ParseByType(param.ParamType, item.Value));
                     }
                     else
                     {

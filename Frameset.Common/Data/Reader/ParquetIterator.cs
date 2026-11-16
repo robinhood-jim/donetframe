@@ -51,13 +51,13 @@ namespace Frameset.Common.Data.Reader
         }
         public ParquetIterator(IFileSystem fileSystem, string processPath) : base(fileSystem, processPath)
         {
-            Identifier = Constants.FileFormatType.AVRO;
+            Identifier = Constants.FileFormatType.PARQUET;
             useRawStream = true;
             Initalize(processPath);
         }
         public ParquetIterator(IFileSystem fileSystem, string processPath, Action<AbstractDataIterator<T>>? initFunc) : base(fileSystem, processPath, initFunc)
         {
-            Identifier = Constants.FileFormatType.AVRO;
+            Identifier = Constants.FileFormatType.PARQUET;
             useRawStream = true;
             Initalize(processPath);
         }

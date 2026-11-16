@@ -10,6 +10,7 @@ using System.Collections.Generic;
 using System.Data;
 using System.Data.Common;
 using System.Linq;
+using System.Linq.Expressions;
 using System.Threading;
 
 namespace Frameset.Core.Context
@@ -23,8 +24,12 @@ namespace Frameset.Core.Context
         /// <param name="entity"></param>
         /// <returns></returns>
         bool SaveEntity<V>(V entity) where V : BaseEntity;
+        int SaveEntities<V>(List<V> entities) where V : BaseEntity;
 
-        bool UpdateEntity<V, P>(V entity) where V : BaseEntity where P : notnull;
+        bool UpdateEntity<V, P>(V entity) where V : BaseEntity where P : notnull
+        {
+            throw new NotImplementedException();
+        }
 
         int RemoveEntity<V, P>(List<P> pks) where V : BaseEntity where P : notnull;
 
@@ -45,7 +50,6 @@ namespace Frameset.Core.Context
         PageDTO<V> QueryModelsPage<V>(PageQuery query) where V : BaseEntity;
 
         void ChangeDs(string dsName);
-
         void RestoreDs();
         string GetDsName();
         List<V> QueryByCondition<V>(FilterCondition condition, PageQuery? query = null) where V : BaseEntity;
@@ -59,10 +63,34 @@ namespace Frameset.Core.Context
         void DoWithQuery(string sql, Dictionary<string, object> QueryParamter, Action<IDataReader> action);
         string GetContextName();
         void SetAutoCommit(bool autoCommit);
+        void SetSubmitOnce(bool submitOnce);
+        void ResetSubmitOnce();
         void ResetCommitStatus();
         void ManyToOne(Type subType, string fieldName, Type parentType);
         void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
         IAdoDao GetDao();
         IQueryable<T> Query<T>() where T : BaseEntity;
+        /// <summary>
+        /// Single Table Update
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="conditions"></param>
+        /// <param name="generateExpression"></param>
+        /// <returns></returns>
+        int Update<T>(Expression<Func<T, bool>> conditions, Expression<Func<T>> generateExpression) where T : BaseEntity;
+        /// <summary>
+        /// Single Table Delete
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="conditions"></param>
+        /// <returns></returns>
+        int Delete<T>(Expression<Func<T, bool>> conditions) where T : BaseEntity;
+        /// <summary>
+        /// SingleTable select count
+        /// </summary>
+        /// <typeparam name="T"></typeparam>
+        /// <param name="conditions"></param>
+        /// <returns></returns>
+        int Count<T>(Expression<Func<T, bool>> conditions) where T : BaseEntity;
     }
 }

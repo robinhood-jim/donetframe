@@ -127,6 +127,6 @@ namespace Frameset.Core.Repo
         List<O> QueryByFields<O>(QueryParameter queryParams);
         bool ExecuteOperation(Action<IAdoDao, DbCommand> action);
         List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter);
-        PageDTO<V> QueryPageByCondition(PageQuery query, FilterCondition condition);
+        PageDTO<V> QueryPageByCondition(PageQuery? query, FilterCondition condition);
     }
 }

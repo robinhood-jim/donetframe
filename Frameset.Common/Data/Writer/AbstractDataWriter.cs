@@ -27,7 +27,7 @@ namespace Frameset.Common.Data.Writer
         {
             get; internal set;
         }
-        
+
         internal Stream outputStream = null!;
         internal StreamWriter writer = null!;
         internal bool useWriter = false;
@@ -155,6 +155,7 @@ namespace Frameset.Common.Data.Writer
         internal object? GetValue(T input, DataSetColumnMeta column)
         {
             object? retValue = null;
+            Trace.Assert(input != null);
             if (useDictOutput)
             {
                 (input as Dictionary<string, object>)?.TryGetValue(column.ColumnCode, out retValue);
@@ -162,7 +163,7 @@ namespace Frameset.Common.Data.Writer
             else
             {
                 methodMap.TryGetValue(column.ColumnCode, out MethodParam? param);
-                retValue = param?.GetMethod.Invoke(input, null);
+                retValue = param?.Getter(input);
             }
             if (retValue != null)
             {

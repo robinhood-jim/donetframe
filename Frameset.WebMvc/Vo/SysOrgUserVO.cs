@@ -1,12 +1,7 @@
-﻿using Frameset.Core.Annotation;
-using Frameset.Core.Model;
-
-namespace Frameset.Web.Model.Org
+﻿namespace Frameset.WebMvc.Vo
 {
-    [MappingEntity("t_employee")]
-    public class Employee : BaseEntity
+    public class SysOrgUserVO
     {
-        [MappingFieldAttribute(ifPrimary: true, ifIncrement: true)]
         public long Id
         {
             get; set;
@@ -27,7 +22,7 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         } = string.Empty;
-        public short? Gender
+        public int Gender
         {
             get; set;
         }
@@ -39,7 +34,21 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         } = string.Empty;
-
-
+        public long RegOrgId
+        {
+            get; set;
+        }
+        public long UserId
+        {
+            get; set;
+        }
+        public string Province
+        {
+            get; set;
+        } = string.Empty;
+        public string City
+        {
+            get; set;
+        } = string.Empty;
     }
 }

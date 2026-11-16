@@ -20,7 +20,6 @@ using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
 using System.Text;
 using System.Text.Json;
 using System.Threading;
@@ -33,13 +32,13 @@ namespace Frameset.Core.Dao
         private readonly string _connectionStr;
         private readonly string _dbTypeStr = "Mysql";
         private readonly ISqlDialect _dataMeta = null!;
-        private readonly Constants.DbType _dbType=Constants.DbType.Mysql;
+        private readonly Constants.DbType _dbType = Constants.DbType.Mysql;
         private readonly string _schema = null!;
         private string _logicColumn = string.Empty;
         private int _validValue = Constants.VALID_INT;
         private int _invalidValue = Constants.INVALID_INT;
         #region Construct
-        internal AdoDao(string connectionStr)
+        private AdoDao(string connectionStr)
         {
             this._connectionStr = connectionStr;
         }
@@ -83,16 +82,16 @@ namespace Frameset.Core.Dao
             this._logicColumn = logicColumn;
             if (validValue != null)
             {
-                this._validValue = Convert.ToInt32(validValue);
+                _validValue = Convert.ToInt32(validValue);
             }
             if (invalidValue != null)
             {
-                this._invalidValue = Convert.ToInt32(invalidValue);
+                _invalidValue = Convert.ToInt32(invalidValue);
             }
         }
         public void SetLogicColumn(string logicColumn)
         {
-            this._logicColumn = logicColumn;
+            _logicColumn = logicColumn;
 
         }
         public string GetLogicColumn()
@@ -202,7 +201,7 @@ namespace Frameset.Core.Dao
 
             return retList;
         }
-        
+
         public List<Dictionary<string, object>> QueryBySql(DbCommand command, object[] objects)
         {
             DbParameter[] parameters = DaoUtils.ParseParameter(_dataMeta, objects);
@@ -210,71 +209,70 @@ namespace Frameset.Core.Dao
             return DaoUtils.SimpleQuery(command);
         }
 
-        public object QueryBySql(Type targetType, string querySql, List<DbParameter> parameters)
+        public object QueryBySql(DbCommand command, Type targetType, string querySql, List<DbParameter>? parameters)
         {
-            using DbConnection connection = _dataMeta.GetDbConnection(GetConnectString());
-            using DbCommand command = _dataMeta.GetDbCommand(connection, querySql);
             try
             {
-                connection.Open();
-                command.Parameters.AddRange(parameters.ToArray());
+                if (parameters != null && !parameters.IsNullOrEmpty())
+                {
+                    command.Parameters.AddRange(parameters.ToArray());
+                }
                 if (targetType.IsTypeDictionary())
                 {
                     return DaoUtils.SimpleQuery(command);
                 }
-                else
+                var listType = typeof(List<>).MakeGenericType(targetType);
+                var list = Activator.CreateInstance(listType);
+                var addMethod = listType.GetMethod("Add");
+                Trace.Assert(addMethod != null);
+
+                using var reader = command.ExecuteReader();
+                List<string> columns = DaoUtils.GetResultColumns(reader);
+                while (reader.Read())
                 {
-                    var listType = typeof(List<>).MakeGenericType(targetType);
-                    var list = Activator.CreateInstance(listType);
-                    var addMethod = listType.GetMethod("Add");
-                    Trace.Assert(addMethod != null);
-                    var properties = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
-                    using var reader = command.ExecuteReader();
-                    List<string> columns = DaoUtils.GetResultColumns(reader);
-                    while (reader.Read())
+                    object? instance;
+                    if (DaoUtils.IsAnonymousType(targetType))
                     {
-                        object? instance;
-                        if (DaoUtils.IsAnonymousType(targetType))
+                        var constructor = targetType.GetConstructors().First();
+                        var parameters1 = constructor.GetParameters();
+                        var constructorArgs = new object?[parameters1.Length];
+                        for (int i = 0; i < parameters1.Length; i++)
                         {
-                            var constructor = targetType.GetConstructors().First();
-                            var parameters1 = constructor.GetParameters();
-                            var constructorArgs = new object?[parameters1.Length];
-                            for (int i = 0; i < parameters1.Length; i++)
+                            string? columnName = parameters1[i].Name;
+                            Trace.Assert(!string.IsNullOrWhiteSpace(columnName));
+                            if (DaoUtils.HasColumn(columns, columnName, out string? dbColName) && !string.IsNullOrWhiteSpace((dbColName)))
                             {
-                                string? columnName = parameters1[i].Name;
-                                Trace.Assert(!string.IsNullOrWhiteSpace(columnName));
-                                if (DaoUtils.HasColumn(columns, columnName, out string? dbColName) && !string.IsNullOrWhiteSpace((dbColName)))
-                                {
-                                    var val = reader[dbColName];
-                                    constructorArgs[i] = val == DBNull.Value ? null : val;
-                                }
-                            }
-                            instance = constructor.Invoke(constructorArgs);
-                        }
-                        else
-                        {
-                            instance = Activator.CreateInstance(targetType);
-                            foreach (var prop in properties)
-                            {
-                                if (DaoUtils.HasColumn(columns, prop.Name, out string? dbColName) && !string.IsNullOrWhiteSpace(dbColName))
-                                {
-                                    var val = reader[dbColName];
-                                    if (val != DBNull.Value)
-                                    {
-                                        prop.SetValue(instance, ConvertUtil.ParseByType(prop.PropertyType,val));
-                                    }
-                                }
+                                var val = reader[dbColName];
+                                constructorArgs[i] = val == DBNull.Value ? null : ConvertUtil.ParseByType(parameters1[i].ParameterType, val);
                             }
                         }
-                        addMethod.Invoke(list, [instance]);
+                        instance = constructor.Invoke(constructorArgs);
                     }
-                    Trace.Assert(list != null);
-                    return list;
+                    else
+                    {
+                        Dictionary<string, MethodParam> methodDict = AnnotationUtils.ReflectObject(targetType);
+                        instance = Activator.CreateInstance(targetType);
+                        Trace.Assert(instance != null);
+                        foreach (var prop in methodDict)
+                        {
+                            if (DaoUtils.HasColumn(columns, prop.Key, out string? dbColName) && !string.IsNullOrWhiteSpace(dbColName))
+                            {
+                                var val = reader[dbColName];
+                                if (val != DBNull.Value)
+                                {
+                                    prop.Value.Setter(instance, ConvertUtil.ParseByType(prop.Value.PropertyInfo.PropertyType, val));
+                                }
+                            }
+                        }
+                    }
+                    addMethod.Invoke(list, [instance]);
                 }
+                Trace.Assert(list != null);
+                return list;
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
         }
 
@@ -290,32 +288,9 @@ namespace Frameset.Core.Dao
             }
             using (DbDataReader reader = command.ExecuteReader())
             {
-                List<string> parameters = DaoUtils.GetParameters(methodMap);
                 while (reader.Read())
                 {
-                    dynamic? retObj = Activator.CreateInstance<O>();
-                    for (int col = 0; col < reader.FieldCount; col++)
-                    {
-                        if (retMap)
-                        {
-                            Dictionary<string, object>? dict = retObj as Dictionary<string, object>;
-                            Trace.Assert(dict != null, "");
-                            dict[reader.GetName(col)] = reader[col];
-                        }
-                        else
-                        {
-                            string columnName = reader.GetName(col);
-                            if (DaoUtils.HasColumn(parameters, columnName, out string? paramName) && !string.IsNullOrWhiteSpace(paramName)
-                                && methodMap.TryGetValue(paramName, out MethodParam? param))
-                            {
-                                if (!Convert.IsDBNull(reader[col]))
-                                {
-                                    param.SetMethod.Invoke(retObj, new[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
-                                }
-                            }
-                        }
-                    }
-                    retList.Add(retObj);
+                    retList.Add(DaoUtils.WrapRow<O>(reader, retMap, methodMap));
                 }
             }
             return retList;
@@ -338,6 +313,7 @@ namespace Frameset.Core.Dao
             }
             countSql = _dataMeta.GenerateCountSql(querySql);
             command.CommandText = countSql;
+            DaoUtils.AppendParameters(command, _dataMeta, query.Parameters);
             long count = QueryByLong(command);
             PageDTO<V> ret = new(count, query.PageSize, query.CurrentPage);
             string pageSql = _dataMeta.GeneratePageSql(querySql, query);
@@ -345,7 +321,7 @@ namespace Frameset.Core.Dao
             bool ifRetMap = false;
             Dictionary<string, MethodParam> methodMap = [];
 
-            if (retType.Equals(typeof(Dictionary<string, object>)))
+            if (retType == typeof(Dictionary<string, object>))
             {
                 ifRetMap = true;
             }
@@ -357,44 +333,15 @@ namespace Frameset.Core.Dao
             using DbDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {
-                V entity = Activator.CreateInstance<V>();
-                Dictionary<string, object>? dict = null;
-                if (ifRetMap)
-                {
-                    dict = [];
-                }
-
-                for (int col = 0; col < reader.FieldCount; col++)
+                ret.Results.Add(DaoUtils.WrapRow<V>(reader, ifRetMap, methodMap, (col) =>
                 {
                     string name = reader.GetName(col);
-                    if (ifRetMap)
-                    {
-                        Trace.Assert(dict != null, "");
-                        dict[reader.GetName(col)] = reader[col];
-                    }
-
                     if ((mappingMap == null || !mappingMap.MappingColumns.TryGetValue(name, out string? mappingColumn)) && !query.MappingColumns.TryGetValue(name, out mappingColumn))
                     {
-                        mappingColumn = StringUtils.CamelCaseLowConvert(name);
+                        mappingColumn = StringUtils.CamelCaseUpperConvert(name);
                     }
-
-                    if (methodMap.TryGetValue(mappingColumn, out MethodParam? param))
-                    {
-                        if (!Convert.IsDBNull(reader[col]))
-                        {
-                            param.SetMethod.Invoke(entity, new[] { ConvertUtil.ParseByType(param.ParamType, reader[col]) });
-                        }
-                    }
-                }
-                if (ifRetMap)
-                {
-                    dynamic? tmp = Convert.ChangeType(dict, retType);
-                    ret.Results.Add(tmp);
-                }
-                else
-                {
-                    ret.Results.Add(entity);
-                }
+                    return mappingColumn;
+                }));
             }
             return ret;
         }
@@ -402,13 +349,11 @@ namespace Frameset.Core.Dao
         {
             GetSqlAndParameterByCondition<V>(condition, out StringBuilder builder, out Dictionary<string, object> queryParameter);
             string querySql = builder.ToString();
-            string countSql = string.Empty;
-
             DaoUtils.ParseParameter(_dataMeta, command, queryParameter);
             if (query != null)
             {
                 querySql = GetDialect().GeneratePageSql(querySql, query);
-                countSql = GetDialect().GenerateCountSql(querySql);
+                string countSql = GetDialect().GenerateCountSql(querySql);
                 command.CommandText = countSql;
                 long count = QueryByLong(command);
                 query.Total = count;
@@ -418,7 +363,7 @@ namespace Frameset.Core.Dao
             Dictionary<string, MethodParam>? methodMap = null;
             Type retType = typeof(V);
             var retList = new List<V>();
-            if (retType.Equals(typeof(Dictionary<string, object>)))
+            if (retType == typeof(Dictionary<string, object>))
             {
                 ifRetMap = true;
             }
@@ -430,29 +375,7 @@ namespace Frameset.Core.Dao
             using DbDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {
-                V entity = Activator.CreateInstance<V>();
-                for (int col = 0; col < reader.FieldCount; col++)
-                {
-                    if (ifRetMap)
-                    {
-                        Dictionary<string, object>? dict = entity as Dictionary<string, object>;
-                        Trace.Assert(dict != null, "");
-                        dict[reader.GetName(col)] = reader[col];
-                    }
-                    else
-                    {
-                        Trace.Assert(methodMap != null, "");
-                        if (methodMap.TryGetValue(reader.GetName(col), out MethodParam? param))
-                        {
-                            object value = reader[col];
-                            if (!Convert.IsDBNull(value))
-                            {
-                                param.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(param.ParamType, value) });
-                            }
-                        }
-                    }
-                }
-                retList.Add(entity);
+                retList.Add(DaoUtils.WrapRow<V>(reader, ifRetMap, methodMap));
             }
             return retList;
         }
@@ -463,7 +386,6 @@ namespace Frameset.Core.Dao
             StringBuilder newColumnsBuilder = new();
             StringBuilder havingBuiler = new();
             StringBuilder groupByBuilder = new();
-            string orderByStr;
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
             Dictionary<string, string> propFieldMap = [];
             EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
@@ -546,7 +468,6 @@ namespace Frameset.Core.Dao
                             havingBuiler.Append(funcStr).Append(Constants.OperatorValue(compareOper)).Append('@').Append(columnName).Append(Constants.SQL_AND);
                             preparedMap.TryAdd(columnName, cmpValue);
                         }
-
                     }
                     else
                     {
@@ -555,7 +476,7 @@ namespace Frameset.Core.Dao
                     }
                 }
             }
-            orderByStr = queryParams.OrderBy;
+            string orderByStr = queryParams.OrderBy;
 
             foreach (var entry in queryParams.Parameters)
             {
@@ -613,34 +534,10 @@ namespace Frameset.Core.Dao
             using DbDataReader reader = command.ExecuteReader();
             while (reader.Read())
             {
-                O entity = Activator.CreateInstance<O>();
-                for (int col = 0; col < reader.FieldCount; col++)
-                {
-                    if (ifRetMap)
-                    {
-                        Dictionary<string, object>? dict = entity as Dictionary<string, object>;
-                        Trace.Assert(dict != null);
-                        dict[reader.GetName(col)] = reader[col];
-                    }
-                    else
-                    {
-                        Trace.Assert(methodMap != null);
-                        if (methodMap.TryGetValue(reader.GetName(col), out MethodParam? param))
-                        {
-                            if (!Convert.IsDBNull(reader[col]))
-                            {
-                                param.SetMethod.Invoke(entity, [ConvertUtil.ParseByType(param.ParamType, reader[col])]);
-                            }
-                        }
-                    }
-                }
-                retList.Add(entity);
+                retList.Add(DaoUtils.WrapRow<O>(reader, ifRetMap, methodMap));
             }
-
             return retList;
-
         }
-
 
         public List<dynamic> QueryMapper(SqlSelectSegment sqlsegment, Dictionary<string, object> paramMap, string nameSpace, DbCommand command)
         {
@@ -659,34 +556,8 @@ namespace Frameset.Core.Dao
                 Trace.Assert(retType != null, "");
                 methodMap = AnnotationUtils.ReflectObject(retType);
             }
+            DaoUtils.AppendParameters(command, _dataMeta, paramMap);
 
-            if (!paramMap.IsNullOrEmpty())
-            {
-                foreach (var item in paramMap)
-                {
-                    object value = item.Value;
-                    if (value != null)
-                    {
-                        if (value.GetType().IsFundamentalType())
-                        {
-                            command.Parameters.Add(_dataMeta.WrapParameter(item.Key, item.Value));
-                        }
-                        else if (value.GetType().IsTypeDictionary())
-                        {
-                            Dictionary<string, object>? dict = value as Dictionary<string, object>;
-                            Trace.Assert(dict != null, "");
-                            foreach (var item1 in dict)
-                            {
-                                command.Parameters.Add(_dataMeta.WrapParameter(item1.Key, item1.Value));
-                            }
-                        }
-                        else
-                        {
-                            command.Parameters.Add(_dataMeta.WrapParameter(item.Key, item.Value));
-                        }
-                    }
-                }
-            }
             var listType = typeof(List<>).MakeGenericType(retType);
 
             dynamic? retList = Activator.CreateInstance(listType);
@@ -696,7 +567,6 @@ namespace Frameset.Core.Dao
             {
                 Dictionary<string, object>? dict = null;
                 object? ret = null;
-
                 if (retMap)
                 {
                     dict = [];
@@ -705,24 +575,32 @@ namespace Frameset.Core.Dao
                 {
                     ret = Activator.CreateInstance(retType);
                 }
-
+                Trace.Assert(ret != null);
                 for (int col = 0; col < reader.FieldCount; col++)
                 {
-                    string name = reader.GetName(col);
+                    string columnName = reader.GetName(col);
                     if (retMap)
                     {
                         Trace.Assert(dict != null, "");
                         dict[reader.GetName(col)] = reader[col];
                     }
-                    else if (map != null && map.MappingColumns.TryGetValue(name, out string? keyVal) && !string.IsNullOrWhiteSpace(keyVal) && methodMap != null && methodMap.TryGetValue(keyVal, out MethodParam? param))
+                    else
                     {
-                        if (!Convert.IsDBNull(reader[col]))
+                        Trace.Assert(methodMap != null);
+                        List<string> columns = methodMap.Keys.ToList();
+                        if (map == null || !map.MappingColumns.TryGetValue(columnName, out string? mappingColumn))
                         {
-                            param.SetMethod.Invoke(ret, [ConvertUtil.ParseByType(param.ParamType, reader[col])]);
+                            mappingColumn = StringUtils.CamelCaseUpperConvert(columnName);
+                        }
+                        if (DaoUtils.HasColumn(columns, mappingColumn, out string? propName) && !string.IsNullOrWhiteSpace(propName) && methodMap.TryGetValue(propName, out MethodParam? param))
+                        {
+                            if (!Convert.IsDBNull(reader[col]))
+                            {
+                                param.Setter(ret, ConvertUtil.ParseByType(param.ParamType, reader[col]));
+                            }
                         }
                     }
                 }
-
                 if (retMap)
                 {
                     retList?.Add(dict);
@@ -733,9 +611,9 @@ namespace Frameset.Core.Dao
                     retList?.Add(tmp);
                 }
             }
-            IEnumerable? enumables = retList as IEnumerable;
-            Trace.Assert(enumables != null);
-            return enumables.Cast<dynamic>().ToList();
+            IEnumerable? enumerable = retList as IEnumerable;
+            Trace.Assert(enumerable != null);
+            return enumerable.Cast<dynamic>().ToList();
         }
         public void DoWithQuery(string sql, object[] obj, Action<IDataReader> action)
         {
@@ -743,19 +621,19 @@ namespace Frameset.Core.Dao
             connection.Open();
             using DbCommand command = _dataMeta.GetDbCommand(connection, sql);
             DbParameter[] parameters = DaoUtils.ParseParameter(_dataMeta, obj);
-            if (parameters != null && parameters.Length > 0)
+            if (parameters.Length > 0)
             {
                 command.Parameters.AddRange(parameters);
             }
             using DbDataReader reader = command.ExecuteReader();
             action.Invoke(reader);
         }
-        public void DoWithQueryNamed(string sql, Dictionary<string, object> QueryParameters, Action<IDataReader> action)
+        public void DoWithQueryNamed(string sql, Dictionary<string, object> queryParameters, Action<IDataReader> action)
         {
             using DbConnection connection = _dataMeta.GetDbConnection(_connectionStr);
             connection.Open();
             using DbCommand command = _dataMeta.GetDbCommand(connection, sql);
-            DaoUtils.ParseParameter(_dataMeta, command, QueryParameters);
+            DaoUtils.ParseParameter(_dataMeta, command, queryParameters);
             using (DbDataReader reader = command.ExecuteReader())
             {
                 action.Invoke(reader);
@@ -763,7 +641,7 @@ namespace Frameset.Core.Dao
         }
         public IQueryable<T> Query<T>() where T : BaseEntity
         {
-            return new QueryTable<T>(this);
+            return new CustomQueryable<T>(this);
         }
         #endregion
         #region Crud
@@ -776,7 +654,7 @@ namespace Frameset.Core.Dao
                 object? genId = command.ExecuteScalar();
                 if (genId != null)
                 {
-                    segment.GenKeyMethod.Invoke(model, [ConvertUtil.ParseByType(segment.GenKeyMethod.GetParameters()[0].ParameterType, genId)]);
+                    segment.GenKeySetter(model, ConvertUtil.ParseByType(segment.GenKeyType, genId));
                 }
             }
             else
@@ -784,10 +662,20 @@ namespace Frameset.Core.Dao
                 command.ExecuteNonQuery();
             }
             return true;
-
+        }
+        public int SaveEntities<V>(DbCommand command, List<V> models) where V : BaseEntity
+        {
+            int count = 0;
+            foreach (V model in models)
+            {
+                if (SaveEntity(command, model, SqlUtils.GetInsertSegment(this, model)))
+                    count++;
+            }
+            return count;
         }
         public bool UpdateEntity(DbCommand command, UpdateSegment segment)
         {
+            LogUtils.Debug($"execute Update Sql {segment.UpdateSql}");
             command.CommandText = segment.UpdateSql;
             command.Parameters.AddRange(segment.Parameters.ToArray());
             return command.ExecuteNonQuery() == 1;
@@ -822,9 +710,9 @@ namespace Frameset.Core.Dao
             return command.ExecuteNonQuery();
 
         }
-        public long InsertBatch(DbConnection connection, string _schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
+        public long InsertBatch(DbConnection connection, string schema, string tableName, List<DataSetColumnMeta> metas, IEnumerable<Dictionary<string, object>> models, CancellationToken token, int batchSize = 10000)
         {
-            return GetDialect().BatchInsert(this, connection, _schema, tableName, metas, models, token);
+            return GetDialect().BatchInsert(this, connection, schema, tableName, metas, models, token);
         }
         public int BatchInsert<T>(DbConnection connection, List<T> list, int batchSize = 1000)
         {
@@ -859,6 +747,15 @@ namespace Frameset.Core.Dao
         public DbParameter WrapParameter(string key, object value)
         {
             return _dataMeta.WrapParameter(key, value);
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        protected void Dispose(bool disposable)
+        {
+
         }
     }
 }

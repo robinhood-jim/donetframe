@@ -50,6 +50,10 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         } = string.Empty;
+        public int AuditStatus
+        {
+            get; set;
+        } = 0;
 
     }
 }

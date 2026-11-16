@@ -1,4 +1,5 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Context;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Model;
@@ -13,6 +14,11 @@ using System.Threading;
 
 namespace Frameset.Core.Service
 {
+    /// <summary>
+    /// Service Common Interface
+    /// </summary>
+    /// <typeparam name="V"></typeparam>
+    /// <typeparam name="P"></typeparam>
     public interface IService<V, P> where V : BaseEntity where P : notnull
     {
         bool SaveEntity(V entity);
@@ -38,5 +44,6 @@ namespace Frameset.Core.Service
         int Execute(string sql, DbParameter[] parameters);
         IAdoDao GetDao();
         IQueryable<V> Query();
+        IDbContext GetContext();
     }
 }

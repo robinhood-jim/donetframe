@@ -387,7 +387,7 @@ namespace Frameset.Core.Dao.Utils
                 condition.Add(new FilterCondition()
                 {
                     ColumnName = content.FieldName,
-                    ColumnType = content.GetMethod.ReturnType,
+                    ColumnType = content.ParamType,
                     Operator = sqlOperator,
                     Values = values.ToList().ConvertAll(it => (object)it)
                 });
@@ -421,7 +421,7 @@ namespace Frameset.Core.Dao.Utils
                 condition.Add(new FilterCondition()
                 {
                     ColumnName = content.FieldName,
-                    ColumnType = content.GetMethod.ReturnType,
+                    ColumnType = content.ParamType,
                     Operator = sqlOperator,
                     Values = values.ToList().ConvertAll(it => (object)it)
                 });

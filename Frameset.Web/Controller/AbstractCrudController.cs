@@ -109,10 +109,9 @@ namespace Frameset.Web.Controller
             {
                 foreach (var entry in (Dictionary<string, object>)input)
                 {
-                    MethodParam? param = null;
-                    if (paramMap.TryGetValue(entry.Key, out param))
+                    if (paramMap.TryGetValue(entry.Key, out MethodParam? param))
                     {
-                        param?.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                        param?.Setter(retObj,  ConvertUtil.ParseByType(param.ParamType, entry.Value));
                         retObj.AddDirtys(entry.Key);
                     }
                 }
@@ -124,8 +123,12 @@ namespace Frameset.Web.Controller
                 {
                     if (paramMap.TryGetValue(entry.Key, out MethodParam? param))
                     {
-                        param.SetMethod.Invoke(retObj, new[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
-                        retObj.AddDirtys(entry.Key);
+                        object? obj = entry.Value.Getter(input);
+                        if (obj != null)
+                        {
+                            param.Setter(retObj, ConvertUtil.ParseByType(param.ParamType, obj));
+                            retObj.AddDirtys(entry.Key);
+                        }
                     }
                 }
             }
@@ -142,13 +145,13 @@ namespace Frameset.Web.Controller
                     {
                         var user = Request.HttpContext.User;
                         var userId = user.Claims.First(x => x.Type.Equals("UserId")).Value;
-                        fieldContent.SetMethod.Invoke(entityModel, [Convert.ToInt64(userId)]);
+                        fieldContent.Setter(entityModel, Convert.ToInt64(userId));
                         entityModel.AddDirtys(nameof(AbstractModel.Modifier));
                     }
                 }
                 if (fieldMap.TryGetValue(nameof(AbstractModel.ModifyTm), out FieldContent? timeContent))
                 {
-                    timeContent.SetMethod.Invoke(entityModel, [DateTime.UtcNow]);
+                    timeContent.Setter(entityModel, DateTime.UtcNow);
                 }
                 entityModel.AddDirtys(nameof(AbstractModel.ModifyTm));
             }
@@ -163,22 +166,22 @@ namespace Frameset.Web.Controller
                     {
                         var user = Request.HttpContext.User;
                         var userId = user.Claims.First(x => x.Type.Equals("UserId")).Value;
-                        fieldContent.SetMethod.Invoke(entityModel, [Convert.ToInt64(userId)]);
+                        fieldContent.Setter(entityModel, Convert.ToInt64(userId));
                     }
                 }
 
                 if (fieldMap.TryGetValue(nameof(AbstractModel.Status), out FieldContent? statusContent))
                 {
-                    var statusVal = statusContent.GetMethod.Invoke(entityModel, null);
+                    var statusVal = statusContent.Getter(entityModel);
                     if (statusVal == null || string.IsNullOrWhiteSpace(statusVal.ToString()))
                     {
-                        statusContent.SetMethod.Invoke(entityModel, [Constants.VALID]);
+                        statusContent.Setter(entityModel, Constants.VALID);
                     }
                 }
 
                 if (fieldMap.TryGetValue(nameof(AbstractModel.CreateTm), out FieldContent? createTmContent))
                 {
-                    createTmContent.SetMethod.Invoke(entityModel, [DateTime.UtcNow]);
+                    createTmContent.Setter(entityModel, DateTime.UtcNow);
                 }
             }
         }

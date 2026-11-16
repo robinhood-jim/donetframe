@@ -14,16 +14,14 @@ using Frameset.Core.Reflect;
 using Frameset.Core.Repo;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System;
 using System.Collections.Concurrent;
 using System.Collections.Generic;
-using System.ComponentModel.DataAnnotations.Schema;
 using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
-using System.Reflection;
+using System.Linq.Expressions;
 using System.Text;
 using System.Threading;
 
@@ -36,8 +34,9 @@ namespace Frameset.Core.Context
         protected readonly Dictionary<Type, List<Type>> _subTypeMap = [];
         protected readonly Dictionary<Type, FieldContent> _entityPkMap = [];
         protected string _dsName = null!;
-        protected ThreadLocal<string> _temporaryDsName = null!;
-        protected ThreadLocal<bool> _autoCommitStatus = null!;
+        protected ThreadLocal<string>? _temporaryDsName = null;
+        protected ThreadLocal<bool>? _autoCommitStatus = null;
+        protected ThreadLocal<bool>? _submitOnceStatus = null;
 
         protected ConcurrentDictionary<Thread, UpdateEntry> _requestChanges = [];
         protected ConcurrentDictionary<Thread, IUnitofWork> unitOfWorkDict = [];
@@ -48,42 +47,27 @@ namespace Frameset.Core.Context
             get; set;
         } = DbContextFactory.CONTEXTDEFAULTNAME;
 
-
         public bool ExecuteOperation(Action<IAdoDao, DbCommand> action)
         {
-            IUnitofWork? unitofWork = null;
-            bool autoCommit = IsAutoCommit();
-            if (!autoCommit)
-            {
-                CheckThreadTransaction(out unitofWork);
-                Trace.Assert(unitofWork != null);
-            }
-            GetConnectionAndTransaction(unitofWork, autoCommit, out DbConnection? connection, out DbTransaction? transaction);
-            Trace.Assert(connection != null);
-            Trace.Assert(transaction != null);
+            IUnitofWork unitofWork = GetUnitofWork();
+            GetConnectionAndTransaction(unitofWork, out DbConnection connection, out DbTransaction transaction);
             try
             {
                 using DbCommand command = GetDao().GetDialect().GetDbCommand(connection);
                 command.Transaction = transaction;
                 action.Invoke(GetDao(), command);
-                if (autoCommit)
+                if (IsAutoCommit())
                 {
-                    transaction.Commit();
+                    unitofWork.Commit();
                 }
                 return true;
             }
             catch (Exception ex)
             {
-                Rollback(transaction);
-                throw new BaseSqlException(ex.Message,ex);
+                Rollback(unitofWork);
+                throw new BaseSqlException(ex.Message, ex);
             }
-            finally
-            {
-                if (autoCommit)
-                {
-                    DoClear(connection, transaction);
-                }
-            }
+
         }
         public int ExecuteMapper(string nameSpace, string exeId, object input)
         {
@@ -92,16 +76,8 @@ namespace Frameset.Core.Context
             {
                 Trace.Assert(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
                 Trace.Assert(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
-                IUnitofWork? unitofWork = null;
-                bool autoCommit = IsAutoCommit();
-                if (!autoCommit)
-                {
-                    CheckThreadTransaction(out unitofWork);
-                    Trace.Assert(unitofWork != null);
-                }
-                GetConnectionAndTransaction(unitofWork, autoCommit, out DbConnection? connection, out DbTransaction? transaction);
-                Trace.Assert(connection != null);
-                Trace.Assert(transaction != null);
+                IUnitofWork? unitofWork = GetUnitofWork();
+                GetConnectionAndTransaction(unitofWork, out DbConnection connection, out DbTransaction transaction);
 
                 RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam>? methodMap);
                 if (!retMap)
@@ -113,7 +89,8 @@ namespace Frameset.Core.Context
                 int ret = 0;
                 try
                 {
-                    using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, builder.ToString());
+                    using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, builder.ToString(), transaction);
+
                     foreach (var item in paramMap)
                     {
                         command.Parameters.Add(GetDao().GetDialect().WrapParameter("@" + item.Key, item.Value));
@@ -127,7 +104,7 @@ namespace Frameset.Core.Context
                             {
                                 if (methodMap.TryGetValue(generateKey, out MethodParam? param))
                                 {
-                                    param.SetMethod.Invoke(input, [ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId)]);
+                                    param.Setter(input, ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId));
                                 }
                             }
                             else
@@ -141,23 +118,17 @@ namespace Frameset.Core.Context
                     {
                         ret = command.ExecuteNonQuery();
                     }
-                    if (autoCommit)
+                    if (IsAutoCommit())
                     {
-                        transaction.Commit();
+                        unitofWork.Commit();
                     }
                 }
                 catch (Exception ex)
                 {
-                    Rollback(transaction);
-                    throw new BaseSqlException(ex.Message,ex);
+                    Rollback(unitofWork);
+                    throw new BaseSqlException(ex.Message, ex);
                 }
-                finally
-                {
-                    if (autoCommit)
-                    {
-                        DoClear(connection, transaction);
-                    }
-                }
+
                 return ret;
             }
             else
@@ -208,7 +179,7 @@ namespace Frameset.Core.Context
         }
         public IQueryable<T> Query<T>() where T : BaseEntity
         {
-            return new QueryTable<T>(dao);
+            return new CustomQueryable<T>(dao);
         }
         internal BaseEntity GetByIdSimple(Type entityType, object pk, bool ignoreLogic = false)
         {
@@ -257,11 +228,11 @@ namespace Frameset.Core.Context
                 {
                     if (!fieldContent.IsOneToMany && !fieldContent.IsManyToOne && !fieldContent.IsOneToMany)
                     {
-                        if(DaoUtils.HasColumn(columns,fieldContent.PropertyName,out string? dbColName) && !string.IsNullOrWhiteSpace(dbColName) && map.TryGetValue(dbColName,out object? value))
+                        if (DaoUtils.HasColumn(columns, fieldContent.PropertyName, out string? dbColName) && !string.IsNullOrWhiteSpace(dbColName) && map.TryGetValue(dbColName, out object? value))
                         {
                             if (!Convert.IsDBNull(value))
                             {
-                                fieldContent.SetMethod.Invoke(entity, new object[] { ConvertUtil.ParseByType(fieldContent.ParamType, value) });
+                                fieldContent.Setter(entity, ConvertUtil.ParseByType(fieldContent.ParamType, value));
                             }
                         }
                     }
@@ -316,7 +287,7 @@ namespace Frameset.Core.Context
         }
         public void RestoreDs()
         {
-            _temporaryDsName.Dispose();
+            _temporaryDsName?.Dispose();
         }
         public void ChangeDs(string _dsName)
         {
@@ -326,7 +297,9 @@ namespace Frameset.Core.Context
                 throw new BaseSqlException("dsName " + _dsName + " not registered!");
             }
             _temporaryDsName = new ThreadLocal<string>(() => _dsName);
+            string? value = _temporaryDsName.Value;
         }
+
 
         public string GetDsName()
         {
@@ -363,10 +336,17 @@ namespace Frameset.Core.Context
         }
         protected virtual void Dispose(bool disposable)
         {
-            if (!disposable)
+            if (!disposable) return;
+            if (_temporaryDsName != null)
             {
-                return;
+                _temporaryDsName.Dispose();
             }
+            _entityMap.Clear();
+            _entityPkMap.Clear();
+            _fieldContentMap.Clear();
+            _requestChanges.Clear();
+            _subTypeMap.Clear();
+            return;
         }
         public string GetContextName()
         {
@@ -374,12 +354,25 @@ namespace Frameset.Core.Context
         }
         public void ResetCommitStatus()
         {
-            _autoCommitStatus.Dispose();
+            _autoCommitStatus?.Dispose();
+            _autoCommitStatus = null;
         }
         public void SetAutoCommit(bool autoCommit)
         {
             _autoCommitStatus = new ThreadLocal<bool>(() => autoCommit);
-            if (autoCommit)
+            bool bval = _autoCommitStatus.Value;
+        }
+
+        public void ResetSubmitOnce()
+        {
+            _submitOnceStatus?.Dispose();
+            _submitOnceStatus = null;
+        }
+        public void SetSubmitOnce(bool submitOnce)
+        {
+            _submitOnceStatus = new ThreadLocal<bool>(() => submitOnce);
+            bool bval = _submitOnceStatus.Value;
+            if (submitOnce)
             {
                 if (unitOfWorkDict.TryRemove(Thread.CurrentThread, out IUnitofWork? unitofWork))
                 {
@@ -389,11 +382,19 @@ namespace Frameset.Core.Context
         }
         protected bool IsAutoCommit()
         {
-            if (_autoCommitStatus != null && _autoCommitStatus.IsValueCreated)
+            if (_autoCommitStatus is { IsValueCreated: true })
             {
                 return _autoCommitStatus.Value;
             }
             return true;
+        }
+        protected bool IsSubmitOnce()
+        {
+            if (_submitOnceStatus is { IsValueCreated: true })
+            {
+                return _submitOnceStatus.Value;
+            }
+            return false;
         }
 
         protected int IncrementExecute(int effectRow, bool executeOK)
@@ -404,15 +405,12 @@ namespace Frameset.Core.Context
             }
             return effectRow;
         }
-        public void DoWithQuery(string sql, Dictionary<string, object> QueryParamter, Action<IDataReader> action)
+        public void DoWithQuery(string sql, Dictionary<string, object> _queryParamter, Action<IDataReader> action)
         {
             using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
             {
                 connection.Open();
-                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql))
-                {
-                    GetDao().DoWithQueryNamed(sql, QueryParamter, action);
-                }
+                GetDao().DoWithQueryNamed(sql, _queryParamter, action);
             }
         }
         public List<Dictionary<string, object>> QueryBySql(string sql, object[] values)
@@ -429,45 +427,48 @@ namespace Frameset.Core.Context
         }
         public int Execute(string sql, DbParameter[] parameters)
         {
-            IUnitofWork? unitofWork = null;
+            IUnitofWork unitofWork = GetUnitofWork();
             bool autoCommit = IsAutoCommit();
-            if (!autoCommit)
-            {
-                CheckThreadTransaction(out unitofWork);
-                Trace.Assert(unitofWork != null);
-            }
-            GetConnectionAndTransaction(unitofWork, autoCommit, out DbConnection? connection, out DbTransaction? transaction);
-            Trace.Assert(connection != null);
-            Trace.Assert(transaction != null);
-            CheckOpen(connection);
+            GetConnectionAndTransaction(unitofWork, out DbConnection connection, out DbTransaction transaction);
             int returnVal = -1;
             try
             {
-                using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql);
+                using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, sql, transaction);
                 returnVal = GetDao().Execute(command, sql, parameters);
                 if (autoCommit)
                 {
-                    transaction.Commit();
+                    unitofWork.Commit();
                 }
             }
             catch (Exception ex)
             {
-                Rollback(transaction);
+                Rollback(unitofWork);
                 throw new NotSupportedException(ex.Message);
             }
-            finally
-            {
-                if (autoCommit)
-                {
-                    DoClear(connection, transaction);
-                }
-            }
+
             return returnVal;
 
         }
         protected IMetaObjectHandler? GetObjectHandler()
         {
             return metaObjectHandler ?? RegServiceContext.GetBean<IMetaObjectHandler>();
+        }
+        protected IUnitofWork GetUnitofWork()
+        {
+            CheckThreadTransaction(out IUnitofWork? unitofWork);
+            Trace.Assert(unitofWork != null);
+            return unitofWork;
+        }
+        protected void Commit(IUnitofWork unitofWork, DbConnection connection, DbTransaction transaction)
+        {
+            try
+            {
+                unitofWork.Commit();
+            }
+            catch (Exception ex)
+            {
+                throw new BaseSqlException(ex.Message, ex);
+            }
         }
 
         public abstract V GetById<V, P>(P pk, bool ignoreLogic = false) where V : BaseEntity where P : notnull;
@@ -499,37 +500,10 @@ namespace Frameset.Core.Context
         public abstract bool UpdateEntity<V, P>(V entity) where V : BaseEntity where P : notnull;
         public abstract void ManyToOne(Type subType, string fieldName, Type parentType);
         public abstract void OneToMany(Type parentType, Type subType, string fieldName, string relationColumn, CascadeType cascadeType = CascadeType.DETACH);
-        protected List<Type> ScanPackage()
-        {
-            List<Type> retList = [];
-            Assembly? entryAssembly = Assembly.GetEntryAssembly();
-            Trace.Assert(entryAssembly!=null);
-            AssemblyName[] assemblies = entryAssembly.GetReferencedAssemblies();
-            List<AssemblyName> assemblyNames =
-            [
-                ..assemblies,
-                entryAssembly.GetName()
-            ];
-            foreach (AssemblyName assemblyName in assemblyNames)
-            {
-                try
-                {
-                    Assembly assembly = Assembly.Load(assemblyName);
-                    if (StringUtils.IsAssemblySystem(assembly))
-                    {
-                        continue;
-                    }
-                    retList.AddRange(assembly.GetTypes()
-                                .Where(t => t.IsClass && !t.IsAbstract && ((t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 && (t.GetCustomAttribute(typeof(MappingEntityAttribute)) as MappingEntityAttribute).DsName.Equals(ContextName)) || t.GetCustomAttributes(typeof(TableAttribute), false).Length > 0))
-                                .ToList());
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("{Message}", ex.Message);
-                }
-            }
-            return retList;
-        }
+        public abstract int Update<T>(Expression<Func<T, bool>> conditions, Expression<Func<T>> generateExpression) where T : BaseEntity;
+        public abstract int Delete<T>(Expression<Func<T, bool>> conditions) where T : BaseEntity;
+        public abstract int Count<T>(Expression<Func<T, bool>> conditions) where T : BaseEntity;
+        public abstract int SaveEntities<V>(List<V> entities) where V : BaseEntity;
         protected void RegisterExists(Type[] types)
         {
             if (!types.IsNullOrEmpty())
@@ -551,7 +525,7 @@ namespace Frameset.Core.Context
                         LogUtils.Error($"Entity {type.Name} does not have primary key,Skipped");
                         continue;
                     }
-                    IEnumerator<FieldContent> enumerator = fields.Where(x => x.IsManyToOne).GetEnumerator();
+                    using IEnumerator<FieldContent> enumerator = fields.Where(x => x.IsManyToOne).GetEnumerator();
                     while (enumerator.MoveNext())
                     {
                         FieldContent oneToManyColumn = enumerator.Current;
@@ -586,18 +560,10 @@ namespace Frameset.Core.Context
             }
             unitofWork?.GetOrBeginTransaction();
         }
-        protected void Rollback(DbTransaction transaction)
+        protected void Rollback(IUnitofWork unitofWork)
         {
-            if (!IsAutoCommit())
-            {
-                CheckThreadTransaction(out IUnitofWork? unitofWork);
-                unitofWork?.Rollback();
-                unitOfWorkDict.TryRemove(Thread.CurrentThread, out _);
-            }
-            else
-            {
-                transaction.Rollback();
-            }
+            unitofWork?.Rollback();
+            unitOfWorkDict.TryRemove(Thread.CurrentThread, out _);
         }
         protected void DoClear(DbConnection? connection, DbTransaction? transaction)
         {
@@ -610,16 +576,20 @@ namespace Frameset.Core.Context
                 }
                 connection.Dispose();
             }
-            transaction = null;
-            connection = null;
+            transaction = null!;
+            connection = null!;
         }
-        private void GetConnectionAndTransaction(IUnitofWork? unitofWork, bool autoCommit, out DbConnection? connection, out DbTransaction? transaction)
+        protected void GetConnectionAndTransaction(IUnitofWork unitofWork, out DbConnection connection, out DbTransaction transaction)
         {
-            connection = autoCommit ? GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()) : unitofWork?.GetConnection();
+            transaction = unitofWork.GetOrBeginTransaction();
+            connection = unitofWork.GetConnection();
             Trace.Assert(connection != null);
             CheckOpen(connection);
-            transaction = autoCommit ? connection.BeginTransaction() : unitofWork?.GetOrBeginTransaction();
             Trace.Assert(transaction != null);
+        }
+        protected void CheckUnitWorkState(IUnitofWork unitofWork)
+        {
+            CheckOpen(unitofWork.GetConnection());
         }
     }
 }

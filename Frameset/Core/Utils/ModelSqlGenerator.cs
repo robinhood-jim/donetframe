@@ -3,13 +3,10 @@ using Frameset.Core.Common;
 using Frameset.Core.Dao.Meta;
 using Frameset.Core.Dao.Utils;
 using Microsoft.IdentityModel.Tokens;
-using Serilog;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.IO;
-using System.Linq;
-using System.Reflection;
 using System.Text;
 
 namespace Frameset.Core.Utils
@@ -18,7 +15,7 @@ namespace Frameset.Core.Utils
     {
         public static void GenerateSql(Constants.DbType dbType, AbstractSqlDialect dialect, Stream stream, Dictionary<string, object>? additionalCfgMap = null)
         {
-            List<Type> allTypes = ScanModelTypes();
+            List<Type> allTypes = ClassUtils.ScanTypesWithAttribute(typeof(MappingEntityAttribute), (t) => t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 || t.GetCustomAttributes(typeof(TableAttribute), false).Length > 0); ;
             using (StreamWriter writer = new StreamWriter(stream))
             {
                 foreach (Type type in allTypes)
@@ -35,39 +32,7 @@ namespace Frameset.Core.Utils
                 }
             }
         }
-        public static List<Type> ScanModelTypes()
-        {
-            List<Type> retList = [];
-            Assembly? entryAssembly = Assembly.GetEntryAssembly();
-            Trace.Assert(entryAssembly!=null);
-            AssemblyName[] assemblies = entryAssembly.GetReferencedAssemblies();
-            List<AssemblyName> assemblyNames =
-            [
-                ..assemblies,
-                entryAssembly.GetName()
-            ];
 
-            foreach (AssemblyName assemblyName in assemblyNames)
-            {
-                try
-                {
-                    Assembly assembly = Assembly.Load(assemblyName);
-                    if (StringUtils.IsAssemblySystem(assembly))
-                    {
-                        continue;
-                    }
-                    retList.AddRange(assembly.GetTypes()
-                                .Where(t => t.IsClass && !t.IsAbstract && (t.GetCustomAttributes(typeof(MappingEntityAttribute), false).Length > 0 || t.GetCustomAttributes(typeof(System.ComponentModel.DataAnnotations.Schema.TableAttribute), false).Length > 0))
-                                .ToList());
-                }
-                catch (Exception ex)
-                {
-                    Log.Error("{Message}", ex.Message);
-                }
-            }
-            return retList;
-
-        }
         internal static string GenerateCreatSql(EntityContent entityContent, IList<FieldContent> fields, AbstractSqlDialect dialect, Dictionary<string, object>? additionalCfgMap)
         {
             StringBuilder builder = new StringBuilder();

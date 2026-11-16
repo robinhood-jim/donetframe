@@ -22,13 +22,15 @@ namespace Frameset.Core.Query
         }
         public PageQuery(long pageSize)
         {
-            this.PageSize = pageSize;
-
+            PageSize = pageSize;
         }
-        public PageQuery(long pageSize, long currentPage)
+        public PageQuery(long pageSize, long currentPage) : this(pageSize)
         {
-            this.PageSize = pageSize;
-            this.CurrentPage = currentPage;
+            CurrentPage = currentPage;
+        }
+        public PageQuery(long pageSize, long currentPage, long total) : this(pageSize, currentPage)
+        {
+            Total = total;
         }
     }
 }

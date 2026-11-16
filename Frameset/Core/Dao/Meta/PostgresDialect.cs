@@ -85,7 +85,7 @@ namespace Frameset.Core.Dao.Meta
                         }
                         else
                         {
-                            object? value = content.GetMethod.Invoke(model, []);
+                            object? value = content.Getter(model);
                             if (value != null)
                             {
                                 FillValue(writer, value, content.DataType);

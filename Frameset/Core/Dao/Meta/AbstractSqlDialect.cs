@@ -5,7 +5,6 @@ using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Reflect;
 using Frameset.Core.Utils;
-using Microsoft.IdentityModel.Tokens;
 using Serilog;
 using Serilog.Events;
 using System;
@@ -226,7 +225,8 @@ namespace Frameset.Core.Dao.Meta
                 {
                     if (methodParams.TryGetValue(content.PropertyName, out MethodParam? param))
                     {
-                        object? value = param.GetMethod.Invoke(entity, []);
+                        Trace.Assert(entity != null);
+                        object? value = param.Getter(entity);
                         if (value != null)
                         {
                             row[content.FieldName] = value;
@@ -407,7 +407,7 @@ namespace Frameset.Core.Dao.Meta
             {
                 if (!content.IfIncrement)
                 {
-                    row[content.FieldName] = content.GetMethod.Invoke(model, null);
+                    row[content.FieldName] = content.Getter(model);
                 }
                 else
                 {

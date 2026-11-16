@@ -124,7 +124,7 @@ namespace Frameset.Core.Scripts
                     Dictionary<string, MethodParam> methodDict = AnnotationUtils.ReflectObject(input.GetType());
                     foreach (var item in methodDict)
                     {
-                        object? value = item.Value.PropertyInfo.GetValue(input);
+                        object? value = item.Value.Getter(input);
                         if (value != null)
                         {
                             propertyBag.Add(item.Key, value);

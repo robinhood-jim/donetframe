@@ -1,5 +1,4 @@
 ﻿using Frameset.Core.Annotation;
-using Frameset.Core.Common;
 using Frameset.Core.Model;
 
 namespace Frameset.Web.Model.Org
@@ -36,7 +35,7 @@ namespace Frameset.Web.Model.Org
         {
             get; set;
         }
-       
+
         public DateTime? AcceptTime
         {
             get; set;

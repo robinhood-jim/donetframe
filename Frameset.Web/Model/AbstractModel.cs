@@ -1,4 +1,5 @@
 ﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using Frameset.Core.Model;
 
 namespace Frameset.Web.Model
@@ -25,7 +26,7 @@ namespace Frameset.Web.Model
         public string Status
         {
             get; set;
-        } = "1";
+        } = Constants.VALID;
         public long? TenantId
         {
             get; set;

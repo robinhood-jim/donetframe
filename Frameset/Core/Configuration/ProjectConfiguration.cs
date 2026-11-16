@@ -23,7 +23,7 @@ namespace Frameset.Core.Configuration
     {
         private Dictionary<string, object> configDict = [];
         private string etcdHostUrl = null!;
-        private EtcdServiceClient client = null!;
+        private EtcdServiceClient? client = null;
         private string appName = DEFAULT;
         private string mapperPath = null!;
         private string etcdWorkerBasePath = "/service/";
@@ -44,10 +44,10 @@ namespace Frameset.Core.Configuration
         public static readonly string DEFAULT = "default";
         public static readonly string DBTYPE = "dbType";
         public static readonly byte[] ALIVE = { 0x00, 0x00, 0x7F, 0x7F };
-        private CancellationTokenSource cancellation = null!;
+        private CancellationTokenSource? cancellation = null;
         private string yamlPath = null!;
         //proxy Function to support Tracing 
-        private Func<string, AbstractSqlDialect>? proxyFunc ;
+        private Func<string, AbstractSqlDialect>? proxyFunc;
         public ProjectConfiguration(string yamlConfigFile)
         {
             this.yamlPath = yamlConfigFile;
@@ -123,7 +123,7 @@ namespace Frameset.Core.Configuration
                         tmpDict.TryAdd(keyStr, pair.Value);
                     }
                     tmpDict.TryGetValue(DBTYPE, out object? dbTypeObj);
-                    Trace.Assert(dbTypeObj != null  && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()), "missing config dbType");
+                    Trace.Assert(dbTypeObj != null && !string.IsNullOrWhiteSpace(dbTypeObj.ToString()), "missing config dbType");
                     string? dbTypeStr = dbTypeObj.ToString();
                     Trace.Assert(!string.IsNullOrWhiteSpace(dbTypeStr));
                     DAOFactory.RegisterJdbcDao(key, tmpDict, proxyFunc?.Invoke(dbTypeStr));
@@ -195,7 +195,7 @@ namespace Frameset.Core.Configuration
                             Trace.Assert(!string.IsNullOrWhiteSpace(keyStr));
                             if (methodDict.TryGetValue(keyStr, out MethodParam? param))
                             {
-                                param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                                param.Setter(retObj, ConvertUtil.ParseByType(param.ParamType, entry.Value));
                             }
                         }
                         return retObj;
@@ -211,11 +211,12 @@ namespace Frameset.Core.Configuration
         }
         private void RegisterWorker()
         {
+            Trace.Assert(cancellation != null);
             if (client != null)
             {
                 //注册路径，KeepAlive 
                 client.KeepAlive(etcdWorkerBasePath, ALIVE, cancellation.Token);
-                notifyMaster();
+                NotifyMaster();
                 //监听发送的消息
                 EtcdListener();
                 //等待license 服务器响应是否允许运行，否则卡死
@@ -229,7 +230,7 @@ namespace Frameset.Core.Configuration
                 }
             }
         }
-        private void notifyMaster()
+        private void NotifyMaster()
         {
             using MemoryStream stream = new();
             using BinaryWriter write = new(stream);
@@ -242,7 +243,7 @@ namespace Frameset.Core.Configuration
             write.Write(systemTagBytes.Length);
             write.Write(systemTagBytes);
             //通知master上线
-            client.PutValue(etcdmasterPath, stream.ToArray());
+            client?.PutValue(etcdmasterPath, stream.ToArray());
         }
         private async Task<bool> WaitForMasterAck()
         {
@@ -252,7 +253,7 @@ namespace Frameset.Core.Configuration
         private void EtcdListener()
         {
 
-            client.Watch(etcdWorkerBasePath, (response) =>
+            client?.Watch(etcdWorkerBasePath, (response) =>
             {
                 var events = response.Events;
                 foreach (var evt in events)
@@ -305,7 +306,7 @@ namespace Frameset.Core.Configuration
             writer.Write(LicenseUtils.PUBLICKEYLICACK);
             writer.Write(Encoding.UTF8.GetBytes(realIp));
             //发送信号，等待服务器响应
-            client.PutValue(etcdmasterPath, mstream.ToArray());
+            client?.PutValue(etcdmasterPath, mstream.ToArray());
         }
         private void WritePublicKey(byte[] content)
         {
@@ -329,15 +330,8 @@ namespace Frameset.Core.Configuration
 
         public void Dispose()
         {
-            if (client != null)
-            {
-                client.Dispose();
-            }
-
-            if (cancellation != null)
-            {
-                cancellation.Cancel();
-            }
+            client?.Dispose();
+            cancellation?.Cancel();
         }
     }
 }

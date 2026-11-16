@@ -8,7 +8,7 @@ namespace Frameset.Core.Mapper
         {
             get; set;
         } = [];
-        public Dictionary<string, ResultMap> ReslutMap
+        public Dictionary<string, ResultMap> ResultMap
         {
             get; set;
         } = [];

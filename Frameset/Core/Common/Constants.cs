@@ -155,6 +155,9 @@ namespace Frameset.Core.Common
                 case TypeCode.Double:
                     metaType = MetaType.DOUBLE;
                     break;
+                case TypeCode.Decimal:
+                    metaType = MetaType.DOUBLE;
+                    break;
                 case TypeCode.Single:
                     metaType = MetaType.FLOAT;
                     break;
@@ -369,7 +372,10 @@ namespace Frameset.Core.Common
         public static readonly string HAVING = "HAVING";
         public static readonly string GROUPBY = "GROUP BY";
         public static readonly string ORDERBY = "ORDER BY";
-        public static readonly string SELECT = "SELECT ";
+        public static readonly string SELECT = "SELECT";
+        public static readonly string UPDATE = "UPDATE";
+        public static readonly string DELETE = "DELETE";
+        public static readonly string COUNT = "COUNT";
         public static readonly string ALTER_TABLE = "ALERT TABLE ";
         public static readonly string SELECTCOLUMS = "SELECTCOLUMNS";
         public static readonly string NEWCOLUMN = "NEWCOLUMN";

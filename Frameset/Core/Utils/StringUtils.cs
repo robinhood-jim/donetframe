@@ -9,14 +9,14 @@ namespace Frameset.Core.Utils
 {
     public class StringUtils
     {
-        private static readonly string undlineStr = "_";
+        private static readonly char undlineStr = '_';
         public static readonly int ASCII_VISIBLE_START = 48;
         public static readonly int ASCII_VISIBLE_END = 122;
         public static readonly int ASCII_UPPER_START = 64;
         public static readonly int ASCII_LOWER_START = 96;
         public static string Capitalize(string value)
         {
-            if (HasLegth(value))
+            if (HasLength(value))
             {
                 return ChangeFirstCharacterCase(value, true);
             }
@@ -25,11 +25,11 @@ namespace Frameset.Core.Utils
                 throw new AggregateException("value is empty!");
             }
         }
-        public static bool IsNotNull(object value)
+        public static bool IsNotNull(object? value)
         {
             return value != null && !string.IsNullOrWhiteSpace(value.ToString());
         }
-        public static bool IsDictNullWithReturn(Dictionary<string, object> dict, string key, out string value)
+        public static bool IsDictNullWithReturn(Dictionary<string, object>? dict, string key, out string value)
         {
             value = string.Empty;
             if (dict != null && dict.TryGetValue(key, out object? obj))
@@ -45,7 +45,7 @@ namespace Frameset.Core.Utils
         }
         public static string Uncapitalize(string value)
         {
-            if (HasLegth(value))
+            if (HasLength(value))
             {
                 return ChangeFirstCharacterCase(value, false);
             }
@@ -116,14 +116,14 @@ namespace Frameset.Core.Utils
         }
 
 
-        public static bool HasLegth(string value)
+        public static bool HasLength(string? value)
         {
             return value != null && !string.IsNullOrWhiteSpace(value);
         }
 
         private static string ChangeFirstCharacterCase(string str, bool capitalize)
         {
-            if (!HasLegth(str))
+            if (!HasLength(str))
             {
                 return str;
             }
@@ -297,14 +297,24 @@ namespace Frameset.Core.Utils
             int value = Convert.ToInt32(enumObj);
             return value.ToString();
         }
+        public static string PrintDepenencyTree(HashSet<object> objects)
+        {
+            StringBuilder stringBuilder = new StringBuilder();
+            foreach (object obj in objects)
+            {
+                stringBuilder.Append('[').Append(obj.GetType()).Append("]->");
+            }
+            stringBuilder.Remove(stringBuilder.Length - 2, 2);
+            return stringBuilder.ToString();
+        }
         public static bool IsAssemblySystem(Assembly assembly)
         {
             string? assemblyName = assembly.GetName().Name;
             return string.IsNullOrEmpty(assemblyName) ||
                         assemblyName.StartsWith("System.") ||
-                        assemblyName.StartsWith("Microsoft.") || 
+                        assemblyName.StartsWith("Microsoft.") ||
                         assemblyName.Contains("Frameset.Core") || assemblyName.Contains("Frameset.Common") ||
-                        assemblyName.Contains("Frameset.Web") || assemblyName.Contains("Frameset.Tracing") ||
+                        assemblyName.Contains("Frameset.Tracing") ||
                         assemblyName.StartsWith("netstandard") || assemblyName.Contains("Serilog") ||
                         assemblyName.Contains("OpenTelemetry") || assemblyName.Contains("Google") ||
                         assemblyName.Contains("Harmony");

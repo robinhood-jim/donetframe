@@ -25,7 +25,7 @@ namespace Frameset.Core.Dao.Utils
             builder.Append("insert into ");
             StringBuilder columnsBuilder = new StringBuilder();
             StringBuilder valuesBuilder = new StringBuilder();
-            IList<DbParameter> parameters = new List<DbParameter>();
+            List<DbParameter> parameters = new List<DbParameter>();
             if (!entityContent.Schema.IsNullOrEmpty())
             {
                 builder.Append(entityContent.Schema).Append(".");
@@ -36,7 +36,11 @@ namespace Frameset.Core.Dao.Utils
             TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, vo.GetType());
             foreach (FieldContent content in fields)
             {
-                object? realVal = content.GetMethod.Invoke(vo, null);
+                if (content.IsManyToOne || content.IsOneToMany)
+                {
+                    continue;
+                }
+                object? realVal = content.Getter(vo);
                 if (realVal != null)
                 {
                     if (!content.IfIncrement && !content.IfSequence)
@@ -45,20 +49,21 @@ namespace Frameset.Core.Dao.Utils
                         columnsBuilder.Append(content.FieldName).Append(",");
                         valuesBuilder.Append(paramName).Append(",");
                         parameters.Add(dao.GetDialect().WrapParameter(paramName, realVal));
-
                     }
                     else if (content.IfSequence)
                     {
                         columnsBuilder.Append(content.FieldName).Append(",");
                         valuesBuilder.Append(dao.GetDialect().GenerateSequenceFunc(content.SequenceName)).Append(",");
                         segment.Sequence = true;
-                        segment.GenKeyMethod = content.SetMethod;
+                        segment.GenKeySetter = content.Setter;
+                        segment.GenKeyType = content.ParamType;
                         appdendField = content;
                     }
                     else if (content.IfIncrement)
                     {
                         segment.Increment = true;
-                        segment.GenKeyMethod = content.SetMethod;
+                        segment.GenKeySetter = content.Setter;
+                        segment.GenKeyType = content.ParamType;
                     }
                 }
                 else
@@ -71,8 +76,6 @@ namespace Frameset.Core.Dao.Utils
                         parameters.Add(dao.GetDialect().WrapParameter(paramName, logicColumn.ValidValue));
                     }
                 }
-
-
             }
             builder.Append("(").Append(columnsBuilder.ToString().Substring(0, columnsBuilder.Length - 1)).Append(") values (")
                 .Append(valuesBuilder.ToString().Substring(0, valuesBuilder.Length - 1)).Append(")");
@@ -87,6 +90,34 @@ namespace Frameset.Core.Dao.Utils
             segment.InsertSql = builder.ToString();
             segment.Parameters = parameters;
             return segment;
+        }
+        public static List<DbParameter> ExtractInsertParameter(IAdoDao dao, BaseEntity vo)
+        {
+            int pos = 1;
+            List<DbParameter> parameters = [];
+            List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(vo.GetType());
+            TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, vo.GetType());
+            foreach (FieldContent content in fields)
+            {
+                object? realVal = content.Getter(vo);
+                if (realVal != null)
+                {
+                    if (!content.IfIncrement && !content.IfSequence)
+                    {
+                        string paramName = "@val" + pos++;
+                        parameters.Add(dao.GetDialect().WrapParameter(paramName, realVal));
+                    }
+                }
+                else
+                {
+                    if (logicColumn != null && content.FieldName.Equals(logicColumn.FieldName))
+                    {
+                        string paramName = "@val" + pos++;
+                        parameters.Add(dao.GetDialect().WrapParameter(paramName, logicColumn.ValidValue));
+                    }
+                }
+            }
+            return parameters;
         }
         public static string GetInsertBactchSql(IAdoDao dao, Type modelType)
         {
@@ -120,14 +151,18 @@ namespace Frameset.Core.Dao.Utils
             StringBuilder builder = new StringBuilder();
             builder.Append("update ");
             StringBuilder columnsBuilder = new StringBuilder();
-            IList<DbParameter> parameters = new List<DbParameter>();
+            List<DbParameter> parameters = new List<DbParameter>();
             StringBuilder whereSegment = new StringBuilder();
             UpdateSegment segment = new UpdateSegment();
 
             builder.Append(entityContent.GetTableName()).Append(" set ");
             foreach (FieldContent content in fields)
             {
-                object? realVal = content.GetMethod.Invoke(update, null);
+                if (content.IsManyToOne || content.IsOneToMany)
+                {
+                    continue;
+                }
+                object? realVal = content.Getter(update);
                 //GetDirty不为空，代表修改字段名在Dirty中，避免非空类型初始化有值导致判断失效
                 if (realVal == null)
                 {
@@ -138,7 +173,7 @@ namespace Frameset.Core.Dao.Utils
                 }
                 else
                 {
-                    object? originVal = content.GetMethod.Invoke(origin, null);
+                    object? originVal = content.Getter(origin);
                     if (!content.IfPrimary)
                     {
                         if (!realVal.Equals(originVal))
@@ -161,12 +196,13 @@ namespace Frameset.Core.Dao.Utils
                 whereSegment.Append(" and ").Append(logicColumn.FieldName).Append("=@valid");
                 parameters.Add(dao.GetDialect().WrapParameter("@valid", logicColumn.ValidValue));
             }
+            //仅在有值变化的情况下需要修改
             if (columnsBuilder.Length > 0)
             {
                 segment.UpdateRequired = true;
+                segment.UpdateSql = builder.Append(columnsBuilder.ToString().Substring(0, columnsBuilder.Length - 1)).Append(whereSegment).ToString();
+                segment.Parameters = parameters;
             }
-            segment.UpdateSql = builder.Append(columnsBuilder.ToString().Substring(0, columnsBuilder.Length - 1)).Append(whereSegment).ToString();
-            segment.Parameters = parameters;
             return segment;
         }
         public static string GetRemovePkSql(Type modelType)
@@ -437,7 +473,7 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = null!;
-        public IList<DbParameter> Parameters
+        public List<DbParameter> Parameters
         {
             get; set;
         } = [];
@@ -449,13 +485,18 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = false;
-        public MethodInfo GenKeyMethod
-        {
-            get; set;
-        } = null!;
+        
         public IList<object> ParamObjects
         {
             get; set;
+        } = null!;
+        public Action<object, object?> GenKeySetter
+        {
+            get; internal set;
+        } = null!;
+        public Type GenKeyType
+        {
+            get; internal set;
         } = null!;
 
     }
@@ -465,14 +506,17 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = null!;
-        public IList<DbParameter> Parameters
+        public List<DbParameter> Parameters
         {
             get; set;
         } = null!;
-        public IList<object> ParameterObjects
+        public List<object> ParameterObjects
         {
             get; set;
         } = [];
+        /// <summary>
+        /// 实体是否需要更新
+        /// </summary>
         public bool UpdateRequired
         {
             get; set;

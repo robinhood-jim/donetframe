@@ -1,4 +1,5 @@
 ﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 
 namespace Frameset.Web.Model.System;
 
@@ -21,6 +22,15 @@ public class SysResourceRole : AbstractModel
         get;
         set;
     }
+    public SysResourceRole()
+    {
 
+    }
+    public SysResourceRole(long roleId, long resId)
+    {
+        RoleId = roleId;
+        ResId = resId;
+        Status = Constants.VALID;
+    }
 
 }

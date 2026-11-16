@@ -14,7 +14,7 @@ namespace Frameset.Core.Utils
         private static Dictionary<char, int> operSymbolDict = [];
         private static char LEFTCHAR = '(';
         private static char RIGHTCHAR = ')';
-        private static ThreadLocal<Queue<string>> calculateQueue = null!;
+        private static ThreadLocal<Queue<string>>? calculateQueue = null;
         static ReversePolishNotationUtils()
         {
             operSymbolDict.TryAdd(')', 0);
@@ -206,11 +206,7 @@ namespace Frameset.Core.Utils
         }
         private static bool IsNumber(string input)
         {
-            bool canParse = true;
-            if (!long.TryParse(input, out _) || !int.TryParse(input, out _) || double.TryParse(input, out _))
-            {
-                canParse = false;
-            }
+            bool canParse = !(!long.TryParse(input, out _) || !int.TryParse(input, out _) || double.TryParse(input, out _));
             return canParse;
         }
     }

@@ -16,7 +16,7 @@ using System.Threading;
 
 namespace Frameset.Core.Service
 {
-    public class ServiceImpl<V, P> : IService<V, P> where V : BaseEntity where P : notnull
+    public class ServiceImpl<V, P> : IDisposable, IService<V, P> where V : BaseEntity where P : notnull
     {
         internal string dsName = "core";
         protected readonly IDbContext dbContext;
@@ -117,7 +117,28 @@ namespace Frameset.Core.Service
         }
         public IQueryable<V> Query()
         {
-            return new QueryTable<V>(dbContext.GetDao());
+            return new CustomQueryable<V>(dbContext.GetDao());
+        }
+        public int SaveBatch(List<V> lists)
+        {
+            return dbContext.SaveEntities(lists);
+        }
+        public IDbContext GetContext()
+        {
+            return dbContext;
+        }
+        protected void PageRecords(IQueryable<V> queryable, PageQuery query)
+        {
+            queryable.Skip(Convert.ToInt32((query.CurrentPage - 1) * query.PageSize)).Take(Convert.ToInt32(query.PageSize));
+        }
+
+        public void Dispose()
+        {
+            Dispose(true);
+        }
+        protected void Dispose(bool disposable)
+        {
+
         }
     }
 }

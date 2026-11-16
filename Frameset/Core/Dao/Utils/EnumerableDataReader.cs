@@ -358,7 +358,7 @@ namespace Frameset.Core.Dao.Utils
                     }
                     else if (methodMap.TryGetValue(meta.ColumnName, out MethodParam? param))
                     {
-                        object? obj = param.GetMethod?.Invoke(current, []);
+                        object? obj = param.Getter(current);
                         if (obj != null)
                         {
                             return obj;

@@ -1,9 +1,11 @@
 ﻿using Frameset.Core.Common;
+using Frameset.Core.Context;
 using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
 using Frameset.Core.Exceptions;
 using Frameset.Core.Mapper;
 using Frameset.Core.Mapper.Segment;
+using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
@@ -156,7 +158,7 @@ namespace Frameset.Core.Repo
             catch (Exception ex)
             {
                 transaction.Rollback();
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
             finally
             {
@@ -168,7 +170,7 @@ namespace Frameset.Core.Repo
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
                 connection.Open();
-                DbTransaction transaction = connection.BeginTransaction();
+                using DbTransaction transaction = connection.BeginTransaction();
                 using DbCommand command = dao.GetDialect().GetDbCommand(connection, sql);
                 try
                 {
@@ -180,7 +182,7 @@ namespace Frameset.Core.Repo
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    throw new BaseSqlException(ex.Message,ex);
+                    throw new BaseSqlException(ex.Message, ex);
                 }
                 finally
                 {
@@ -211,7 +213,7 @@ namespace Frameset.Core.Repo
             List<DbParameter> parameters = ParameterHelper.AddQueryParam(dao, fielContent, builder, 0, out int endPos, oper, values);
             TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
             //add logicColumn in query
-            if (logicColumn!=null &&  !propertyName.Equals(logicColumn.FieldName))
+            if (logicColumn != null && !propertyName.Equals(logicColumn.FieldName))
             {
                 builder.Append(" and ").Append(logicColumn.FieldName).Append("=@").Append(parameters.Count);
                 parameters.Add(dao.GetDialect().WrapParameter(parameters.Count, logicColumn.ValidValue));
@@ -223,15 +225,15 @@ namespace Frameset.Core.Repo
             return Tuple.Create(builder, parameters);
         }
 
-        public static T ExecuteInTransaction<V, T>(IAdoDao dao, string sql, V entity, Func<DbCommand, V, T> func)
+        public static T ExecuteInTransaction<V, T>(IAdoDao dao, string sql, V entity, Func<DbCommand, V, T> func) where V : BaseEntity
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
                 connection.Open();
-                DbTransaction transaction = connection.BeginTransaction();
+                using DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
-                    DbCommand command = dao.GetDialect().GetDbCommand(connection, sql, transaction);
+                    using DbCommand command = dao.GetDialect().GetDbCommand(connection, sql, transaction);
                     T ret = func.Invoke(command, entity);
                     transaction.Commit();
                     return ret;
@@ -239,7 +241,7 @@ namespace Frameset.Core.Repo
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    throw new BaseSqlException(ex.Message,ex);
+                    throw new BaseSqlException(ex.Message, ex);
                 }
                 finally
                 {
@@ -247,12 +249,63 @@ namespace Frameset.Core.Repo
                 }
             }
         }
+        public static T ExecuteInUnitOfWork<V, T>(IUnitofWork unitofWork, IAdoDao dao, bool autoCommit, string sql, V entity, Func<DbCommand, V, T> func) where V : BaseEntity
+        {
+            DbConnection connection = unitofWork.GetConnection();
+            {
+                DbTransaction transaction = unitofWork.GetOrBeginTransaction();
+                try
+                {
+                    using DbCommand command = dao.GetDialect().GetDbCommand(connection, sql, transaction);
+                    T ret = func.Invoke(command, entity);
+                    if (autoCommit)
+                    {
+                        unitofWork.Commit();
+                    }
+                    return ret;
+                }
+                catch (Exception ex)
+                {
+                    unitofWork.Rollback();
+                    throw new BaseSqlException(ex.Message, ex);
+                }
+            }
+        }
+
+        public static int ExecuteInUnitOfWork<V>(IUnitofWork unitofWork, IAdoDao dao, bool autoCommit, List<V> entities, Func<DbCommand, V, int> func) where V : BaseEntity
+        {
+            DbConnection connection = unitofWork.GetConnection();
+            {
+                DbTransaction transaction = unitofWork.GetOrBeginTransaction();
+                try
+                {
+                    using DbCommand command = dao.GetDialect().GetDbCommand(connection, string.Empty, transaction);
+                    int count = 0;
+                    foreach (V entity in entities)
+                    {
+                        count += func.Invoke(command, entity);
+                    }
+                    if (autoCommit)
+                    {
+                        unitofWork.Commit();
+                    }
+                    return count;
+                }
+                catch (Exception ex)
+                {
+                    unitofWork.Rollback();
+                    throw new BaseSqlException(ex.Message, ex);
+                }
+
+            }
+        }
+
         public static int ExecuteInTransaction(IAdoDao dao, Func<DbConnection, DbTransaction, int> func)
         {
             using (DbConnection connection = dao.GetDialect().GetDbConnection(dao.GetConnectString()))
             {
                 connection.Open();
-                DbTransaction transaction = connection.BeginTransaction();
+                using DbTransaction transaction = connection.BeginTransaction();
                 try
                 {
                     int ret = func.Invoke(connection, transaction);
@@ -262,7 +315,7 @@ namespace Frameset.Core.Repo
                 catch (Exception ex)
                 {
                     transaction.Rollback();
-                    throw new BaseSqlException(ex.Message,ex);
+                    throw new BaseSqlException(ex.Message, ex);
                 }
                 finally
                 {

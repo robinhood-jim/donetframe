@@ -2,6 +2,7 @@
 using Frameset.Core.Exceptions;
 using Frameset.Core.Repo;
 using Frameset.Core.Service;
+using Frameset.Core.Utils;
 using Microsoft.Extensions.DependencyInjection;
 using Serilog;
 using System;
@@ -9,7 +10,7 @@ using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Reflection;
-using Frameset.Core.Utils;
+using System.Threading.Tasks;
 
 namespace Frameset.Core.Context
 {
@@ -29,11 +30,19 @@ namespace Frameset.Core.Context
         //Auto Wired Type Exists
         private static readonly Dictionary<Type, int> wiredTypeMap = [];
         private static IServiceProvider _provider = null!;
+        private static IServiceCollection? _collections = null;
+        private static readonly MethodInfo GetRequiredServiceMethod = typeof(ServiceProviderServiceExtensions).GetMethod(
+           nameof(ServiceProviderServiceExtensions.GetRequiredService), new[] { typeof(IServiceProvider), typeof(Type) })!;
 
+        public static void SetCollections(IServiceCollection collections)
+        {
+            _collections = collections;
+        }
         public static void SetContext(IServiceProvider provider)
         {
             _provider = provider;
         }
+
         /// <summary>
         /// Register Transient Type
         /// </summary>
@@ -46,6 +55,7 @@ namespace Frameset.Core.Context
             {
                 interfaceTargetMap.TryAdd(baseInterface, subType);
                 lifeTimeMap.TryAdd(subType, ServiceLifetime.Scoped);
+                _collections?.AddSingleton(baseInterface, subType);
             }
             else
             {
@@ -64,6 +74,10 @@ namespace Frameset.Core.Context
             {
                 registerMap.TryAdd(baseInterface, valueObj);
                 targetTypeMap.TryAdd(valueObj.GetType(), valueObj);
+                if (lifetime == ServiceLifetime.Singleton)
+                {
+                    _collections?.AddSingleton(baseInterface, valueObj);
+                }
             }
             lifeTimeMap.TryAdd(baseInterface, lifetime);
         }
@@ -73,9 +87,9 @@ namespace Frameset.Core.Context
         /// <param name="interfaceType"></param>
         /// <returns></returns>
         /// <exception cref="OperationFailedException"></exception>
-        public static object GetBean(Type interfaceType)
+        public static object? GetBean(Type interfaceType)
         {
-            object? retObj = null;
+            object? retObj;
 
             if (!registerMap.TryGetValue(interfaceType, out retObj))
             {
@@ -88,7 +102,7 @@ namespace Frameset.Core.Context
                         if (lifeTime.Equals(ServiceLifetime.Singleton))
                         {
                             registerMap.TryAdd(interfaceType, retObj);
-                            targetTypeMap.TryAdd(retObj.GetType(), retObj);
+                            targetTypeMap.TryAdd(subType, retObj);
                         }
                     }
                 }
@@ -99,7 +113,7 @@ namespace Frameset.Core.Context
                     {
                         retObj = GetServiceRequired(interfaceType, targetType, ServiceLifetime.Singleton, []);
                         registerMap.TryAdd(interfaceType, retObj);
-                        targetTypeMap.TryAdd(retObj.GetType(), retObj);
+                        targetTypeMap.TryAdd(targetType, retObj);
                     }
 
                 }
@@ -108,21 +122,21 @@ namespace Frameset.Core.Context
             {
                 if (_provider != null)
                 {
-                    retObj = _provider.GetRequiredService(interfaceType);
+                    retObj = _provider.GetService(interfaceType);
                 }
-                if (retObj == null)
+
+            }
+
+            if (retObj != null)
+            {
+                if (interfaceType.IsAssignableFrom(retObj.GetType()))
                 {
-                    throw new OperationFailedException("type does not register!");
+                    return retObj;
                 }
-            }
-            if (interfaceType.IsAssignableFrom(retObj.GetType()))
-            {
-                return retObj;
-            }
-            else
-            {
                 throw new OperationFailedException("type is not subType!");
             }
+
+            return retObj;
         }
         /// <summary>
         /// GetRequired
@@ -132,16 +146,15 @@ namespace Frameset.Core.Context
         /// <exception cref="OperationFailedException"></exception>
         public static T GetBean<T>()
         {
-            return (T)GetBean(typeof(T));
+            object? obj = GetBean(typeof(T));
+            if (obj != null)
+            {
+                return (T)obj;
+            }
+            throw new ConfigIncorrectException($"bean not defined!");
         }
-        /// <summary>
-        /// Customer IOC(Dependency Injection) Scanner
-        /// </summary>
-        /// <param name="type">Attribute Type</param>
-        /// <param name="action">User Defined Action</param>
-        public static void ScanServices(Type type, Action<Type, Type>? action = null)
+        public static List<Type> ScanAndReloadService(Type type)
         {
-            Trace.Assert(type.IsSubclassOf(typeof(Attribute)), "");
             List<Type> types = type.ScanTypesWithAttribute();
             //Add interface and implement by assembly
             types.ForEach(impl =>
@@ -152,6 +165,17 @@ namespace Frameset.Core.Context
                     interfaceTargetMap.TryAdd(interfaceType, impl);
                 }
             });
+            return types;
+        }
+        /// <summary>
+        /// Customer IOC(Dependency Injection) Scanner
+        /// </summary>
+        /// <param name="type">Attribute Type</param>
+        /// <param name="action">User Defined Action</param>
+        public static void ScanServices(Type type, Action<Type, Type>? action = null)
+        {
+            Trace.Assert(type.IsSubclassOf(typeof(Attribute)), "");
+            List<Type> types = ScanAndReloadService(type);
             types.ForEach(impl =>
             {
                 //获取该类所继承的所有接口
@@ -208,6 +232,11 @@ namespace Frameset.Core.Context
             if (scannedTypes.TryGetValue(wireType, out int _))
             {
                 throw new OperationFailedException("dependency cycle exists");
+            }
+            object? obj = _provider != null ? _provider.GetService(baseType) : null;
+            if (obj != null)
+            {
+                return obj;
             }
             if (registerMap.TryGetValue(baseType, out object? retObj))
             {
@@ -271,12 +300,12 @@ namespace Frameset.Core.Context
             {
                 return;
             }
-            var fields = wiredType.GetTypeInfo().DeclaredFields.Where(field => Attribute.IsDefined(field, typeof(ResourceAttribute))).GetEnumerator();
+            var fields = wiredType.GetTypeInfo().DeclaredFields.Where(field => Attribute.IsDefined(field, typeof(AutoInjectAttribute))).GetEnumerator();
             using var unknown = fields as IDisposable;
             while (fields.MoveNext())
             {
                 FieldInfo info = fields.Current;
-                ResourceAttribute? attribute = info.GetCustomAttribute(typeof(ResourceAttribute)) as ResourceAttribute;
+                AutoInjectAttribute? attribute = info.GetCustomAttribute(typeof(AutoInjectAttribute)) as AutoInjectAttribute;
                 Trace.Assert(attribute != null);
                 if (info.GetValue(originObj) == null)
                 {
@@ -344,6 +373,69 @@ namespace Frameset.Core.Context
             }
             return isNoParam;
         }
-        
+        public static void DoDispose()
+        {
+            foreach (var pair in targetTypeMap)
+            {
+
+                if (pair.Value is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        public static async ValueTask DoDisposeAsyn()
+        {
+            foreach (var pair in targetTypeMap)
+            {
+                if (pair.Value is IAsyncDisposable asyncDisposable)
+                {
+                    await asyncDisposable.DisposeAsync();
+                }
+                if (pair.Value is IDisposable disposable)
+                {
+                    disposable.Dispose();
+                }
+            }
+        }
+        public static bool IsRegistered(Type serviceType)
+        {
+            return targetTypeMap.TryGetValue(serviceType, out _) || registerMap.TryGetValue(serviceType, out _);
+        }
+        public static Dictionary<Type, object> GetTragetType()
+        {
+            return targetTypeMap;
+        }
+        public static void InjectMembers(object instance)
+        {
+            const BindingFlags flags = BindingFlags.Public | BindingFlags.NonPublic | BindingFlags.Instance;
+            var type = instance.GetType();
+
+            foreach (var prop in type.GetProperties(flags).Where(p => p.CanWrite && p.IsDefined(typeof(AutoInjectAttribute), true)))
+            {
+                Type[] interfaces = prop.PropertyType.GetInterfaces();
+                Type interfactType = prop.PropertyType;
+                if (interfaces.Length > 0)
+                {
+                    interfactType = interfaces[0];
+                }
+                var dep = GetServiceRequired(interfactType, prop.PropertyType, ServiceLifetime.Singleton, []);
+                prop.SetValue(instance, dep);
+            }
+
+            foreach (var field in type.GetFields(flags).Where(f => f.IsDefined(typeof(AutoInjectAttribute), true)))
+            {
+                Type[] interfaces = field.FieldType.GetInterfaces();
+                Type interfactType = field.FieldType;
+                if (interfaces.Length > 0)
+                {
+                    interfactType = interfaces[0];
+                }
+                var dep = GetServiceRequired(interfactType, field.FieldType, ServiceLifetime.Singleton, []);
+                field.SetValue(instance, dep);
+            }
+        }
+
+
     }
 }

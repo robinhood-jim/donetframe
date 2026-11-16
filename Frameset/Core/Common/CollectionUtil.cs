@@ -34,7 +34,7 @@ namespace Frameset.Core.Common
             }
             return false;
         }
-        
+
 
     }
 }

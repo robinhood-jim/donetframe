@@ -1,6 +1,7 @@
 ﻿using Frameset.Core.Annotation;
 using Frameset.Core.Common;
 using Frameset.Core.Model;
+using Frameset.Core.Reflect;
 using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections.Generic;
@@ -21,14 +22,14 @@ namespace Frameset.Core.Dao.Utils
         private static readonly Dictionary<Type, FieldContent> pkFieldMap = [];
         private static readonly Dictionary<Type, TableLogicColumn> logicMap = [];
 
+
         public static EntityContent GetEntityInfo(Type entityType)
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
 
             if (!entityContentMap.TryGetValue(entityType, out EntityContent? content))
             {
-                MappingEntityAttribute? entity = entityType.GetCustomAttribute(typeof(MappingEntityAttribute)) as MappingEntityAttribute;
-                if (entity != null)
+                if (entityType.GetCustomAttribute(typeof(MappingEntityAttribute)) is MappingEntityAttribute entity)
                 {
                     string tableName = entity.TableName;
                     string schema = entity.Schema;
@@ -36,13 +37,9 @@ namespace Frameset.Core.Dao.Utils
                     content = new(entityType, tableName, schema, dsName);
                     content.IfExplicit = entity.IfExplicit;
                 }
-                else
+                else if (entityType.GetCustomAttribute(typeof(TableAttribute)) is TableAttribute attribute)
                 {
-                    TableAttribute? attribute = entityType.GetCustomAttribute(typeof(TableAttribute)) as TableAttribute;
-                    if (attribute != null)
-                    {
-                        content = new(entityType, attribute.Name, attribute.Schema, null);
-                    }
+                    content = new(entityType, attribute.Name, attribute.Schema, null);
                 }
 
                 if (content != null)
@@ -70,14 +67,15 @@ namespace Frameset.Core.Dao.Utils
                     object[] attributes = prop.GetCustomAttributes(false);
                     string propName = prop.Name;
                     string fieldName = Core.Utils.StringUtils.CamelCaseLowConvert(propName);
-                    Constants.MetaType dataType = AdjustType(prop.PropertyType);
+                    Constants.MetaType dataType = Constants.MetaTypeOfType(prop.PropertyType);
+                    FieldBuilder builder = new(entityType);
+                    builder.Property(prop);
+                    
                     if (attributes.Length > 0)
                     {
-                        FieldBuilder builder = new(entityType);
-                        builder.Property(prop);
                         for (int i = 0; i < attributes.Length; i++)
                         {
-                            if (attributes[i].GetType().Equals(typeof(MappingFieldAttribute)))
+                            if (attributes[i].GetType() == typeof(MappingFieldAttribute))
                             {
                                 MappingFieldAttribute? mappingField = attributes[i] as MappingFieldAttribute;
                                 Trace.Assert(mappingField != null);
@@ -101,20 +99,20 @@ namespace Frameset.Core.Dao.Utils
                                         builder.Increment(true);
                                     }
                                     Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
-                                    builder.Required(mappingField.IfRequired).DataType(dataType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                                    builder.Required(mappingField.IfRequired).DataType(dataType);
 
                                 }
                             }
-                            else if (attributes[i].GetType().Equals(typeof(ColumnAttribute)))
+                            else if (attributes[i].GetType() == typeof(ColumnAttribute))
                             {
                                 ColumnAttribute? a = attributes[i] as ColumnAttribute;
                                 Trace.Assert(a != null);
                                 fieldName = !string.IsNullOrWhiteSpace(a.Name) ? a.Name : Core.Utils.StringUtils.CamelCaseLowConvert(propName);
                                 Trace.Assert(prop.DeclaringType != null && prop.GetMethod != null && prop.SetMethod != null);
-                                builder.PropertyName(propName).FieldName(fieldName).DataType(AdjustType(prop.DeclaringType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                                builder.PropertyName(propName).FieldName(fieldName).DataType(Constants.MetaTypeOfType(prop.DeclaringType));
 
                             }
-                            else if (attributes[i].GetType().Equals(typeof(DatabaseGeneratedAttribute)))
+                            else if (attributes[i].GetType() == typeof(DatabaseGeneratedAttribute))
                             {
                                 DatabaseGeneratedAttribute? a = attributes[i] as DatabaseGeneratedAttribute;
                                 Trace.Assert(a != null);
@@ -127,60 +125,57 @@ namespace Frameset.Core.Dao.Utils
                                     builder.Computed();
                                 }
                             }
-                            else if (attributes[i].GetType().Equals(typeof(RequiredAttribute)))
+                            else if (attributes[i].GetType() == typeof(RequiredAttribute))
                             {
                                 builder.Required(true);
                             }
-                            else if (attributes[i].GetType().Equals(typeof(KeyAttribute)))
+                            else if (attributes[i].GetType() == typeof(KeyAttribute))
                             {
                                 builder.Primary(true);
                             }
-                            else if (attributes[i].GetType().Equals(typeof(NotMappedAttribute)))
+                            else if (attributes[i].GetType() == typeof(NotMappedAttribute))
                             {
                                 builder.NotMapped();
                             }
-                            else if (attributes[i].GetType().Equals(typeof(ManyToOneAttribute)))
+                            else if (attributes[i].GetType() == typeof(ManyToOneAttribute))
                             {
                                 ManyToOneAttribute attr = (ManyToOneAttribute)attributes[i];
                                 builder.ManyToOne(attr);
                                 entityContent.ParentEntitys.Add(attr.ParentType);
                             }
-                            else if (attributes[i].GetType().Equals(typeof(OneToManyAttribute)))
+                            else if (attributes[i].GetType() == typeof(OneToManyAttribute))
                             {
                                 OneToManyAttribute attr = (OneToManyAttribute)attributes[i];
                                 builder.OneToMany(attr);
                             }
-                            else if (attributes[i].GetType().Equals(typeof(LogicColumnAttribute)))
+                            else if (attributes[i].GetType() == typeof(LogicColumnAttribute))
                             {
                                 //support Custom Logic column defined
                                 LogicColumnAttribute attr = (LogicColumnAttribute)attributes[i];
                                 builder.LogicColumn(attr);
                             }
-                            else if (attributes[i].GetType().Equals(typeof(ColumnFormulaAttribute)))
+                            else if (attributes[i].GetType() == typeof(ColumnFormulaAttribute))
                             {
                                 ColumnFormulaAttribute attr = (ColumnFormulaAttribute)attributes[i];
                                 builder.Formula(attr.Value);
                             }
                             builder.DataType(dataType);
                         }
+                        
                         if (builder.Acceptable())
                         {
+                            builder.Getter(ReflectionUtils.GetGetter(entityType, propName)).Setter(ReflectionUtils.GetSetter(entityType, propName));
                             fields.Add(builder.Build());
                         }
-                        else if (!entityContent.IfExplicit)
-                        {
-                            Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
-                            builder.PropertyName(propName).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
-                            fields.Add(builder.Build());
-                        }
+                     
                     }
                     else if (!entityContent.IfExplicit)
                     {
-                        FieldBuilder builder = new(entityType);
-                        Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
-                        builder.PropertyName(propName).DataType(dataType).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(AdjustType(prop.PropertyType)).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                        builder.Getter(ReflectionUtils.GetGetter(entityType, propName)).Setter(ReflectionUtils.GetSetter(entityType, propName));
+                        builder.PropertyName(propName).DataType(dataType).FieldName(Core.Utils.StringUtils.CamelCaseLowConvert(propName)).DataType(Constants.MetaTypeOfType(prop.PropertyType));
                         fields.Add(builder.Build());
                     }
+                   
                 }
 
                 if (!fields.IsNullOrEmpty())
@@ -191,6 +186,8 @@ namespace Frameset.Core.Dao.Utils
 
             return fields;
         }
+
+
         public static Dictionary<string, FieldContent> GetFieldsMap(Type entityType)
         {
             Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
@@ -214,10 +211,7 @@ namespace Frameset.Core.Dao.Utils
                 if (!fields.IsNullOrEmpty())
                 {
                     content = fields.First(x => x.IfPrimary);
-                    if (content != null)
-                    {
-                        pkFieldMap.TryAdd(entityType, content);
-                    }
+                    pkFieldMap.TryAdd(entityType, content);
                 }
             }
             Trace.Assert(content != null);
@@ -261,48 +255,7 @@ namespace Frameset.Core.Dao.Utils
             return tableLogicColumn;
         }
 
-        public static Constants.MetaType AdjustType(Type type)
-        {
-            Constants.MetaType dataType = Constants.MetaType.INTEGER;
-            if (type.Equals(typeof(long)) || type.Equals(typeof(long?)))
-            {
-                dataType = Constants.MetaType.LONG;
-            }
-            else if (type.Equals(typeof(int)) || type.Equals(typeof(int?)))
-            {
-                dataType = Constants.MetaType.INTEGER;
-            }
-            else if (type.Equals(typeof(short)) || type.Equals(typeof(short?)))
-            {
-                dataType = Constants.MetaType.SHORT;
-            }
-            else if (type.Equals(typeof(float)) || type.Equals(typeof(float?)))
-            {
-                dataType = Constants.MetaType.FLOAT;
-            }
-            else if (type.Equals(typeof(double)) || type.Equals(typeof(double?)))
-            {
-                dataType = Constants.MetaType.DOUBLE;
-            }
-            else if (type.Equals(typeof(DateTime)) || type.Equals(typeof(DateTime?)))
-            {
-                dataType = Constants.MetaType.DATE;
-            }
-            else if (type.Equals(typeof(DateTimeOffset)) || type.Equals(typeof(DateTimeOffset?)))
-            {
-                dataType = Constants.MetaType.TIMESTAMP;
-            }
-            else if (type.Equals(typeof(byte[])))
-            {
-                dataType = Constants.MetaType.BLOB;
-            }
-            else if (type.Equals(typeof(string)))
-            {
-                dataType = Constants.MetaType.STRING;
-            }
-            return dataType;
 
-        }
         public static Dictionary<Type, Dictionary<Type, string>> GetRelationMap()
         {
             return relationMap;

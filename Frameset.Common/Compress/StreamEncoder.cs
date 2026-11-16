@@ -40,7 +40,7 @@ namespace Frameset.Common.Compress
                 throw new OperationFailedException(ex.Message, ex);
             }
         }
-    
+
         private static Stream GetZipOutput(Stream rawstream, FileMeta meta)
         {
             Stream outStream = new ZipOutputStream(rawstream);

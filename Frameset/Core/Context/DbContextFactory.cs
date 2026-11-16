@@ -8,6 +8,7 @@ namespace Frameset.Core.Context
     {
         public static readonly string CONTEXTDEFAULTNAME = "core";
         public static readonly Dictionary<string, IDbContext> contextMap = [];
+        private static bool disposed = false;
         public static void Register(IDbContext context)
         {
             Trace.Assert(!string.IsNullOrWhiteSpace(context.GetContextName()), "Context Name must Exists!");
@@ -24,9 +25,13 @@ namespace Frameset.Core.Context
 
         public static void Dispose()
         {
-            foreach (var entry in contextMap)
+            if (!disposed)
             {
-                entry.Value.Dispose();
+                foreach (var entry in contextMap)
+                {
+                    entry.Value.Dispose();
+                }
+                disposed = true;
             }
         }
     }

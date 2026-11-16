@@ -8,18 +8,25 @@ namespace Frameset.Office.Excel.Element
 {
     public class Cell
     {
-        private WorkBook workBook;
+        public WorkBook workBook
+        {
+            get; internal set;
+        } = null!;
         public CellType CellType
         {
             get; internal set;
         }
         private object? value = null!;
-        private CellAddress address;
+        private CellAddress address = null!;
         private string? formula = null!;
         private string rawValue = null!;
         private string? dataFormatId;
         private string? dataFormatString;
         private int style;
+        public Cell()
+        {
+
+        }
         public Cell(WorkBook workbook, CellType type, object? value, CellAddress address, string? formula, string rawValue) : this(workbook, type, value, address, formula, rawValue, null, null)
         {
 

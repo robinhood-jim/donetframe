@@ -56,7 +56,7 @@ namespace Frameset.Web.Utils
         }
         private static void AutoWireInject(AbstractControllerBase originObj)
         {
-            var fields = originObj.GetType().GetTypeInfo().DeclaredFields.Where(field => Attribute.IsDefined(field, typeof(ResourceAttribute))).GetEnumerator();
+            var fields = originObj.GetType().GetTypeInfo().DeclaredFields.Where(field => Attribute.IsDefined(field, typeof(AutoInjectAttribute))).GetEnumerator();
             while (fields.MoveNext())
             {
                 FieldInfo info = fields.Current;

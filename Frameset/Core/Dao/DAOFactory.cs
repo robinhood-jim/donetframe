@@ -308,6 +308,13 @@ namespace Frameset.Core.Dao
                 }
             }
         }
+        public static void Dispose()
+        {
+            foreach (var pair in containner)
+            {
+                pair.Value.Dispose();
+            }
+        }
     }
 }
 

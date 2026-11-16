@@ -21,7 +21,7 @@ namespace Frameset.Core.Dao
         {
             if (fieldDict.TryGetValue(columnName, out FieldContent? fieldContent))
             {
-                return fieldContent.GetMethod.Invoke(originObj, null);
+                return fieldContent.Getter(originObj);
             }
             return null;
         }
@@ -29,16 +29,16 @@ namespace Frameset.Core.Dao
         {
             if (fieldDict.TryGetValue(fieldName, out FieldContent? fieldContent))
             {
-                fieldContent.SetMethod.Invoke(originObj, [fieldValue]);
+                fieldContent.Setter(originObj, fieldValue);
             }
         }
         public bool HasGetter(string columnName)
         {
-            return fieldDict.TryGetValue(columnName, out FieldContent? fieldContent) && fieldContent.GetMethod != null && fieldContent.GetMethod.IsPublic;
+            return fieldDict.TryGetValue(columnName, out FieldContent? fieldContent) && fieldContent.Getter!=null;
         }
         public bool HasSetter(string columnName)
         {
-            return fieldDict.TryGetValue(columnName, out FieldContent? fieldContent) && fieldContent.SetMethod != null && fieldContent.SetMethod.IsPublic;
+            return fieldDict.TryGetValue(columnName, out FieldContent? fieldContent) && fieldContent.Setter!=null;
         }
         public bool HasProperty(string columnName, out PropertyInfo? propertyInfo)
         {

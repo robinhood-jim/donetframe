@@ -121,7 +121,7 @@ namespace Frameset.Office.Excel.Meta
                     {
                         ExcelCellProp cellProp = new ExcelCellProp();
                         cellProp.ColumnCode = propName;
-                        Constants.MetaType metaType = EntityReflectUtils.AdjustType(prop.PropertyType);
+                        Constants.MetaType metaType = Constants.MetaTypeOfType(prop.PropertyType);
                         cellProp.ColumnType = metaType;
                         for (int i = 0; i < propAttr.Length; i++)
                         {
@@ -129,7 +129,7 @@ namespace Frameset.Office.Excel.Meta
                         }
                         FieldBuilder builder = new(entityType);
                         Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
-                        builder.Property(prop).PropertyName(propName).FieldName(columnName).DataType(metaType).GetMethod(prop.GetMethod).SetMethod(prop.SetMethod);
+                        builder.Property(prop).PropertyName(propName).FieldName(columnName).DataType(metaType);
                         propDef.fieldInfoMap.TryAdd(propName, builder.Build());
                         cellMap.TryAdd(cellProp.Index, cellProp);
                         totalNum++;
@@ -147,7 +147,7 @@ namespace Frameset.Office.Excel.Meta
                         {
                             ExcelCellProp cellProp = new ExcelCellProp();
                             cellProp.ColumnCode = propName;
-                            Constants.MetaType metaType = EntityReflectUtils.AdjustType(field.GetType());
+                            Constants.MetaType metaType = Constants.MetaTypeOfType(field.GetType());
                             cellProp.ColumnType = metaType;
                             for (int i = 0; i < propAttr.Length; i++)
                             {
@@ -178,7 +178,7 @@ namespace Frameset.Office.Excel.Meta
             {
                 string propName = reader.GetName(i);
                 string columName = propName;
-                Constants.MetaType metaType = EntityReflectUtils.AdjustType(reader.GetFieldType(i));
+                Constants.MetaType metaType = Constants.MetaTypeOfType(reader.GetFieldType(i));
                 if (nameMapping != null && !nameMapping.IsNullOrEmpty() && nameMapping.TryGetValue(propName, out string? mapColumName))
                 {
                     columName = mapColumName;

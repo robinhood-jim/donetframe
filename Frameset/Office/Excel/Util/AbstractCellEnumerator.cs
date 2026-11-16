@@ -30,7 +30,7 @@ namespace Frameset.Office.Excel.Util
         } = null!;
         internal bool multipleType = false;
         internal bool needIdentifyColumn = false;
-        internal IList<Cell> cells = new List<Cell>();
+        internal List<Cell> cells = null!;
         internal bool finishReadHeader = false;
         internal Dictionary<int, CellAddress> addressMap = new Dictionary<int, CellAddress>();
         internal CellProcessor processor;
@@ -426,7 +426,7 @@ namespace Frameset.Office.Excel.Util
             }
         }
         internal abstract void GetNext();
-        public IList<Cell> GetCells()
+        public List<Cell> GetCells()
         {
             return cells;
         }

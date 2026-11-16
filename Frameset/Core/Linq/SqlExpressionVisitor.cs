@@ -1,7 +1,9 @@
 ﻿using Frameset.Core.Dao;
 using Frameset.Core.Dao.Utils;
+using Frameset.Core.Exceptions;
 using Frameset.Core.Model;
 using Frameset.Core.Utils;
+using Microsoft.IdentityModel.Tokens;
 using System;
 using System.Collections;
 using System.Collections.Generic;
@@ -16,53 +18,139 @@ namespace Frameset.Core.Linq
 {
     public class SqlExpressionVisitor : ExpressionVisitor
     {
-        private List<string> _tablesClause = [];
+        private string _tablesClause = string.Empty;
+        private List<string> _joinSegments = [];
         private StringBuilder _whereClause = new();
         private StringBuilder _groupByClause = new();
         private StringBuilder _havingClause = new();
-
-        private Dictionary<string, string> _aliasMap = [];
-        private Dictionary<Type, string> _typeToAliasMap = new Dictionary<Type, string>();
+        private StringBuilder _orderByClause = new();
+        private StringBuilder _joinClause = new();
+        protected Dictionary<Type, string> TypeToAliasMap = new Dictionary<Type, string>();
+        protected Dictionary<Type, string> TypeToTableNameMap = [];
         private List<string> _selectFields = [];
-        private int _aliasCount = 0;
+        private StringBuilder _currentFieldBuilder = new();
+        protected int AliasCount = 0;
         private string _activeContext = "WHERE";
-        public List<DbParameter> Parameters { get; } = [];
+        public List<DbParameter> Parameters { get; protected set; } = [];
         private readonly IAdoDao _dao;
-        int _paramCount = 0;
+        protected int ParamCount = 0;
         private bool _isNegated = false;
+        protected long SkipRows
+        {
+            get; private set;
+        } = 0;
+        protected long PageSize
+        {
+            get; private set;
+        } = 10;
+        protected bool Pageable
+        {
+            get; private set;
+        } = false;
+
         public SqlExpressionVisitor(IAdoDao dao)
         {
             this._dao = dao;
         }
-        public string Translate(Expression expression)
+        public void InheritContext(SqlExpressionVisitor parent)
         {
-            _tablesClause.Clear(); _whereClause.Clear(); _groupByClause.Clear(); _havingClause.Clear();
-            _selectFields.Clear(); _aliasMap.Clear(); _typeToAliasMap.Clear();
-            _aliasCount = 0; _activeContext = "WHERE";
+            AliasCount = parent.AliasCount;
+            ParamCount = parent.ParamCount;
+            Parameters = parent.Parameters;
+            TypeToAliasMap = parent.TypeToAliasMap;
+        }
+
+        public void SynchronizeCounters(SqlExpressionVisitor child)
+        {
+            AliasCount = child.AliasCount;
+            ParamCount = child.ParamCount;
+        }
+
+        public string TranslateSimple<T>(Expression expression, out string? tablesStr)
+        {
+            _tablesClause = string.Empty; _whereClause.Clear(); _groupByClause.Clear(); _havingClause.Clear();
+            _selectFields.Clear(); TypeToAliasMap.Clear(); _currentFieldBuilder.Clear();
+            AliasCount = 0; _activeContext = "WHERE";
+            Type entityType = typeof(T);
+            EntityContent content = EntityReflectUtils.GetEntityInfo(entityType);
+            AliasCount++;
+            string alias = GetLatestAlias();
+            _tablesClause = $"{content.TableName}";
+            Visit(expression);
+            var sql = new StringBuilder();
+            tablesStr = string.Join(", ", _tablesClause);
+            if (_selectFields.Count > 0)
+            {
+                string selectStr = string.Join(", ", _selectFields);
+                sql.Append($"{selectStr}");
+            }
+            if (_whereClause.Length > 0) sql.Append($"{_whereClause}");
+            return sql.ToString();
+        }
+        public TranslationResult Translate(Expression expression)
+        {
+            _tablesClause = string.Empty; _whereClause.Clear(); _groupByClause.Clear(); _havingClause.Clear();
+            _selectFields.Clear(); TypeToAliasMap.Clear(); _currentFieldBuilder.Clear();
+            AliasCount = 0; _activeContext = "WHERE";
 
             Visit(expression);
             string? selectStr = null;
             if (_selectFields.Count == 0)
             {
-                if (_typeToAliasMap.Count == 1)
+                if (TypeToAliasMap.Count == 1)
                 {
-                    Type entityType = _typeToAliasMap.Keys.First();
+                    Type entityType = TypeToAliasMap.Keys.First();
                     SqlUtils.GetSelectFields(entityType, out selectStr);
                 }
             }
             else
             {
-                selectStr = string.Join(", ", _selectFields);
+                selectStr = string.Join(",", _selectFields);
             }
-            string tablesStr = string.Join(", ", _tablesClause);
 
-            var sql = new StringBuilder($"SELECT {selectStr} FROM {tablesStr}");
+            string joinsStr = _joinSegments.Count > 0 ? " " + string.Join(" ", _joinSegments) : "";
+
+            var sql = new StringBuilder($"SELECT {selectStr} FROM {_tablesClause}{joinsStr}");
 
             if (_whereClause.Length > 0) sql.Append($" WHERE {_whereClause}");
             if (_groupByClause.Length > 0) sql.Append($" GROUP BY {_groupByClause}");
             if (_havingClause.Length > 0) sql.Append($" HAVING {_havingClause}");
+            if (_orderByClause.Length > 0)
+            {
+                _orderByClause.Remove(_orderByClause.Length - 1, 1);
+                sql.Append($" ORDER BY {_orderByClause}");
+            }
 
-            return sql.ToString();
+            return new TranslationResult() { CommandText = sql.ToString(), Parameters = Parameters, Pageable = Pageable, PageSize = PageSize, SkipRows = SkipRows };
+        }
+        protected override Expression VisitLambda<T>(Expression<T> node)
+        {
+            if (node.Body.NodeType == ExpressionType.MemberInit)
+            {
+                MemberInitExpression? memberInitExp = node.Body as MemberInitExpression;
+                var bindings = memberInitExp?.Bindings;
+                Type memberType = node.Body.Type;
+                if (bindings != null && !bindings.IsNullOrEmpty())
+                {
+                    foreach (MemberBinding binding in bindings)
+                    {
+                        ParseAliasEntity(memberType);
+                        if (TypeToAliasMap.TryGetValue(memberType, out string? alias))
+                        {
+                            Dictionary<string, FieldContent> fields = EntityReflectUtils.GetFieldsMap(memberType);
+                            if (fields.TryGetValue(binding.Member.Name, out FieldContent? content))
+                            {
+                                _whereClause.Append($"{alias}.{content.FieldName}=");
+                                Visit(((MemberAssignment)binding).Expression);
+                                _whereClause.Append(",");
+
+                            }
+                        }
+                    }
+                }
+                return node;
+            }
+            return base.VisitLambda(node);
         }
         protected override Expression VisitInvocation(InvocationExpression node)
         {
@@ -93,15 +181,27 @@ namespace Frameset.Core.Linq
         }
         protected override Expression VisitMethodCall(MethodCallExpression node)
         {
-            foreach (var arg in node.Arguments.OfType<LambdaExpression>())
+
+            if (node.Method.Name == "Any" && node.Arguments.Count > 1)
             {
-                foreach (var param in arg.Parameters)
-                {
-                    if (_typeToAliasMap.TryGetValue(param.Type, out string? alias))
-                    {
-                        _aliasMap.TryAdd(param.Name, alias);
-                    }
-                }
+                var subVisitor = new SqlExpressionVisitor(_dao);
+                subVisitor.InheritContext(this);
+
+                // Visit inner data table context bounds (e.g. bCollection)
+                subVisitor.Visit(node.Arguments[0]);
+                var innerLambda = (LambdaExpression)UnwrapQuotes(node.Arguments[1]);
+                Type modelType = innerLambda.Parameters[0].Type;
+                subVisitor._activeContext = "WHERE";
+                subVisitor.Visit(innerLambda.Body);
+                SynchronizeCounters(subVisitor);
+                string presenceOperator = _isNegated ? "NOT EXISTS " : "EXISTS ";
+                subVisitor.TypeToAliasMap.TryGetValue(modelType, out string? alias);
+                subVisitor.TypeToTableNameMap.TryGetValue(modelType, out string? tableName);
+                Trace.Assert(!string.IsNullOrWhiteSpace(alias) && !string.IsNullOrWhiteSpace(tableName));
+                AppendToActiveClause(presenceOperator);
+                AppendToActiveClause($"(SELECT * FROM {tableName} as {alias} WHERE {subVisitor._whereClause})");
+
+                return node;
             }
             //string operation
             if (node.Method.DeclaringType == typeof(string))
@@ -118,6 +218,7 @@ namespace Frameset.Core.Linq
                     return node;
                 }
                 var value = EvaluateLocalExpression(node.Arguments[0]);
+                bool canReturn = true;
                 switch (node.Method.Name)
                 {
                     case "Contains":
@@ -138,8 +239,11 @@ namespace Frameset.Core.Linq
                         AppendToActiveClause(_isNegated ? " not like " : " like ");
                         RegisterParameter('%' + value?.ToString());
                         break;
+                    default:
+                        canReturn = false;
+                        break;
                 }
-                return node;
+                if (canReturn) return node;
             }
             // in operation
             if (node.Method.Name == "Contains" && typeof(IEnumerable).IsAssignableFrom(node.Method.DeclaringType))
@@ -153,8 +257,8 @@ namespace Frameset.Core.Linq
                     var paramTokens = new List<string>();
                     foreach (var val in collectionValue)
                     {
-                        _paramCount++;
-                        string paramName = $"@p{_paramCount}";
+                        ParamCount++;
+                        string paramName = $"@p{ParamCount}";
                         Parameters.Add(_dao.GetDialect().WrapParameter(paramName, val ?? DBNull.Value));
                         paramTokens.Add(paramName);
                     }
@@ -174,31 +278,26 @@ namespace Frameset.Core.Linq
 
             switch (node.Method.Name)
             {
+                case "GroupJoin":
                 case "Join":
                     Visit(node.Arguments[0]);
                     Visit(node.Arguments[1]);
+                    Type rightModelType = node.Arguments[1].Type.GetGenericArguments().First();
+                    if (!TypeToAliasMap.TryGetValue(rightModelType, out string? rightAlias) || !TypeToTableNameMap.TryGetValue(rightModelType, out string? rightTableName))
+                    {
+                        throw new BaseSqlException("entity type mismatch");
+                    }
                     var outerKeyLambda = (LambdaExpression)UnwrapQuotes(node.Arguments[2]);
                     var innerKeyLambda = (LambdaExpression)UnwrapQuotes(node.Arguments[3]);
-                    var resultLambda = (LambdaExpression)UnwrapQuotes(node.Arguments[4]);
-                    string? outerFieldName = outerKeyLambda.Parameters[0].Name;
 
-                    if (resultLambda.Parameters.Count >= 2)
-                    {
-                        string? outerKeyName = resultLambda.Parameters[0].Name;
-                        string? innerKeyName = resultLambda.Parameters[1].Name;
-                        Trace.Assert(!string.IsNullOrWhiteSpace(innerKeyName) && !string.IsNullOrWhiteSpace(outerKeyName));
-                        _aliasMap.TryAdd(outerKeyName, _typeToAliasMap[outerKeyLambda.Parameters[0].Type]);
-                        _aliasMap.TryAdd(innerKeyName, _typeToAliasMap[innerKeyLambda.Parameters[0].Type]);
-                    }
-
-                    // 3. Append relational equality check condition directly into the WHERE queue buffer
-                    if (_whereClause.Length > 0) _whereClause.Append(" AND ");
-
-                    _whereClause.Append("(");
+                    string joinOperator = node.Method.Name == "GroupJoin" ? " LEFT JOIN " : " INNER JOIN ";
+                    string currentActive = _activeContext;
+                    _activeContext = "JOIN";
                     Visit(outerKeyLambda.Body);
-                    _whereClause.Append(" = ");
+                    AppendToActiveClause(" = ");
                     Visit(innerKeyLambda.Body);
-                    _whereClause.Append(")");
+                    _activeContext = currentActive;
+                    _joinSegments.Add($"{joinOperator} {rightTableName} {rightAlias} ON {_joinClause}");
                     break;
                 case "Where":
                     Visit(node.Arguments[0]);
@@ -209,6 +308,9 @@ namespace Frameset.Core.Linq
 
                     Visit(UnwrapQuotes(node.Arguments[1]));
                     break;
+                case "SelectMany":
+                    Visit(node.Arguments[0]);
+                    break;
                 case "Select":
                     Visit(node.Arguments[0]);
                     _activeContext = "SELECT";
@@ -218,21 +320,31 @@ namespace Frameset.Core.Linq
                     {
                         for (int i = 0; i < newExp.Arguments.Count; i++)
                         {
-                            var oldFields = _selectFields;
-                            _selectFields = new List<string>();
-
+                            _currentFieldBuilder.Clear();
                             Visit(newExp.Arguments[i]);
-
-                            string expressionSegment = string.Join("", _selectFields);
-                            oldFields.Add($"{expressionSegment} AS {newExp.Members[i].Name}");
-                            _selectFields = oldFields;
+                            _selectFields.Add($"{_currentFieldBuilder} AS {newExp.Members[i].Name}");
                         }
-                    } else // Fallback for raw arithmetic equations mapped directly without dynamic type wrapping definitions
+                    }
+                    else if (lambda.Body is MemberInitExpression)
                     {
-                        var oldFields = _selectFields; _selectFields = new List<string>();
+                        MemberInitExpression? initExpression = lambda.Body as MemberInitExpression;
+                        Trace.Assert(initExpression != null);
+                        foreach (MemberBinding binding in initExpression.Bindings)
+                        {
+                            _currentFieldBuilder.Clear();
+                            if (binding is MemberAssignment assignment)
+                            {
+                                string assignColumn = binding.Member.Name;
+                                Visit(assignment.Expression);
+                                _selectFields.Add($"{_currentFieldBuilder} as {assignColumn}");
+                            }
+                        }
+                    }
+                    else
+                    {
+                        _currentFieldBuilder.Clear();
                         Visit(lambda.Body);
-                        oldFields.Add(string.Join("", _selectFields));
-                        _selectFields = oldFields;
+                        _selectFields.Add(_currentFieldBuilder.ToString());
                     }
                     break;
                 case "Sum":
@@ -240,7 +352,26 @@ namespace Frameset.Core.Linq
                 case "Min":
                 case "Average":
                     AppendToActiveClause($"{node.Method.Name.ToUpper()}(");
-                    if (node.Arguments.Count > 0) Visit(UnwrapQuotes(node.Arguments[0]));
+                    var lambdaArgument = node.Arguments.FirstOrDefault(arg => arg is LambdaExpression ||
+                        (arg is UnaryExpression ue && ue.Operand is LambdaExpression));
+
+                    if (lambdaArgument != null)
+                    {
+                        Visit(UnwrapQuotes(lambdaArgument));
+                    }
+                    else if (node.Method.Name == "Count")
+                    {
+                        // Default to * for bare g.Count() invocations
+                        AppendToActiveClause("*");
+                    }
+                    else
+                    {
+                        var propertyArgument = node.Arguments.FirstOrDefault(arg => arg is MemberExpression);
+                        if (propertyArgument != null)
+                        {
+                            Visit(propertyArgument);
+                        }
+                    }
                     AppendToActiveClause(")");
                     break;
                 case "Equals":
@@ -249,7 +380,30 @@ namespace Frameset.Core.Linq
                     AppendToActiveClause(" = ");
                     Visit(node.Arguments[0]);
                     break;
-
+                case "OrderBy":
+                case "OrderByDescending":
+                case "ThenBy":
+                case "ThenByDescending":
+                    string oldAction = _activeContext;
+                    Visit(node.Arguments[0]);
+                    _activeContext = "ORDERBY";
+                    Visit(UnwrapQuotes(node.Arguments[1]));
+                    string sortDirection = node.Method.Name.Contains("Descending") ? " DESC" : " ASC";
+                    AppendToActiveClause(sortDirection + ',');
+                    _activeContext = oldAction;
+                    break;
+                case "Skip":
+                    Pageable = true;
+                    Visit(node.Arguments[0]);
+                    var skipValue = EvaluateLocalExpression(node.Arguments[1]);
+                    SkipRows = Convert.ToInt64(skipValue);
+                    break;
+                case "Take":
+                    Pageable = true;
+                    Visit(node.Arguments[0]);
+                    var takeValue = EvaluateLocalExpression(node.Arguments[1]);
+                    PageSize = Convert.ToInt64(takeValue);
+                    break;
             }
             return node;
         }
@@ -257,13 +411,14 @@ namespace Frameset.Core.Linq
         {
             if (node.Value is IQueryable queryable)
             {
-                _aliasCount++;
-                string alias = GetLatestAlias();
+
                 Type entityType = queryable.ElementType;
                 Trace.Assert(entityType.IsSubclassOf(typeof(BaseEntity)));
-                EntityContent content = EntityReflectUtils.GetEntityInfo(entityType);
-                _typeToAliasMap.TryAdd(entityType, alias);
-                _tablesClause.Add($"{content.TableName} AS {alias}");
+                ParseAliasEntity(entityType);
+                if (string.IsNullOrWhiteSpace(_tablesClause) && TypeToAliasMap.TryGetValue(entityType, out string? alias) && TypeToTableNameMap.TryGetValue(entityType, out string? tableName))
+                {
+                    _tablesClause = $"{tableName} AS {alias}";
+                }
                 return node;
             }
             object? value = node.Value;
@@ -271,16 +426,19 @@ namespace Frameset.Core.Linq
 
             return node;
         }
+
         protected override Expression VisitMember(MemberExpression node)
         {
             if (node.Expression is ParameterExpression paramNode)
             {
                 Type? memberType = node.Expression.Type;
-                if (memberType != null && !memberType.IsSubclassOf(typeof(BaseEntity)))
+                if (!memberType.IsSubclassOf(typeof(BaseEntity)))
                 {
                     memberType = node.Type;
                 }
-                if (memberType != null && _typeToAliasMap.TryGetValue(memberType, out string? alias))
+                Trace.Assert(memberType != null);
+                ParseAliasEntity(memberType);
+                if (TypeToAliasMap.TryGetValue(memberType, out string? alias))
                 {
                     Dictionary<string, FieldContent> fields = EntityReflectUtils.GetFieldsMap(memberType);
                     if (fields.TryGetValue(node.Member.Name, out FieldContent? content))
@@ -401,7 +559,7 @@ namespace Frameset.Core.Linq
             return node;
         }
 
-        private string GetLatestAlias() => $"t{_aliasCount}";
+        private string GetLatestAlias() => $"t{AliasCount}";
         private Expression UnwrapQuotes(Expression exp)
         {
             while (exp.NodeType == ExpressionType.Quote) exp = ((UnaryExpression)exp).Operand;
@@ -409,14 +567,15 @@ namespace Frameset.Core.Linq
         }
         private void AppendToActiveClause(string value)
         {
-            if (_activeContext == "SELECT") _selectFields.Add(value);
+            if (_activeContext == "SELECT") _currentFieldBuilder.Append(value);
             else if (_activeContext == "WHERE")
             {
                 _whereClause.Append(value);
             }
             else if (_activeContext == "GROUPBY") _groupByClause.Append(value);
             else if (_activeContext == "HAVING") _havingClause.Append(value);
-
+            else if (_activeContext == "ORDERBY") _orderByClause.Append(value);
+            else if (_activeContext == "JOIN") _joinClause.Append(value);
         }
         private void RegisterParameter(object? value)
         {
@@ -425,8 +584,8 @@ namespace Frameset.Core.Linq
                 AppendToActiveClause("NULL");
                 return;
             }
-            _paramCount++;
-            string parameterName = $"@p{_paramCount}";
+            ParamCount++;
+            string parameterName = $"@p{ParamCount}";
             Parameters.Add(_dao.GetDialect().WrapParameter(parameterName, value));
             AppendToActiveClause(parameterName);
         }
@@ -440,6 +599,17 @@ namespace Frameset.Core.Linq
         {
             if (expr is ConstantExpression ce && ce.Value == null) return true;
             try { return EvaluateLocalExpression(expr) == null; } catch { return false; }
+        }
+        private void ParseAliasEntity(Type entityType)
+        {
+            if (!TypeToAliasMap.TryGetValue(entityType, out _))
+            {
+                AliasCount++;
+                string alias = GetLatestAlias();
+                EntityContent content = EntityReflectUtils.GetEntityInfo(entityType);
+                TypeToAliasMap.TryAdd(entityType, alias);
+                TypeToTableNameMap.TryAdd(entityType, content.GetTableName());
+            }
         }
 
     }

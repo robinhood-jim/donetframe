@@ -11,7 +11,7 @@ namespace Frameset.Common.FileSystem
     {
         private HdfsClient? client = null!;
         private bool useLibhdfs = true;
-        private string libhdfsHost=null!;
+        private string libhdfsHost = null!;
         private int libhdfsPort;
         private IntPtr fileSystem;
         private IntPtr hFile;

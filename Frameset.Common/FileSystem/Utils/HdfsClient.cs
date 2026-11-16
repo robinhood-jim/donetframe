@@ -233,8 +233,8 @@ namespace Frameset.Common.FileSystem.utils
             HttpResponseMessage obj = await client.GetAsync(WrapRequest(path, paramMap));
             obj.EnsureSuccessStatusCode();
             Dictionary<string, object>? dictMap = await JsonSerializer.DeserializeAsync<Dictionary<string, object>>(await obj.Content.ReadAsStreamAsync());
-            Trace.Assert(dictMap!=null && !dictMap.IsNullOrEmpty());
-            object? list=null;
+            Trace.Assert(dictMap != null && !dictMap.IsNullOrEmpty());
+            object? list = null;
             (dictMap["FileStatuses"] as Dictionary<string, object>)?.TryGetValue("FileStatus", out list);
             if (list != null)
             {

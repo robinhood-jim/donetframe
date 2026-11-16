@@ -76,29 +76,24 @@ namespace Frameset.Core.Mapper
 
                                     foreach (XmlElement ele1 in ele.ChildNodes)
                                     {
-                                        if (ele1.GetAttribute("property") != null && ele1.GetAttribute("column") != null)
+                                        if (ele1.GetAttributeNode("property") != null && ele1.GetAttributeNode("column") != null)
                                         {
                                             rsMap.MappingColumns.TryAdd(ele1.GetAttribute("column"), ele1.GetAttribute("property"));
                                         }
 
                                     }
-                                    configMap[namespaceStr].ReslutMap.TryAdd(id, rsMap);
+                                    configMap[namespaceStr].ResultMap.TryAdd(id, rsMap);
                                     break;
-
                             }
-
                         }
                     }
                 }
-
-
-
             }
 
         }
         public static AbstractSegment GetExecuteSegment(string nameSpace, string id)
         {
-            if (executeMap.TryGetValue(nameSpace, out Dictionary<string, AbstractSegment>? segmentMap) && segmentMap != null && !segmentMap.IsNullOrEmpty() && segmentMap.TryGetValue(id, out AbstractSegment? segment))
+            if (executeMap.TryGetValue(nameSpace, out Dictionary<string, AbstractSegment>? segmentMap) && !segmentMap.IsNullOrEmpty() && segmentMap.TryGetValue(id, out AbstractSegment? segment))
             {
                 return segment;
             }
@@ -106,7 +101,7 @@ namespace Frameset.Core.Mapper
         }
         public static ResultMap? GetResultMap(string nameSpace, string id)
         {
-            if (configMap.TryGetValue(nameSpace, out MapperConfig? config) && config != null && config.ReslutMap.TryGetValue(id, out ResultMap? map))
+            if (configMap.TryGetValue(nameSpace, out MapperConfig? config) && config.ResultMap.TryGetValue(id, out ResultMap? map))
             {
                 return map;
             }
@@ -114,7 +109,7 @@ namespace Frameset.Core.Mapper
         }
         public static string GetSqlPart(string nameSpace, string id)
         {
-            if (configMap.TryGetValue(nameSpace, out MapperConfig? config) && config != null && config.SqlMap.TryGetValue(id, out string? retstr) && !string.IsNullOrWhiteSpace(retstr))
+            if (configMap.TryGetValue(nameSpace, out MapperConfig? config) && config.SqlMap.TryGetValue(id, out string? retstr) && !string.IsNullOrWhiteSpace(retstr))
             {
                 return retstr;
             }

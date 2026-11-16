@@ -5,7 +5,7 @@
 ![Platform](https://img.shields.io/badge/Platform-AnyCPU%20%7C%20x64-lightgrey)
 [![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
 
-=========
+
 ## Introduction
 A comprehensive enterprise-grade **.NET 8** framework solution providing ORM, unified file system, multi-format data processing, microservice gateway, serverless computing, distributed tracing, and AI integration capabilities.
 

@@ -21,6 +21,7 @@ namespace Frameset.Core.Scripts
         public static JsValue Eval<T>(Engine engine, Prepared<Acornima.Ast.Script> script, T input)
         {
             Type type = typeof(T);
+            Trace.Assert(input != null);
             bool useMap = type.Equals(typeof(Dictionary<string, object>));
             if (useMap)
             {
@@ -36,7 +37,7 @@ namespace Frameset.Core.Scripts
                 Dictionary<string, MethodParam> dict = AnnotationUtils.ReflectObject(type);
                 foreach (var item in dict)
                 {
-                    object? value = item.Value.GetMethod.Invoke(input, []);
+                    object? value = item.Value.Getter(input);
                     if (value != null)
                     {
                         engine.SetValue(item.Key, value);

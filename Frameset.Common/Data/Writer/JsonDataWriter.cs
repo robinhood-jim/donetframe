@@ -51,7 +51,7 @@ namespace Frameset.Common.Data.Writer
                         jsonWriter.WritePropertyName(column.ColumnCode);
                         jsonWriter.WriteValue(getValue);
                     }
-                    
+
                 }
             }
             jsonWriter.WriteEndObject();

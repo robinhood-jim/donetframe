@@ -1,4 +1,5 @@
-﻿using Frameset.Core.Common;
+﻿using Frameset.Core.Annotation;
+using Frameset.Core.Common;
 using Frameset.Core.Model;
 using Frameset.Core.Query;
 using Frameset.Core.Query.Dto;
@@ -12,55 +13,55 @@ namespace Frameset.Web.Controller
 {
     public class AbstractController<R, V, P> : AbstractControllerBase where R : IService<V, P> where V : BaseEntity where P : notnull
     {
-        protected R repository;
+        [AutoInject]
+        protected R _service = default!;
 
-
-        public AbstractController(R baseRepository)
+        protected AbstractController(R baseService)
         {
-            repository = baseRepository;
+            _service = baseService;
         }
         public AbstractController()
         {
-            repository = default!;
+            //_service = RegServiceContext.GetBean<R>();
         }
         public JsonResult SaveEntity(object input)
         {
-            Trace.Assert(input != null && repository != null);
+            Trace.Assert(input != null && _service != null);
             bool saveOk = false;
             if (input.GetType().Equals(typeof(V)))
             {
-                saveOk = repository.SaveEntity((V)input);
+                saveOk = _service.SaveEntity((V)input);
             }
             else
             {
-                saveOk = repository.SaveEntity(GetValueFrom(input));
+                saveOk = _service.SaveEntity(GetValueFrom(input));
             }
             return OutputMsg(saveOk);
         }
         public JsonResult UpdateEntity(object input)
         {
-            Trace.Assert(input != null && repository != null);
+            Trace.Assert(input != null && _service != null);
             bool saveOk = false;
             if (input.GetType().Equals(typeof(V)))
             {
-                saveOk = repository.UpdateEntity((V)input);
+                saveOk = _service.UpdateEntity((V)input);
             }
             else
             {
-                saveOk = repository.UpdateEntity(GetValueFrom(input));
+                saveOk = _service.UpdateEntity(GetValueFrom(input));
             }
             return OutputMsg(saveOk);
         }
 
         public PageDTO<T> QueryPage<T>(PageQuery query)
         {
-            Trace.Assert(repository != null);
-            return repository.QueryPage<T>(query);
+            Trace.Assert(_service != null);
+            return _service.QueryPage<T>(query);
         }
         public JsonResult GetEntity(P id)
         {
-            Trace.Assert(repository != null);
-            V vo = repository.GetById(id);
+            Trace.Assert(_service != null);
+            V vo = _service.GetById(id);
             if (vo != null)
             {
                 return OutputMsg(vo);
@@ -72,11 +73,21 @@ namespace Frameset.Web.Controller
         }
         public JsonResult RemoveEntity(P id)
         {
-            Trace.Assert(repository != null);
-            return OutputMsg(repository.RemoveEntity([id]));
+            Trace.Assert(_service != null);
+            return OutputMsg(_service.RemoveEntity([id]));
+        }
+        public JsonResult RemoveEnities(string ids)
+        {
+            List<P> idsArr = [];
+            string[] idsStrArr = ids.Split(',');
+            foreach (var idStr in idsStrArr)
+            {
+                idsArr.Add((P)Convert.ChangeType(idStr, typeof(P)));
+            }
+            return OutputMsg(_service.RemoveEntity(idsArr));
         }
 
-        internal V GetValueFrom(object input)
+        protected V GetValueFrom(object input)
         {
             V retObj = Activator.CreateInstance<V>();
             Dictionary<string, MethodParam> paramMap = AnnotationUtils.ReflectObject(typeof(V));
@@ -87,7 +98,7 @@ namespace Frameset.Web.Controller
                     string key = StringUtils.Capitalize(entry.Key);
                     if (paramMap.TryGetValue(key, out MethodParam? param))
                     {
-                        param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value) });
+                        param.Setter(retObj,  ConvertUtil.ParseByType(param.ParamType, entry.Value));
                     }
                 }
             }
@@ -98,7 +109,9 @@ namespace Frameset.Web.Controller
                 {
                     if (entry.Value != null && paramMap.TryGetValue(entry.Key, out MethodParam? param))
                     {
-                        param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, entry.Value.GetMethod.Invoke(input, null)) });
+                        object? obj = entry.Value.Getter(input);
+                        if(obj!=null)
+                            param.Setter(retObj, ConvertUtil.ParseByType(param.ParamType,obj));
                     }
                 }
             }

@@ -72,7 +72,7 @@ namespace Frameset.Core.Utils
         /// <returns></returns>
         public static bool IsFundamentalType(this Type classType)
         {
-            
+
             Type cmpType = classType;
             if (classType.IsGenericType && classType.GetGenericTypeDefinition() == typeof(Nullable<>))
             {
@@ -103,30 +103,43 @@ namespace Frameset.Core.Utils
             }
             return false;
         }
-        public static List<Type> ScanTypesWithAttribute(this Type scanType)
+        public static List<AssemblyName> GetRunningAssemblies()
         {
-            Trace.Assert(scanType.IsSubclassOf(typeof(Attribute)),"type must be Attribute!");
-            List<Type> retList = [];
             Assembly? entryAssembly = Assembly.GetEntryAssembly();
-            Trace.Assert(entryAssembly!=null);
-            AssemblyName[] assemblies = entryAssembly.GetReferencedAssemblies();
-            List<AssemblyName> assemblyNames =
+            Trace.Assert(entryAssembly != null);
+            var assemblies = entryAssembly.GetReferencedAssemblies().Where(a => a.Name != null
+                            && !a.Name.StartsWith("System", StringComparison.OrdinalIgnoreCase)
+                            && !a.Name.StartsWith("Microsoft", StringComparison.OrdinalIgnoreCase)
+                            && !a.Name.Equals("netstandard", StringComparison.OrdinalIgnoreCase)
+                            && !a.Name.Equals("mscorlib", StringComparison.OrdinalIgnoreCase));
+            return
             [
                 ..assemblies,
                 entryAssembly.GetName()
             ];
+        }
+        public static List<Type> ScanTypesWithAttribute(this Type scanType, Func<Type, bool>? compareFunc = null)
+        {
+            Trace.Assert(scanType.IsSubclassOf(typeof(Attribute)), "type must be Attribute!");
+            List<Type> retList = [];
+            List<AssemblyName> assemblyNames = GetRunningAssemblies();
 
             foreach (AssemblyName assemblyName in assemblyNames)
             {
                 try
                 {
                     Assembly assembly = Assembly.Load(assemblyName);
+                    Func<Type, bool>? cmpFunc = compareFunc;
+                    if (cmpFunc == null)
+                    {
+                        cmpFunc = t => t.GetCustomAttributes(scanType, false).Length > 0;
+                    }
                     if (StringUtils.IsAssemblySystem(assembly))
                     {
                         continue;
                     }
                     retList.AddRange(assembly.GetTypes()
-                        .Where(t => t.IsClass && !t.IsAbstract && t.GetCustomAttributes(scanType, false).Length > 0)
+                        .Where(t => t.IsClass && !t.IsAbstract && cmpFunc.Invoke(t))
                         .ToList());
                 }
                 catch (Exception ex)

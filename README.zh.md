@@ -1,65 +1,119 @@
-# 通用.net框架
-[![Ask DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
+# dotnetframe 通用 .NET 框架
 
-=========
-#### 介绍
-基于.Net8.0以上的 基础框架，目前包含基本ORM 框架，可支持EF Core的注解方式，整个框架小而精，集成了最小功能集合的ORM功能，未考虑微软的语法树等功能。代码直观易懂，整体代码都是原创，可通过阅读整体框架对ORM有深入的了解
+[![DeepWiki](https://deepwiki.com/badge.svg)](https://deepwiki.com/robinhood-jim/donetframe)
 
-##ORM 框架 说明
-- 使用自定义的标签 MappingEntity MappingField
-- 使用全局的DAOFactory 管理注册的所有数据库链接
-- 同一数据源下唯一的数据访问层 dao JdbcDao
-- 业务层 BaseRepository，带基本事务管理，可以扩展CRUD前后置操作，也可以完全自定义相应方法
-- 类似Mybatis 的xml配置查询框架，配置支持js脚本语言
-- 针对不同数据库，支持批量插入
-- 支持对EF core的注解标注实体的支持
-- 支持类似Java Resource的循环依赖注入
-- 支持线程安全的DbContext
+## 介绍
 
-## Examples
-- 数据库相关配置
+dotnetframe 是一个基于 .NET 8.0 框架开发的通用应用开发基础框架，由个人独立开发。框架旨在简化具体开发中的重复繁琐的 CRUD 等劳动，同时对若干常用的业务场景进行抽象，提供开箱即用的企业级应用开发能力。
+
+## 特性
+
+### 数据访问层 (ORM)
+- 统一的 DAO 层设计，一个数据源对应一个 DAO
+- Repository 模式封装，支持单表基本操作（增删改查）
+- 支持各种前后置操作钩子
+- 支持逻辑删除
+- 线程安全的 DbContext 操作，基于 ThreadLocal 实现
+
+### 配置管理
+- 基于 YAML 的统一配置管理
+- 内置 License 许可证管理能力
+- 支持多数据源配置
+
+### 依赖注入 (IoC)
+- 参考 Spring 的实现方式
+- 支持构造函数注入
+- 支持字段属性注入（`[Resource]` 特性）
+- 支持多级依赖逐级创建
+- 支持依赖递归注入
+
+### 文件处理
+- **Excel/Word**: 高效的大文件读写功能
+- **多种格式支持**: CSV、JSON、XML、Avro、Parquet 等
+- **文件系统**: 本地文件系统、FTP/SFTP、HDFS
+- **云存储**: S3、阿里云 OSS、腾讯云 COS、七牛云等
+- **压缩文件**: 支持多种压缩格式（无需解压直接读取）
+
+### 服务端无 Serverless
+- 支持 DLL 动态加载和卸载
+- 支持函数热插拔
+
+### SQL 构建
+- Mybatis 风格配置文件支持
+- 基于 Builder 的动态 SQL 构建
+- 支持 JavaScript 脚本引擎动态解析
+
+### 大数据能力
+- NoSQL 数据库封装：MongoDB、Cassandra、CouchDB、HBase
+- 图数据库支持：HugeGraph
+- 全文搜索：Elasticsearch
+
+### 服务发现与路由
+- 支持 Consul 服务注册与发现
+- 支持 Nacos 服务注册与发现
+- 配置与 Spring Cloud Gateway 兼容
+
+### 链路追踪
+- 支持对应 Namespace 的 Assembly Bytecode 增强
+- 记录 DAO 层的 SQL 及参数
+- 全链路追踪能力
+
+### API 网关
+- 统一请求路由
+- 负载均衡
+- 请求过滤与拦截
+
+## 快速开始
+
+### 配置数据源
+
 ```yaml
 dataSource:
- core:
-  host: localhost
-  port: 3316
-  dbType: Mysql
-  userName: root
-  password: root
-  maxSize: 10
-```
-其中dbType 为数据库类型
-
-- DAO/Repository 初始化
-```cs
-//工厂初始化
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-//构造Repository
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
-
+  core:
+    host: localhost
+    port: 3316
+    dbType: Mysql
+    userName: root
+    password: root
+    maxSize: 10
 ```
 
-- CRUD 操作
-```cs
+### 初始化 DAO 工厂
+
+```csharp
+// 工厂初始化
 DAOFactory f = DAOFactory.init("f:/1.yaml");
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
+// 构造 Repository
+BaseRepository<TestModel, long> repository = new Builder<TestModel, long>().build();
+```
+
+### 基本 CRUD 操作
+
+```csharp
+DAOFactory f = DAOFactory.init("f:/1.yaml");
+BaseRepository<TestModel, long> repository = new Builder<TestModel, long>().build();
 TestModel model = new TestModel();
-...  
-//新增
+// ... 设置属性
+
+// 新增
 repository.SaveEntity(model);
-//按主键获取
-TestModel  model=repository.GetById(1);
-//按单字段指定条件查询
-IList<TestModel> list=repository.QueryModelsByField("name", Constants.SqlOperator.LIKE, new object[] { "t" });
-//Update
+
+// 按主键获取
+TestModel model = repository.GetById(1);
+
+// 按单字段条件查询
+IList<TestModel> list = repository.QueryModelsByField("name", Constants.SqlOperator.LIKE, new object[] { "t" });
+
+// 更新
 repository.UpdateEntity(model);
-//删除
-repository.RemoveEntity(new long[] { 1 }.ToArray());
+
+// 删除
+repository.RemoveEntity(new long[] { 1 });
 ```
-- 批量插入
-```cs
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
+
+### 批量插入
+
+```csharp
 IList<TestSimple> list = new List<TestSimple>();
 for (int i = 0; i < 1000; i++)
 {
@@ -69,222 +123,147 @@ for (int i = 0; i < 1000; i++)
     simple.dTime = DateTime.Now;
     list.Add(simple);
 }
-return repository.InsertBatch(list);
+repository.InsertBatch(list);
 ```
 
-- 类似Mybatis 的Mapper 操作 及 分页
-```cs
-DAOFactory f = DAOFactory.init("f:/1.yaml");
-BaseRepository<TestModel,long> repository = new Builder<TestModel,long>().build();
-//查询分页
+### Mybatis 风格 Mapper 操作
+
+```csharp
+// 查询分页
 PageQuery query = new PageQuery(4);
 query.Parameters.Add("Name", "t%");
 query.NameSpace = "Frameset.Test";
 query.QueryId = "select1";
 PageDTO<TestVO> list = repository.QueryPage<TestVO>(query);
-//执行Sql
- TestVO vo = new TestVO();
- vo.Name = "test";
- vo.Description = "test";
- vo.CsId = 50;
- repository.ExecuteMapper("Frameset.Test", "insert1", vo);
+
+// 执行 Sql
+TestVO vo = new TestVO();
+vo.Name = "test";
+vo.Description = "test";
+vo.CsId = 50;
+repository.ExecuteMapper("Frameset.Test", "insert1", vo);
 ```
 
-- Mybatis 配置文件(基本兼容Mybatis语法，支持js脚本引擎)
+### Mybatis XML 配置示例
+
 ```xml
 <?xml version="1.0" encoding="UTF-8"?>
 <mapper namespace="Frameset.Test">
-    <resultMap id="rsMap1" type="Frametest.Dao.TestVO">
-		<id property="Id"    column="id"    />
-		<result property="Name"    column="name"    />
-		<result property="CsId"    column="cs_id"    />
-		<result property="CreateTime"    column="create_time"    />
-		<result property="Description"    column="code_desc"    />
-		
-    </resultMap>
-    <sql id="sqlpart1">
-        id,name,code_desc,cs_id,create_time
-    </sql>
-    <sql id="sqlpart2">
-        name,code_desc,cs_id,create_time
-    </sql>
     <select id="select1" resultMap="rsMap1" parameterType="rsMap1">
-        select
-        <include refid="sqlpart1" />
-         from t_test where 1=1
+        select id, name, code_desc, cs_id, create_time
+        from t_test where 1=1
         <script lang="js" id="test1" resultMap="rsMap1">
             var returnstr="";
             if(Name!=null){
                 returnstr+=" and name like @Name";
             }
-            if(Description!=null){
-                returnstr+=" and code_desc like @Description";
-            }
-            if(CsId!=0){
-                returnstr+=" and cs_id=@CsId";
-            }
             returnstr;
         </script>
     </select>
-    <insert id="insert1" parameterType="rsMap1" useGeneratedKeys="true" keyProperty="Id">
-        insert into t_test (
-        <script lang="js" id="test2">
-            var returnstr="";
-            if(Name!=null){
-                returnstr+="name,"
-            }
-            if(Description!=null){
-                returnstr+="code_desc,"
-            }
-            if(CsId!=0){
-                returnstr+="cs_id,"
-            }
-            returnstr+="create_time";
-        </script>
-        ) values (
-        <script lang="js" id="test3">
-            var returnstr="";
-            if(Name!=null){
-                returnstr+="@Name,";
-            }
-            if(Description!=null){
-                returnstr+="@Description,";
-            }if(CsId!=0){
-                returnstr+="@CsId,";
-            }
-            returnstr+="sysdate()";
-        </script>
-        )
-    </insert>
-    <batch id="batch1" parameterType="rsMap1">
-        insert into t_test
-        <include refid="sqlpart2" />
-        values (@Name,@Description,@CsId,sysdate())
-    </batch>
-    <update id="update1" parameterType="rsMap1">
-        update t_test set
-        <script lang="js" id="test4">
-            var returnstr="";
-            if(name!=null){
-                returnstr+="name=@Name,";
-            }
-            if(description!=null){
-                returnstr+="code_desc=@Description,";
-            }
-            if(csId!=0){
-                returnstr+="cs_id=@CsId,";
-            }
-            returnstr.substr(0,returnstr.length-1);
-        </script>
-          where id=@Id
-    </update>
-    
 </mapper>
 ```
-- 自定义线程安全DbContext
-基于ThreadLocal，保证单DbContext可以线程安全的处理SaveChanges和每个请求一个Transaction两种模式，数据源可以运行时使用dsName动态切换
-```cs
 
-IDbContext context = new DbContext();
-DbContextFactory.Register(context);
+### 自定义 IoC 注入
 
-```
-
-- 自定义的IoC支持
-除了支持构造函数注入以外，加入Spring的Resource 标签的注入方法，并支持注入的递归操作，全面兼容Spring的注入方式（微软迟早要加入非构造函数注入的支持）
-```cs
+```csharp
 RegServiceContext.ScanServices(typeof(ServiceAttribute));
+
 [Service]
 public class UserOperService : IUserOperService
 {
     [Resource]
     private ISysUserRepository _userRepository;
+    
     [Resource]
     private IBaseRepository<SysRole, long> _roleRepository;
-...
+}
 ```
 
-- 统一的FileSystem与文件格式读写支持
-基于统一的IFileSystem 与 AbstractDataIterator AbstractDataWrite,实现对本地文件系统，FTP/SFTP、HDFS以及云存储类型（S3/aliyun OSS/tencent COS）等文件系统支持，数据格式支持csv/json/xml/avro/parquet等格式
-支持Dictionary 和对象两种模式
-从文件系统读取,Dictionary 方式
-```java
- DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
- //using FileSystem Local
- builder.Path("e:/1.json.gz").FsType(Constants.FileSystemType.LOCAL);
+### 文件读写
 
- using (AbstractDataIterator<Dictionary<string, object>> iterator = builder.Build().GetDataReader<Dictionary<string,object>>())
- {
-     while (iterator.MoveNext())
-     {
-         Dictionary<string, object> valueMap = iterator.Current;
-         Log.Information("{valueMap}", valueMap);
-     }
- }
-```
-Model 对象方式
-```java
- DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
- //using FileSystem Local
- builder.Path("e:/1.json.gz").FsType(Constants.FileSystemType.LOCAL);
-
- using (AbstractDataIterator<TestModel> iterator = builder.Build().GetDataReader<TestModel>())
- {
-     while (iterator.MoveNext())
-     {
-         TestModel model = iterator.Current;
-         Log.Information("{Model}", model);
-     }
- }
-```
-
-
-写入文件系统 Dictionary 方式
-```java
+```csharp
+// 读取 JSON 文件
 DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
-//assign Path and column metadata define
-builder.Path("e:/1.parquet").AddColumnDefine("id", Constants.MetaType.BIGINT).AddColumnDefine("name", Constants.MetaType.STRING)
-    .AddColumnDefine("time", Constants.MetaType.TIMESTAMP).AddColumnDefine("amount", Constants.MetaType.INTEGER).AddColumnDefine("price", Constants.MetaType.DOUBLE);
-Dictionary<string, object> cachedMap = new Dictionary<string, object>();
-Random random = new Random(1231313);
-long startTs = DateTimeOffset.UtcNow.ToUnixTimeMilliseconds() - 3600 * 24 * 1000;
-DateTime dateTime = new DateTime(1970, 1, 1, 0, 0, 0, 0);
+builder.Path("e:/1.json.gz").FsType(Constants.FileSystemType.LOCAL);
+
+using (AbstractDataIterator<Dictionary<string, object>> iterator = builder.Build().GetDataReader<Dictionary<string,object>>())
+{
+    while (iterator.MoveNext())
+    {
+        Dictionary<string, object> valueMap = iterator.Current;
+    }
+}
+
+// 写入 Parquet 文件
+DataCollectionBuilder builder = DataCollectionBuilder.NewBuilder();
+builder.Path("e:/1.parquet")
+    .AddColumnDefine("id", Constants.MetaType.BIGINT)
+    .AddColumnDefine("name", Constants.MetaType.STRING)
+    .AddColumnDefine("time", Constants.MetaType.TIMESTAMP);
+
 using (AbstractDataWriter<Dictionary<string, object>> writer = DataFileExporter.GetDataWriter<Dictionary<string, object>>(builder.Build()))
 {
     for (int i = 0; i < 1000; i++)
     {
-        cachedMap.Clear();
-        cachedMap.TryAdd("name", StringUtils.GenerateRandomChar(random, 12));
-        cachedMap.TryAdd("time", dateTime.AddMilliseconds(startTs + i * 1000));
-        cachedMap.TryAdd("amount", random.Next(1000) + 1);
-        cachedMap.TryAdd("price", random.NextDouble() * 1000);
-        cachedMap.TryAdd("id", Convert.ToInt64(i));
+        Dictionary<string, object> cachedMap = new Dictionary<string, object>();
+        cachedMap.TryAdd("id", i);
+        cachedMap.TryAdd("name", "value");
         writer.WriteRecord(cachedMap);
     }
 }
 ```
-- 自定义函数的Serverless 动态 装载DLL 实现
-在承载的Asp.Net项目中appsetting.json 添加serverlessPrefix 参数
-```json
-{
-  "Logging": {
-    "LogLevel": {
-      "Default": "Information",
-      "Microsoft.AspNetCore": "Warning"
-    }
-  },
-  "AllowedHosts": "*",
-  "serverlessPrefix": "/serverless",
-  
-}
+
+### 服务注册发现
+
+框架支持通过 Consul 或 Nacos 进行服务注册与发现，配置方式与 Spring Cloud Gateway 兼容。
+
+### 链路追踪
+
+```csharp
+// 初始化追踪
+DbOperationHacker.Initialize(httpContextAccessor);
 ```
-在承载的Class中调用方法加ServerlessFunc 的Attribute，并打包DLL
-```cs
- public class TestService
-    {
-        [ServerlessFunc]
-        public static object GetRole(HttpRequest request, HttpResponse response, long id, IBaseRepository<SysRole, long> repository)
-        {
+
+## 项目结构
+
 ```
-使用 DynamicFunctionLoader的RegisterFunction在运行时进行注册
-访问AspNet 项目对应对峙的 /serverless/{functionName} 动态调用方法
+dotnetframe/
+├── Frameset/                    # 核心框架
+│   ├── Core/                    # 核心功能
+│   ├── Annotation/              # 特性定义
+│   ├── Dao/                     # 数据访问
+│   ├── Repo/                    # 仓储层
+│   └── Service/                 # 服务层
+├── Frameset.Bigdata/            # 大数据组件
+│   ├── MongoDb/
+│   ├── Elastic/
+│   ├── Cassandra/
+│   ├── Hbase/
+│   └── Graph/
+├── Frameset.Common/             # 通用工具
+│   ├── Data/                    # 数据处理
+│   ├── FileSystem/              # 文件系统
+│   ├── Compress/                # 压缩解压
+│   └── Streaming/               # 消息队列
+├── Frameset.Gateway/            # API 网关
+├── Frameset.Web/                # Web 基础
+├── Frameset.WebMvc/             # MVC 控制器
+└── ConsoleTest/                 # 测试示例
+```
+
+## 技术栈
+
+- **.NET 8.0**
+- **数据库**: MySQL, PostgreSQL, Oracle, SQL Server, ClickHouse, DB2
+- **NoSQL**: MongoDB, Cassandra, CouchDB, HBase, Redis
+- **搜索**: Elasticsearch
+- **消息队列**: Kafka, RabbitMQ
+- **文件存储**: S3, HDFS, OSS, COS, 七牛云
+
+## 许可证
+
+本项目为个人独立开发项目，使用请遵循相关许可证协议。
+
+## 贡献
+
+欢迎提交 Issue 和 Pull Request。

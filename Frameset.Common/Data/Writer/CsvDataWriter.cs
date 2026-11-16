@@ -2,6 +2,7 @@
 using Frameset.Core.Common;
 using Frameset.Core.FileSystem;
 using Frameset.Core.Reflect;
+using System.Diagnostics;
 
 
 namespace Frameset.Common.Data.Writer
@@ -65,10 +66,11 @@ namespace Frameset.Common.Data.Writer
                 }
                 else
                 {
+                    Trace.Assert(value != null);
                     methodMap.TryGetValue(meta.ColumnCode, out MethodParam? param);
                     if (param != null)
                     {
-                        object? retValue = param?.GetMethod.Invoke(value, null);
+                        object? retValue = param?.Getter(value);
                         contents.Add(GetOutputString(meta, retValue));
                     }
                     else

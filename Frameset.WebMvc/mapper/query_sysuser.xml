@@ -1,0 +1,26 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<mapper namespace="Frameset.Core.Query.Sys">
+	<select id="getResPermission" resultMap="Map">
+		select id,res_name as name,url,is_leaf as leafTag,permission as code,pid,seq_no as seqNo,assign_type as assignType from (select a.*,0 as assign_type from t_sys_resource_info a,t_sys_resource_role_r b,t_sys_role_info c,t_sys_user_role_r d where a.status='1' and b.status='1' and a.ID=b.RES_ID and b.role_id=c.id and c.id=d.role_id and d.user_id=@userId and a.STATUS='1' and b.status='1' 
+		<script lang="js">
+			var sqlstr='';
+			if(tenantId!=null){
+				sqlstr=' and ((a.tenant_id=@tenantId and d.tenant_id=@tenantId) or (a.tenant_id=0 and b.tenant_id=0 and c.tenant_id=0))'
+			}
+			sqlstr
+		</script>
+		union
+		select c.*,d.assign_type from t_sys_resource_info c,t_sys_resource_user_r d where c.id=d.res_id and d.USER_ID=@userId and c.STATUS=1)e order by res_code,seq_no,assign_type desc
+	</select>
+	<select id="getUserRoles" resultMap="Map">
+		select a.id,role_name as name,role_code as code,role_type as roleType,a.tenant_id as tenantId from t_sys_role_info a,t_sys_user_role_r b where a.id=b.role_id and b.user_id=@userId and b.status=1 and a.status=1
+	</select>
+	<select id="getUserTenants" resultMap="Map">
+		select a.user_id as userId,b.id as id,b.tenant_name as tenantName,b.tenant_code as tenantCode,b.org_id as orgId,c.org_name as orgName,c.org_code as orgCode,a.type,b.logo from t_tenant_user_r a,t_tenant_info b,t_sys_org_info c
+		where a.status=@status and b.status=@status and c.status=@status and a.TENANT_ID=b.id and c.id=b.org_id and a.user_id=@userId
+	</select>
+	<select id="isOwnerOfOrg">
+		select count(1) as count from t_sys_enterprise a,t_sys_employer b,t_sys_org_info c where a.owner_id=b.id and c.ent_id=a.id and c.id=@orgId and b.id=@employerId
+	</select>
+  
+</mapper>

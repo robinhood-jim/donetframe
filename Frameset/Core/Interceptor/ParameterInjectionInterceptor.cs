@@ -15,7 +15,7 @@ namespace Frameset.Core.Interceptor
             for (int i = 0; i < parameters.Length; i++)
             {
                 var param = parameters[i];
-                if (param.GetCustomAttribute<InjectAttribute>() != null)
+                if (param.GetCustomAttribute<AutoInjectAttribute>() != null)
                 {
                     invocation.Arguments[i] = RegServiceContext.GetBean(param.ParameterType);
                 }

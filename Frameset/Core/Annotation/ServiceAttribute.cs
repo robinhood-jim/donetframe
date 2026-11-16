@@ -10,6 +10,7 @@ namespace Frameset.Core.Annotation
         {
             get; protected set;
         }
+
         public ServiceAttribute(ServiceLifetime serviceLifetime = ServiceLifetime.Singleton)
         {
             LifeTime = serviceLifetime;

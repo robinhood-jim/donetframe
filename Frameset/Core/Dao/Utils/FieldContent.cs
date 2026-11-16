@@ -47,7 +47,7 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = false;
-        public FieldInfo FieldInfomation
+        public FieldInfo FieldInformation
         {
             get; set;
         } = null!;
@@ -55,14 +55,7 @@ namespace Frameset.Core.Dao.Utils
         {
             get; internal set;
         } = null!;
-        public MethodInfo GetMethod
-        {
-            get; internal set;
-        } = null!;
-        public MethodInfo SetMethod
-        {
-            get; internal set;
-        } = null!;
+        
         public Type ParamType
         {
             get; internal set;
@@ -115,7 +108,7 @@ namespace Frameset.Core.Dao.Utils
         {
             get; internal set;
         } = false;
-        public string RealtionColumn
+        public string RelationColumn
         {
             get; set;
         } = string.Empty;
@@ -143,6 +136,22 @@ namespace Frameset.Core.Dao.Utils
         {
             get; set;
         } = string.Empty;
+        /// <summary>
+        /// Property Getter
+        /// </summary>
+        public Func<object, object?> Getter
+        {
+            get; internal set;
+        } = null!;
+        /// <summary>
+        /// Property Setter
+        /// </summary>
+        public Action<object, object?> Setter
+        {
+            get; internal set;
+        } = null!;
+        
+
     }
     public class FieldBuilder
     {
@@ -159,6 +168,15 @@ namespace Frameset.Core.Dao.Utils
         public FieldBuilder Property(PropertyInfo info)
         {
             content.PropertyInfo = info;
+            Type baseType = info.PropertyType;
+            if (baseType.IsGenericType && baseType.GetGenericTypeDefinition()==typeof(Nullable<>))
+            {
+                content.ParamType = baseType.GetGenericArguments()[0];
+            }
+            else
+            {
+                content.ParamType = baseType;
+            }
             return this;
         }
         public FieldBuilder FieldName(string fieldName)
@@ -178,14 +196,9 @@ namespace Frameset.Core.Dao.Utils
         }
         public FieldBuilder FieldInfo(FieldInfo fieldInfo)
         {
-            content.FieldInfomation = fieldInfo;
-            return this;
-        }
-        public FieldBuilder GetMethod(MethodInfo getMethod)
-        {
-            content.GetMethod = getMethod;
-            Type baseType = getMethod.ReturnType;
-            if (baseType.IsGenericType && baseType.GetGenericTypeDefinition().Equals(typeof(Nullable<>)))
+            content.FieldInformation = fieldInfo;
+            Type baseType = fieldInfo.FieldType;
+            if (baseType.IsGenericType && baseType.GetGenericTypeDefinition()==typeof(Nullable<>))
             {
                 content.ParamType = baseType.GetGenericArguments()[0];
             }
@@ -195,11 +208,7 @@ namespace Frameset.Core.Dao.Utils
             }
             return this;
         }
-        public FieldBuilder SetMethod(MethodInfo setMethod)
-        {
-            content.SetMethod = setMethod;
-            return this;
-        }
+        
         public FieldBuilder Precise(int precise)
         {
             content.Precise = precise;
@@ -246,7 +255,7 @@ namespace Frameset.Core.Dao.Utils
         {
             content.IsManyToOne = true;
             content.ParentEntity = attribute.ParentType;
-            content.RealtionColumn = attribute.ColumnName;
+            content.RelationColumn = attribute.ColumnName;
             if (EntityReflectUtils.GetRelationMap().TryGetValue(attribute.ParentType, out Dictionary<Type, string>? childMap))
             {
                 childMap.TryAdd(content.EntityType, attribute.ColumnName);
@@ -279,10 +288,21 @@ namespace Frameset.Core.Dao.Utils
             }
             return this;
         }
+        public FieldBuilder Getter(Func<object,object?> func)
+        {
+            content.Getter = func;
+            return this;
+        }
+        public FieldBuilder Setter(Action<object, object?> action)
+        {
+            content.Setter = action;
+            return this;
+        }
+
 
         public bool Acceptable()
         {
-            return content.Exist && !string.IsNullOrEmpty(content.FieldName) && !string.IsNullOrEmpty(content.PropertyName) && content.GetMethod != null;
+            return content.Exist && !string.IsNullOrEmpty(content.FieldName) && !string.IsNullOrEmpty(content.PropertyName);
         }
 
     }

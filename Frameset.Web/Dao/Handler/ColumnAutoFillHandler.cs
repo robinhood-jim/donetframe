@@ -24,9 +24,17 @@ namespace Frameset.Web.Dao.Handler
                     SetValue(nameof(AbstractModel.Creator), userId, metaObject);
                 }
             }
-            if (metaObject.HasProperty(nameof(AbstractModel.CreateTm), out PropertyInfo? propertyInfo))
+            if (metaObject.HasSetter(nameof(AbstractModel.CreateTm)))
             {
-                propertyInfo?.SetValue(metaObject.GetOriginObj(), DateTime.Now);
+                SetValue(nameof(AbstractModel.CreateTm), DateTime.Now, metaObject);
+            }
+            if (metaObject.HasSetter(nameof(AbstractModel.TenantId)))
+            {
+                long? tenantId = securityUtils.GetLoginTenant();
+                if (tenantId != null)
+                {
+                    SetValue(nameof(AbstractModel.TenantId), tenantId, metaObject);
+                }
             }
         }
 

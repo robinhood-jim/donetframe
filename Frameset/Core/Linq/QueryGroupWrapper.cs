@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using System.Diagnostics;
 using System.Linq;
 using System.Linq.Expressions;
@@ -19,9 +20,21 @@ public class QueryGroupWrapper<T>
         AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
         return this;
     }
+    public QueryGroupWrapper<T> Eq<TProperty>(Expression<Func<T, TProperty>> property, TProperty value)
+    {
+        Expression equalExpr = Expression.Equal(property.Body, Expression.Constant(value, typeof(TProperty)));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
+        return this;
+    }
     public QueryGroupWrapper<T> Ne<TProperty>(bool condition, Expression<Func<T, TProperty>> property, TProperty value)
     {
         if (!condition) return this;
+        Expression equalExpr = Expression.NotEqual(property.Body, Expression.Constant(value, typeof(TProperty)));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
+        return this;
+    }
+    public QueryGroupWrapper<T> Ne<TProperty>(Expression<Func<T, TProperty>> property, TProperty value)
+    {
         Expression equalExpr = Expression.NotEqual(property.Body, Expression.Constant(value, typeof(TProperty)));
         AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
         return this;
@@ -33,9 +46,21 @@ public class QueryGroupWrapper<T>
         AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
         return this;
     }
+    public QueryGroupWrapper<T> Gt<TProperty>(Expression<Func<T, TProperty>> property, TProperty value)
+    {
+        Expression equalExpr = Expression.GreaterThan(property.Body, Expression.Constant(value, typeof(TProperty)));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
+        return this;
+    }
     public QueryGroupWrapper<T> Ge<TProperty>(bool condition, Expression<Func<T, TProperty>> property, TProperty value)
     {
         if (!condition) return this;
+        Expression equalExpr = Expression.GreaterThanOrEqual(property.Body, Expression.Constant(value, typeof(TProperty)));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
+        return this;
+    }
+    public QueryGroupWrapper<T> Ge<TProperty>(Expression<Func<T, TProperty>> property, TProperty value)
+    {
         Expression equalExpr = Expression.GreaterThanOrEqual(property.Body, Expression.Constant(value, typeof(TProperty)));
         AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
         return this;
@@ -47,9 +72,21 @@ public class QueryGroupWrapper<T>
         AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
         return this;
     }
+    public QueryGroupWrapper<T> Lt<TProperty>(Expression<Func<T, TProperty>> property, TProperty value)
+    {
+        Expression equalExpr = Expression.LessThan(property.Body, Expression.Constant(value, typeof(TProperty)));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
+        return this;
+    }
     public QueryGroupWrapper<T> Le<TProperty>(bool condition, Expression<Func<T, TProperty>> property, TProperty value)
     {
         if (!condition) return this;
+        Expression equalExpr = Expression.LessThanOrEqual(property.Body, Expression.Constant(value, typeof(TProperty)));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
+        return this;
+    }
+    public QueryGroupWrapper<T> Le<TProperty>(Expression<Func<T, TProperty>> property, TProperty value)
+    {
         Expression equalExpr = Expression.LessThanOrEqual(property.Body, Expression.Constant(value, typeof(TProperty)));
         AppendExpression(Expression.Lambda<Func<T, bool>>(equalExpr, property.Parameters));
         return this;
@@ -59,9 +96,34 @@ public class QueryGroupWrapper<T>
     {
         if (!condition || string.IsNullOrEmpty(value)) return this;
         var method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
-        Trace.Assert(method!=null,"");
+        Trace.Assert(method != null, "");
         var methodCall = Expression.Call(property.Body, method, Expression.Constant(value));
         AppendExpression(Expression.Lambda<Func<T, bool>>(methodCall, property.Parameters));
+        return this;
+    }
+    public QueryGroupWrapper<T> Like(Expression<Func<T, string>> property, string value)
+    {
+        var method = typeof(string).GetMethod("Contains", new[] { typeof(string) });
+        Trace.Assert(method != null, "");
+        var methodCall = Expression.Call(property.Body, method, Expression.Constant(value));
+        AppendExpression(Expression.Lambda<Func<T, bool>>(methodCall, property.Parameters));
+        return this;
+    }
+    public QueryGroupWrapper<T> In<TProperty>(Expression<Func<T, TProperty>> property, IEnumerable<TProperty> values)
+    {
+        var method = typeof(string).GetMethod("Contains", new[] { typeof(TProperty) });
+        Trace.Assert(method != null, "");
+        var methodCall = Expression.Call(Expression.Constant(values), method, property.Body);
+        AppendExpression(Expression.Lambda<Func<T, bool>>(methodCall, property.Parameters));
+        return this;
+    }
+    public QueryGroupWrapper<T> NotIn<TProperty>(Expression<Func<T, TProperty>> property, IEnumerable<TProperty> values)
+    {
+        var method = typeof(string).GetMethod("Contains", new[] { typeof(TProperty) });
+        Trace.Assert(method != null, "");
+        var methodCall = Expression.Call(Expression.Constant(values), method, property.Body);
+        var notCall = Expression.Not(methodCall);
+        AppendExpression(Expression.Lambda<Func<T, bool>>(notCall, property.Parameters));
         return this;
     }
 

@@ -1,0 +1,16 @@
+﻿mapper: mapper
+appName: test
+dataSource:
+ core:
+  host: localhost
+  port: 3316
+  dbType: Mysql
+  userName: root
+  password: root
+  maxSize: 10
+  schema: vueframe
+fileSystem:
+ fsType: local
+ ftp.userName: test
+ ftp.passwd: test
+ startPath: f:/tmp/

@@ -1,64 +1,84 @@
 ﻿using Frameset.Core.Annotation;
 using System;
 using System.Collections.Generic;
-using System.Diagnostics;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Reflection;
 
 namespace Frameset.Core.Reflect
 {
-    public class AnnotationUtils
+    public static class AnnotationUtils
     {
-        private static Dictionary<Type, Dictionary<string, MethodParam>> reflectMap = new Dictionary<Type, Dictionary<string, MethodParam>>();
-        public static Dictionary<string, MethodParam> ReflectObject(Type targetObj)
+        private static Dictionary<Type, Dictionary<string, MethodParam>> reflectMap = [];
+        public static Dictionary<string, MethodParam> ReflectObject(Type targetType)
         {
-            PropertyInfo[] propertyInfos = targetObj.GetProperties();
-            if (!reflectMap.TryGetValue(targetObj, out Dictionary<string, MethodParam>? dict))
+            if (!reflectMap.TryGetValue(targetType, out Dictionary<string, MethodParam>? dict))
             {
+                PropertyInfo[] propertyInfos = targetType.GetProperties(BindingFlags.Public | BindingFlags.Instance);
                 dict = new();
                 foreach (PropertyInfo prop in propertyInfos)
                 {
                     string name = prop.Name;
-                    Trace.Assert(prop.GetMethod != null && prop.SetMethod != null);
+
                     MethodParam param = new()
                     {
-                        GetMethod = prop.GetMethod,
-                        SetMethod = prop.SetMethod,
-                        ParamType = prop.GetMethod.ReturnType,
-                        PropertyInfo = prop
+                        ParamType = prop.PropertyType,
+                        PropertyInfo = prop,
+                        Getter = ReflectionUtils.GetGetter(targetType, name),
+                        Setter = ReflectionUtils.GetSetter(targetType, name),
                     };
                     dict.TryAdd(name, param);
                 }
-                reflectMap.TryAdd(targetObj, dict);
+                FieldInfo[] fields = targetType.GetFields(BindingFlags.Public | BindingFlags.Instance);
+                foreach (FieldInfo fieldInfo in fields)
+                {
+                    string name = fieldInfo.Name;
+                    MethodParam param = new MethodParam
+                    {
+                        ParamType = fieldInfo.FieldType,
+                        Field = fieldInfo,
+                        Getter = ReflectionUtils.GetGetter(targetType, name),
+                        Setter = ReflectionUtils.GetSetter(targetType, name),
+                    };
+                }
+
+                reflectMap.TryAdd(targetType, dict);
             }
             return dict;
 
         }
         private static bool ValidateEntity(Type type)
         {
-            bool isEntityDef = Attribute.IsDefined(type.Module, typeof(MappingEntityAttribute));
+            bool isEntityDef = Attribute.IsDefined(type.Module, typeof(MappingEntityAttribute)) | Attribute.IsDefined(type.Module, typeof(TableAttribute));
             if (!isEntityDef)
             {
-                throw new ArgumentException("module is not a mappingEntity");
+                throw new ArgumentException("module is not a mappingEntity or EF entity");
             }
-
             return true;
         }
+
     }
     public class MethodParam
     {
-        public MethodInfo GetMethod
-        {
-            get; internal set;
-        } = null!;
-        public MethodInfo SetMethod
-        {
-            get; internal set;
-        } = null!;
+        
         public Type ParamType
         {
             get; internal set;
         } = null!;
         public PropertyInfo PropertyInfo
+        {
+            get; internal set;
+        } = null!;
+        public FieldInfo Field
+        {
+            get; set;
+        } = null!;
+        //Expression Getter
+        public Func<object, object?> Getter
+        {
+            get; internal set;
+        } = null!;
+        //Expression Setter
+        public Action<object, object?> Setter
         {
             get; internal set;
         } = null!;

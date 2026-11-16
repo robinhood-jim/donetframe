@@ -174,7 +174,7 @@ namespace Frameset.Core.Common
                 List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
                 foreach (FieldContent fieldContent in fieldContents)
                 {
-                    object? value = fieldContent.GetMethod.Invoke(obj, null);
+                    object? value = fieldContent.Getter(obj);
                     Trace.Assert(value != null, "");
                     dict.TryAdd(fieldContent.PropertyName, value);
                 }
@@ -196,6 +196,7 @@ namespace Frameset.Core.Common
         {
             Type targetType = typeof(T);
             retObj = Activator.CreateInstance<T>();
+            Trace.Assert(retObj != null);
             Dictionary<string, MethodParam> paramMap = AnnotationUtils.ReflectObject(targetType);
             if (input.GetType().IsTypeDictionary())
             {
@@ -206,7 +207,7 @@ namespace Frameset.Core.Common
                     string key = StringUtils.Capitalize(item.Key);
                     if (paramMap.TryGetValue(key, out MethodParam? param) && item.Value != null)
                     {
-                        param.PropertyInfo.SetValue(retObj, ConvertUtil.ParseByType(param.ParamType, item.Value));
+                        param.Setter(retObj, ConvertUtil.ParseByType(param.ParamType, item.Value));
                     }
                 }
             }
@@ -217,10 +218,10 @@ namespace Frameset.Core.Common
                 {
                     if (entry.Value != null && paramMap.TryGetValue(entry.Key, out MethodParam? param))
                     {
-                        object? invokeObj = entry.Value.GetMethod.Invoke(input, null);
+                        object? invokeObj = entry.Value.Getter(input);
                         if (invokeObj != null)
                         {
-                            param.SetMethod.Invoke(retObj, new object[] { ConvertUtil.ParseByType(param.ParamType, invokeObj) });
+                            param.Setter(retObj, ConvertUtil.ParseByType(param.ParamType, invokeObj));
                         }
                     }
                 }
@@ -235,7 +236,7 @@ namespace Frameset.Core.Common
                 List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(obj.GetType());
                 foreach (FieldContent fieldContent in fieldContents)
                 {
-                    object? value = fieldContent.GetMethod.Invoke(obj, null);
+                    object? value = fieldContent.Getter(obj);
                     if (value != null)
                     {
                         dict.TryAdd(fieldContent.PropertyName, value);
@@ -261,10 +262,10 @@ namespace Frameset.Core.Common
             List<FieldContent> fieldContents = EntityReflectUtils.GetFieldsContent(origin.GetType());
             foreach (FieldContent fieldContent in fieldContents)
             {
-                object? value = fieldContent.GetMethod.Invoke(update, null);
+                object? value = fieldContent.Getter(update);
                 if (value != null || update.GetDirties().Contains(fieldContent.PropertyName))
                 {
-                    fieldContent.SetMethod.Invoke(origin, [value]);
+                    fieldContent.Setter(origin,value);
                 }
             }
 
@@ -343,7 +344,7 @@ namespace Frameset.Core.Common
             }
             catch (Exception ex)
             {
-                throw new OperationFailedException($"columnName ={columnName},type={columnType} with value={valueObj} failed! type mismatch,Please check!",ex);
+                throw new OperationFailedException($"columnName ={columnName},type={columnType} with value={valueObj} failed! type mismatch,Please check!", ex);
             }
             return retObj;
         }

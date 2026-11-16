@@ -13,10 +13,8 @@ using Frameset.Core.Query.Dto;
 using Frameset.Core.Reflect;
 using Frameset.Core.Utils;
 using Microsoft.IdentityModel.Tokens;
-using Org.BouncyCastle.Utilities;
 using System;
 using System.Collections.Generic;
-using System.Data;
 using System.Data.Common;
 using System.Diagnostics;
 using System.Linq;
@@ -43,18 +41,20 @@ namespace Frameset.Core.Repo
         protected readonly Type entityType;
         protected readonly Type pkType;
         protected List<FieldContent> fieldContents;
-        protected ThreadLocal<string> temporaryDsName = null!;
-        protected IMetaObjectHandler metaObjectHandler = null!;
+        protected ThreadLocal<string>? temporaryDsName = null;
+        protected IMetaObjectHandler? metaObjectHandler = null;
         internal readonly Dictionary<Type, Tuple<EntityContent, List<FieldContent>>> entityMap = [];
 
         public BaseRepository()
         {
             Type[] genericType = GetType().GetInterfaces()[0].GetGenericArguments();
-            RepositoryAttribute? attribute = GetType().GetCustomAttribute(typeof(RepositoryAttribute)) as RepositoryAttribute;
+            RepositoryAttribute? attribute =
+                GetType().GetCustomAttribute(typeof(RepositoryAttribute)) as RepositoryAttribute;
             if (attribute != null && !attribute.DsName.IsNullOrEmpty())
             {
                 dsName = attribute.DsName;
             }
+
             Trace.Assert(genericType[0].IsSubclassOf(typeof(BaseEntity)));
             content = EntityReflectUtils.GetEntityInfo(genericType[0]);
             fieldContents = EntityReflectUtils.GetFieldsContent(genericType[0]);
@@ -65,22 +65,26 @@ namespace Frameset.Core.Repo
             {
                 dsName = content.DsName;
             }
-            dao = DAOFactory.GetAdoDao(dsName);
 
+            dao = DAOFactory.GetAdoDao(dsName);
         }
-        public bool SaveEntity(V entity, Action<V>? insertBeforeAction = null, Func<DbCommand, V, bool>? insertAfterAction = null)
+
+        public bool SaveEntity(V entity, Action<V>? insertBeforeAction = null,
+            Func<DbCommand, V, bool>? insertAfterAction = null)
         {
-            IMetaObjectHandler handler = GetObjectHandler();
+            IMetaObjectHandler? handler = GetObjectHandler();
             if (handler != null)
             {
                 Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(entityType);
                 handler.InsertFill(new MetaObject(entity, fieldDict));
             }
+
             InsertSegment segment = SqlUtils.GetInsertSegment(GetDao(), entity);
             if (saveFunc != null)
             {
                 return saveFunc.Invoke(entity);
             }
+
             LogUtils.Debug($"save Enity Sql {segment.InsertSql}");
             return RepositoryHelper.ExecuteInTransaction(GetDao(), segment.InsertSql, entity, (command, v) =>
             {
@@ -93,28 +97,32 @@ namespace Frameset.Core.Repo
                 {
                     executeRs = insertAfterAction.Invoke(command, v);
                 }
+
                 return executeRs;
             });
         }
 
-        public bool UpdateEntity(V entity, Action<V>? updateBeforeAction = null, Func<DbCommand, V, bool>? updateAfterAction = null)
+        public bool UpdateEntity(V entity, Action<V>? updateBeforeAction = null,
+            Func<DbCommand, V, bool>? updateAfterAction = null)
         {
             object? pkObj = pkColumn.PropertyInfo.GetValue(entity);
             Trace.Assert(pkObj != null);
             P pk = (P)pkObj;
             V origin = GetById(pk);
             Trace.Assert(origin != null, "id not found in entity");
-            IMetaObjectHandler handler = GetObjectHandler();
+            IMetaObjectHandler? handler = GetObjectHandler();
             if (handler != null)
             {
                 Dictionary<string, FieldContent> fieldDict = EntityReflectUtils.GetFieldsMap(entityType);
                 handler.UpdateFill(new MetaObject(entity, fieldDict));
             }
+
             UpdateSegment segment = SqlUtils.GetUpdateSegment(GetDao(), origin, entity);
             if (updateFunc != null)
             {
                 return updateFunc.Invoke(entity);
             }
+
             LogUtils.Debug($"update Sql {segment.UpdateSql}");
             return RepositoryHelper.ExecuteInTransaction(GetDao(), segment.UpdateSql, entity, (command, v) =>
             {
@@ -125,6 +133,7 @@ namespace Frameset.Core.Repo
                 {
                     executeRs = updateAfterAction.Invoke(command, v);
                 }
+
                 return executeRs;
             });
         }
@@ -137,6 +146,7 @@ namespace Frameset.Core.Repo
                 {
                     return deleteFunc.Invoke(pks);
                 }
+
                 EntityContent entityContent = EntityReflectUtils.GetEntityInfo(entityType);
                 TableLogicColumn? logicColumn = EntityReflectUtils.GetLogicColumnAndValue(dao, entityType);
                 if (logicColumn == null)
@@ -153,13 +163,13 @@ namespace Frameset.Core.Repo
                             parameters[i] = GetDao().GetDialect().WrapParameter(i + 1, pks[i]);
                         }
                     }
-                    string removeSql = removeBuilder.Append(idsBuilder.ToString().AsSpan(0, idsBuilder.Length - 1)).Append(')').ToString();
+
+                    string removeSql = removeBuilder.Append(idsBuilder.ToString().AsSpan(0, idsBuilder.Length - 1))
+                        .Append(')').ToString();
                     LogUtils.Debug($"remove Enity Sql {removeSql}");
                     V obj = Activator.CreateInstance<V>();
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, obj, (command, _) =>
-                    {
-                        return GetDao().Execute(command, removeSql, parameters);
-                    });
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, obj,
+                        (command, _) => { return GetDao().Execute(command, removeSql, parameters); });
                 }
                 else
                 {
@@ -167,27 +177,33 @@ namespace Frameset.Core.Repo
                     FieldContent? fieldContent = EntityReflectUtils.GetFieldsContent(entityType).Find(x => x.IfPrimary);
                     Trace.Assert(fieldContent != null, "");
                     updateBuilder.Append("update ").Append(entityContent.GetTableName()).Append(" set ")
-                        .Append(logicColumn.FieldName).Append("=@invalid where ").Append(logicColumn.FieldName).Append("=@valid");
+                        .Append(logicColumn.FieldName).Append("=@invalid where ").Append(logicColumn.FieldName)
+                        .Append("=@valid");
                     updateBuilder.Append(" and ").Append(fieldContent.FieldName).Append(" in (");
-                    List<DbParameter> parameters = [GetDao().GetDialect().WrapParameter("invalid",logicColumn.InvalidValue),
-                            GetDao().GetDialect().WrapParameter("valid", logicColumn.ValidValue)];
+                    List<DbParameter> parameters =
+                    [
+                        GetDao().GetDialect().WrapParameter("invalid", logicColumn.InvalidValue),
+                        GetDao().GetDialect().WrapParameter("valid", logicColumn.ValidValue)
+                    ];
                     for (int i = 0; i < pks.Count; i++)
                     {
                         string paramName = "@" + (i + 1).ToString();
                         updateBuilder.Append(paramName).Append(',');
                         parameters.Add(GetDao().GetDialect().WrapParameter(i + 1, pks[i]));
                     }
+
                     updateBuilder.Remove(updateBuilder.Length - 1, 1);
                     updateBuilder.Append(')');
                     LogUtils.Debug($"remove Logic Enity Sql {updateBuilder}");
                     V obj = Activator.CreateInstance<V>();
-                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), updateBuilder.ToString(), obj, (command, _) =>
-                    {
-                        return GetDao().Execute(command, updateBuilder.ToString(), [.. parameters]);
-                    });
+                    return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), updateBuilder.ToString(), obj,
+                        (command, _) =>
+                        {
+                            return GetDao().Execute(command, updateBuilder.ToString(), [.. parameters]);
+                        });
                 }
-
             }
+
             return -1;
         }
 
@@ -202,6 +218,7 @@ namespace Frameset.Core.Repo
                 {
                     throw new ConfigIncorrectException($"fieldName {fieldName} not found in entity");
                 }
+
                 if (logicColumn == null)
                 {
                     StringBuilder removeBuilder = new(SqlUtils.GetRemoveTableSql(entityType));
@@ -218,10 +235,14 @@ namespace Frameset.Core.Repo
                 {
                     StringBuilder updateBuilder = new();
                     updateBuilder.Append("update ").Append(entityContent.GetTableName()).Append(" set ")
-                        .Append(logicColumn.FieldName).Append("=@invalid where ").Append(logicColumn.FieldName).Append("=@valid");
+                        .Append(logicColumn.FieldName).Append("=@invalid where ").Append(logicColumn.FieldName)
+                        .Append("=@valid");
                     updateBuilder.Append(" and (");
-                    List<DbParameter> parameters = [GetDao().GetDialect().WrapParameter("invalid",logicColumn.InvalidValue),
-                        GetDao().GetDialect().WrapParameter("valid", logicColumn.ValidValue)];
+                    List<DbParameter> parameters =
+                    [
+                        GetDao().GetDialect().WrapParameter("invalid", logicColumn.InvalidValue),
+                        GetDao().GetDialect().WrapParameter("valid", logicColumn.ValidValue)
+                    ];
                     parameters.AddRange(ParameterHelper.AddQueryParam(dao, content, updateBuilder, 0,
                         out _, sqlOperator, values));
                     updateBuilder.Append(")");
@@ -232,7 +253,6 @@ namespace Frameset.Core.Repo
                             return GetDao().Execute(command, updateBuilder.ToString(), parameters.ToArray());
                         });
                 }
-
             }
             catch (Exception e)
             {
@@ -240,11 +260,14 @@ namespace Frameset.Core.Repo
                 throw;
             }
         }
+
         public int RemoveLogic(IList<P> pks, string logicColumn, int status)
         {
             if (!pks.IsNullOrEmpty())
             {
-                StringBuilder builder = new StringBuilder("update ").Append(SqlUtils.GetTableWithSchema(content)).Append(" set ").Append(logicColumn).Append('=').Append(status).Append(" where ").Append(pkColumn.FieldName).Append(" in (");
+                StringBuilder builder = new StringBuilder("update ").Append(SqlUtils.GetTableWithSchema(content))
+                    .Append(" set ").Append(logicColumn).Append('=').Append(status).Append(" where ")
+                    .Append(pkColumn.FieldName).Append(" in (");
 
                 StringBuilder idsBuilder = new();
                 DbParameter[] parameters = new DbParameter[pks.Count];
@@ -254,15 +277,16 @@ namespace Frameset.Core.Repo
                     idsBuilder.Append(paramName).Append(',');
                     parameters[i] = GetDao().GetDialect().WrapParameter(i + 1, pks[i]);
                 }
+
                 string removeSql = builder.Append(idsBuilder.ToString().AsSpan(0, idsBuilder.Length - 1)).ToString();
                 V obj = Activator.CreateInstance<V>();
-                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, obj, (command, _) =>
-                {
-                    return GetDao().Execute(command, removeSql, parameters);
-                });
+                return RepositoryHelper.ExecuteInTransaction<V, int>(GetDao(), removeSql, obj,
+                    (command, _) => { return GetDao().Execute(command, removeSql, parameters); });
             }
+
             return -1;
         }
+
         public V GetById(P pk)
         {
             Tuple<string, List<object>> selectSqlTuple = SqlUtils.GetSelectByIdSql(GetDao(), entityType, pkColumn, pk);
@@ -274,15 +298,15 @@ namespace Frameset.Core.Repo
             DbParameter[] parameters = DaoUtils.ParseParameter(queryDao.GetDialect(), selectSqlTuple.Item2.ToArray());
 
             List<V> list = dao.QueryModelsBySql<V>(command, new(parameters));
-            
+
             if (list.Count > 1)
             {
                 throw new BaseSqlException("id not unique");
             }
-            
-            return list[0];
 
+            return list[0];
         }
+
         public List<Dictionary<string, object>> QueryBySql(string sql, object[] values)
         {
             IAdoDao queryDao = GetDao();
@@ -295,6 +319,7 @@ namespace Frameset.Core.Repo
                 }
             }
         }
+
         public List<O> QueryByNamedParameter<O>(string sql, Dictionary<string, object> nameParamter)
         {
             IAdoDao queryDao = GetDao();
@@ -308,12 +333,15 @@ namespace Frameset.Core.Repo
             }
         }
 
-        public List<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values, string? orderByStr = null)
+        public List<V> QueryModelsByField(string propertyName, Constants.SqlOperator oper, object[] values,
+            string? orderByStr = null)
         {
             List<FieldContent> fields = EntityReflectUtils.GetFieldsContent(entityType);
             if (!fields.IsNullOrEmpty())
             {
-                Tuple<StringBuilder, List<DbParameter>> tuple = RepositoryHelper.QueryModelByFieldBefore(entityType, GetDao(), fields, propertyName, oper, values, orderByStr);
+                Tuple<StringBuilder, List<DbParameter>> tuple =
+                    RepositoryHelper.QueryModelByFieldBefore(entityType, GetDao(), fields, propertyName, oper, values,
+                        orderByStr);
                 LogUtils.Debug($"query Sql {tuple.Item1}");
                 using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
                 {
@@ -324,8 +352,10 @@ namespace Frameset.Core.Repo
                     }
                 }
             }
+
             return [];
         }
+
         public PageDTO<V> QueryModelsPage(PageQuery query)
         {
             Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
@@ -333,7 +363,6 @@ namespace Frameset.Core.Repo
             StringBuilder builder = new StringBuilder(SqlUtils.GetSelectSql(entityType)).Append(" WHERE ");
             if (query != null && !query.Parameters.IsNullOrEmpty())
             {
-
                 RepositoryHelper.GetQueryParam(GetDao(), query, fieldMap, dbParameters, builder);
                 string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
                 LogUtils.Debug($"queryPage Sql {querySql}");
@@ -344,7 +373,6 @@ namespace Frameset.Core.Repo
                     connection.Open();
                     using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, countSql))
                     {
-
                         long totalCount = GetDao().QueryByLong(command, dbParameters);
                         command.CommandText = querySql;
                         List<V> list = GetDao().QueryModelsBySql<V>(command, dbParameters);
@@ -355,12 +383,14 @@ namespace Frameset.Core.Repo
                     }
                 }
             }
+
             return new PageDTO<V>(0, 0);
         }
-        public PageDTO<V> QueryPageByCondition(PageQuery query, FilterCondition condition)
+
+        public PageDTO<V> QueryPageByCondition(PageQuery? query, FilterCondition condition)
         {
-            Dictionary<string, FieldContent> fieldMap = EntityReflectUtils.GetFieldsMap(entityType);
-            GetDao().GetSqlAndParameterByCondition<V>(condition, out StringBuilder builder, out Dictionary<string, object> queryParameter);
+            GetDao().GetSqlAndParameterByCondition<V>(condition, out StringBuilder builder,
+                out Dictionary<string, object> queryParameter);
             if (query != null)
             {
                 string querySql = GetDao().GetDialect().GeneratePageSql(builder.ToString(), query);
@@ -382,10 +412,9 @@ namespace Frameset.Core.Repo
                     }
                 }
             }
-
             return new PageDTO<V>(0, 0);
-
         }
+
         void ParseParameter(DbCommand command, Dictionary<string, object> paramMap)
         {
             if (!paramMap.IsNullOrEmpty())
@@ -400,37 +429,33 @@ namespace Frameset.Core.Repo
         public object QueryMapper(string nameSpace, string queryId, object queryObject)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, queryId);
-            if (segment != null)
-            {
-                Trace.Assert(segment.GetType().Equals(typeof(SqlSelectSegment)), "");
-                SqlSelectSegment sqlsegment = (SqlSelectSegment)segment;
-                Dictionary<string, object> paramMap = [];
-                //string rsMap = sqlsegment.ResultMap;
 
-                if (queryObject.GetType().Equals(typeof(Dictionary<string, object>)))
-                {
-                    paramMap = (Dictionary<string, object>)queryObject;
-                }
-                else
-                {
-                    ConvertUtil.ToDict(queryObject, paramMap);
-                }
-                string executeSql = segment.ReturnSqlPart(paramMap);
-                LogUtils.Debug($"execute Sql {executeSql}");
-                using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
-                {
-                    connection.Open();
-                    using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, executeSql))
-                    {
-                        return GetDao().QueryMapper(sqlsegment, paramMap, nameSpace, command);
-                    }
-                }
+            Trace.Assert(segment.GetType().Equals(typeof(SqlSelectSegment)), "");
+            SqlSelectSegment sqlsegment = (SqlSelectSegment)segment;
+            Dictionary<string, object> paramMap = [];
+            //string rsMap = sqlsegment.ResultMap;
+
+            if (queryObject.GetType().Equals(typeof(Dictionary<string, object>)))
+            {
+                paramMap = (Dictionary<string, object>)queryObject;
             }
             else
             {
-                throw new ConfigMissingException("id " + queryId + " does not found in namespace " + nameSpace);
+                ConvertUtil.ToDict(queryObject, paramMap);
+            }
+
+            string executeSql = segment.ReturnSqlPart(paramMap);
+            LogUtils.Debug($"execute Sql {executeSql}");
+            using (DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString()))
+            {
+                connection.Open();
+                using (DbCommand command = GetDao().GetDialect().GetDbCommand(connection, executeSql))
+                {
+                    return GetDao().QueryMapper(sqlsegment, paramMap, nameSpace, command);
+                }
             }
         }
+
         public bool ExecuteOperation(Action<IAdoDao, DbCommand> action)
         {
             return RepositoryHelper.ExecuteInTransaction(GetDao(), "", (cmd) =>
@@ -438,62 +463,57 @@ namespace Frameset.Core.Repo
                 action.Invoke(GetDao(), cmd);
                 return 1;
             }) > 0;
-
         }
 
         public int ExecuteMapper(string nameSpace, string exeId, object input)
         {
             AbstractSegment segment = SqlMapperConfigure.GetExecuteSegment(nameSpace, exeId);
-            if (segment != null)
-            {
-                Trace.Assert(!segment.GetType().Equals(typeof(SqlSelectSegment)), "must not select part");
-                Trace.Assert(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
-                CompositeSegment csegment = (CompositeSegment)segment;
+            Trace.Assert(segment.GetType() != typeof(SqlSelectSegment), "must not select part");
+            Trace.Assert(segment.GetType().IsSubclassOf(typeof(CompositeSegment)), "must be composite part");
+            CompositeSegment csegment = (CompositeSegment)segment;
 
-                RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder, out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey, out Dictionary<string, MethodParam>? methodMap);
-                if (!retMap)
+            RepositoryHelper.ExecuteMapperBefore(GetDao(), segment, nameSpace, input, out StringBuilder builder,
+                out Dictionary<string, object> paramMap, out bool retMap, out bool returnInsert, out string generateKey,
+                out Dictionary<string, MethodParam>? methodMap);
+            if (!retMap)
+            {
+                ResultMap? map = SqlMapperConfigure.GetResultMap(nameSpace, csegment.ResultMap);
+                Trace.Assert(map != null && map.ModelType != null);
+                methodMap = AnnotationUtils.ReflectObject(map.ModelType);
+            }
+
+            LogUtils.Debug($"execute Sql {builder}");
+            return RepositoryHelper.ExecuteInTransaction(GetDao(), builder.ToString(), (command) =>
+            {
+                foreach (var item in paramMap)
                 {
-                    ResultMap? map = SqlMapperConfigure.GetResultMap(nameSpace, csegment.ResultMap);
-                    Trace.Assert(map != null && map.ModelType != null);
-                    methodMap = AnnotationUtils.ReflectObject(map.ModelType);
+                    command.Parameters.Add(GetDao().GetDialect().WrapParameter("@" + item.Key, item.Value));
                 }
-                LogUtils.Debug($"execute Sql {builder}");
-                return RepositoryHelper.ExecuteInTransaction(GetDao(), builder.ToString(), (command) =>
+
+                if (returnInsert)
                 {
-                    foreach (var item in paramMap)
+                    object? genId = command.ExecuteScalar();
+                    if (genId != null)
                     {
-                        command.Parameters.Add(GetDao().GetDialect().WrapParameter("@" + item.Key, item.Value));
-                    }
-                    if (returnInsert)
-                    {
-                        object? genId = command.ExecuteScalar();
-                        if (genId != null)
+                        Trace.Assert(methodMap != null);
+                        if (!retMap)
                         {
-                            Trace.Assert(methodMap != null);
-                            if (!retMap)
+                            if (methodMap.TryGetValue(generateKey, out MethodParam? param))
                             {
-                                if (methodMap.TryGetValue(generateKey, out MethodParam? param))
-                                {
-                                    param.SetMethod.Invoke(input, [ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId)]);
-                                }
-                            }
-                            else
-                            {
-                                paramMap.TryAdd(generateKey, ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId));
+                                param.Setter(input,ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId));
                             }
                         }
-                        return 1;
+                        else
+                        {
+                            paramMap.TryAdd(generateKey,ConvertUtil.ParseByType(methodMap[generateKey].ParamType, genId));
+                        }
                     }
-                    else
-                    {
-                        return command.ExecuteNonQuery();
-                    }
-                });
-            }
-            else
-            {
-                throw new ConfigMissingException("id " + exeId + " does not found in namespace " + nameSpace);
-            }
+
+                    return 1;
+                }
+
+                return command.ExecuteNonQuery();
+            });
         }
 
         public PageDTO<O> QueryPage<O>(PageQuery query)
@@ -503,6 +523,7 @@ namespace Frameset.Core.Repo
             using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, "");
             return GetDao().QueryPage<O>(command, query);
         }
+
         public long InsertBatch(IEnumerable<V> models, CancellationToken token)
         {
             using DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString());
@@ -513,9 +534,10 @@ namespace Frameset.Core.Repo
             }
             catch (Exception ex)
             {
-                throw new BaseSqlException(ex.Message,ex);
+                throw new BaseSqlException(ex.Message, ex);
             }
         }
+
         public List<O> QueryByCondition<O>(FilterCondition condition, PageQuery? query = null)
         {
             using DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString());
@@ -523,6 +545,7 @@ namespace Frameset.Core.Repo
             using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, "");
             return GetDao().QueryByCondition<O>(command, condition, query);
         }
+
         public List<O> QueryByFields<O>(QueryParameter queryParams)
         {
             using DbConnection connection = GetDao().GetDialect().GetDbConnection(GetDao().GetConnectString());
@@ -530,10 +553,12 @@ namespace Frameset.Core.Repo
             using DbCommand command = GetDao().GetDialect().GetDbCommand(connection, "");
             return GetDao().QueryByFields<O>(entityType, command, queryParams);
         }
+
         public string GetDsName()
         {
             return dsName;
         }
+
         public void ChangeDs(string _dsName)
         {
             IAdoDao selectDao = DAOFactory.GetAdoDao(_dsName);
@@ -541,12 +566,16 @@ namespace Frameset.Core.Repo
             {
                 throw new BaseSqlException("dsName " + _dsName + " not registered!");
             }
+
             temporaryDsName = new ThreadLocal<string>(() => _dsName);
+            string? value = temporaryDsName.Value;
         }
+
         public void RestoreDs()
         {
-            temporaryDsName.Dispose();
+            temporaryDsName?.Dispose();
         }
+
         protected IAdoDao GetDao()
         {
             if (temporaryDsName != null && temporaryDsName.IsValueCreated)
@@ -556,13 +585,13 @@ namespace Frameset.Core.Repo
                 IAdoDao tempDao = DAOFactory.GetAdoDao(retDsName);
                 return tempDao ?? throw new BaseSqlException("dsName " + dsName + " not registered!");
             }
+
             return dao;
         }
-        private IMetaObjectHandler GetObjectHandler()
+
+        private IMetaObjectHandler? GetObjectHandler()
         {
             return metaObjectHandler ?? RegServiceContext.GetBean<IMetaObjectHandler>();
         }
-
     }
-
 }

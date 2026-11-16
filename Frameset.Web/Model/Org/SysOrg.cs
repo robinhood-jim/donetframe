@@ -1,10 +1,9 @@
 ﻿using Frameset.Core.Annotation;
-using Frameset.Core.Model;
 
 namespace Frameset.Web.Model.Org
 {
     [MappingEntity("t_sys_org_info")]
-    public class SysOrg : BaseEntity
+    public class SysOrg : AbstractModel
     {
         [MappingField(ifIncrement: true, ifPrimary: true)]
         public long Id
@@ -30,7 +29,7 @@ namespace Frameset.Web.Model.Org
         public string OrgType
         {
             get; set;
-        }
+        } = string.Empty;
         public long Pid
         {
             get; set;
@@ -48,6 +47,6 @@ namespace Frameset.Web.Model.Org
         public string OrderNo
         {
             get; set;
-        }
+        } = string.Empty;
     }
 }

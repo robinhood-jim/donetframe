@@ -13,7 +13,7 @@ namespace Frameset.Core.Dao.Handler
             if (value != null && metaObject.HasProperty(fieldName, out PropertyInfo? propertyInfo))
             {
                 Trace.Assert(propertyInfo != null && propertyInfo.DeclaringType != null);
-                metaObject.SetValue(fieldName, ConvertUtil.ParseByType(propertyInfo.DeclaringType, value));
+                metaObject.SetValue(fieldName, ConvertUtil.ParseByType(propertyInfo.PropertyType, value));
             }
         }
         public bool ContainColumn(string fieldName, MetaObject metaObject)
